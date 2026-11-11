@@ -76,6 +76,7 @@
 | 留守队经验 | `GUARD_EXPERIENCE`（来源 damnation，earned/实际granted/容量不足unused）；`DAMNATION` 附 experience/experienceGranted。核对烧人经验在村内累积、同版存读接续后退休，分配规则只在村庄与仪式state定义。分析器按来源汇总经验，不与新增兵数相加。 |
 | 守村升级付款 | `GUARD_UPGRADE_PAYMENT`（party/troop/payer、quoted与实际paid、付款后treasury），仅观察真实原版金币交易，报价不重复计算。核对灰袍兵由灰袍公库付款、杂兵不改归属后退休。 |
 | 火誓者来源 | `SWORN_GROWTH`（驻留/自然增长信众户 fromWardensHouseholds/fromHearthHouseholds、补兵 regrown、补前缺额 headroomBefore）、`RECONSTRUCTION_SWORN`（added为实际增户）、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`（gain为实际增户）、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么）；分析器将户、兵、人次分项标注，旧集会日志按households前后值求实际增户。 |
+| 守村补兵模型 | `SWORN_MILITIA_MODEL` 每日汇总旧版会强转失败的补兵计算，`activeModel` 为战役当前民兵模型，`villageCalculations` 为当天经过该路径的村数。根因和实测条件见[信众村](firesworn-villages.md#待实测)，验收后退休。 |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
 | 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED`、`PRIEST_HOME_RESTORED`、`PRIEST_DISAPPEAR_BLOCKED` |

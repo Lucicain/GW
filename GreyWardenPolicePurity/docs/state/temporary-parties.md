@@ -92,8 +92,8 @@
 
 用户裁定 2026-09-25：上表六种一律不吃饭。
 
-- `GwpLeaderlessFoodModel` 包在已注册的食物模型外面（`AddModel<T>` 设 BaseModel；NavalDLC
-  的食物模型也这样包原版），只让 `DoesPartyConsumeFood` 对上表返回 false。原版每日进食
+- `GwpLeaderlessFoodModel` 包在已注册的食物模型外面，包括 NavalDLC 的食物模型（见[战役模型的注册顺序](../vanilla/campaign-lifecycle.md#战役模型的注册顺序)），
+  只让 `DoesPartyConsumeFood` 对上表返回 false。原版每日进食
   由它把门，关掉后 `RemainingFoodPercentage` 不再变，队伍不会进入饥饿。
 - 不得把伙食量改成 0，除零会把粮食天数变成异常整数并污染军团算粮。（依据：C#反编译 v1.4.8）
 - 出生时按计划人数配 20 日谷物，只配一次（`OutfitTemporaryDutyParty` → 私有的

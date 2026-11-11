@@ -38,6 +38,9 @@ namespace GreyWardenPolicePurity
 
         private static GwpFireswornBehavior? _instance;
 
+        // 其他模组可以包装战役的民兵模型，守村补兵直接读取本局注册的灰袍模型。
+        private readonly GwpFireswornMilitiaModel _militiaModel;
+
         private readonly Dictionary<string, FaithVillage> _villages =
             new Dictionary<string, FaithVillage>(StringComparer.OrdinalIgnoreCase);
         private readonly List<Ritual> _rituals = new List<Ritual>();
@@ -122,8 +125,9 @@ namespace GreyWardenPolicePurity
             public bool DedicatedMarketTripPending;
         }
 
-        public GwpFireswornBehavior()
+        public GwpFireswornBehavior(GwpFireswornMilitiaModel militiaModel)
         {
+            _militiaModel = militiaModel;
             _instance = this;
         }
 
@@ -961,6 +965,10 @@ namespace GreyWardenPolicePurity
                 presence[here.StringId] = already + added;
             }
 
+#if GWP_DIAGNOSTICS
+            var activeMilitiaModel = Campaign.Current.Models.SettlementMilitiaModel;
+            int wrappedMilitiaGrowthCount = 0;
+#endif
             foreach (FaithVillage row in _villages.Values.ToList())
             {
                 Settlement village = Settlement.Find(row.VillageId);
@@ -979,9 +987,14 @@ namespace GreyWardenPolicePurity
                 int headroom = GuardHeadroom(row);
                 // 祭司最强以后原版民兵不再长，守村队照原版民兵的速度长（用户裁定 2026-10-15）；之前按缺额的 5% 补（用户裁定 2026-10-09）。
                 // 两种都只补到两户一兵的上限。
-                float dailyGrowth = IsPriestStrongest(row, village)
-                    ? ((GwpFireswornMilitiaModel)Campaign.Current.Models.SettlementMilitiaModel).VanillaGrowth(village)
+                bool priestStrongest = IsPriestStrongest(row, village);
+                float dailyGrowth = priestStrongest
+                    ? _militiaModel.VanillaGrowth(village)
                     : headroom * GwpTuning.Firesworn.GuardRegrowDailyChance;
+#if GWP_DIAGNOSTICS
+                if (priestStrongest && activeMilitiaModel is not GwpFireswornMilitiaModel)
+                    wrappedMilitiaGrowthCount++;
+#endif
                 if (IsVillageQuiet(village))
                     regrown = AddToGuard(row, village, zealot, MBRandom.RoundRandomized(dailyGrowth));
                 presence.TryGetValue(row.VillageId, out int fromWardens);
@@ -995,6 +1008,11 @@ namespace GreyWardenPolicePurity
                     "; population=" + GuardPopulation(row) + "; cap=" + GuardCap(row) + "; headroomBefore=" + headroom +
                     "; share=" + SwornShare(row, village).ToString("0.000") + "; hearth=" + village.Village.Hearth.ToString("0"));
             }
+#if GWP_DIAGNOSTICS
+            if (wrappedMilitiaGrowthCount > 0)
+                GwpAiDiagnostics.WriteFaith("SWORN_MILITIA_MODEL",
+                    "activeModel=" + activeMilitiaModel.GetType().FullName + "; villageCalculations=" + wrappedMilitiaGrowthCount);
+#endif
         }
 
         /// <summary>按村子 id 给一个固定的日子（0…period−1），各村错开，不在同一天扎堆。</summary>

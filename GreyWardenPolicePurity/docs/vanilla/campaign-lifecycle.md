@@ -2,6 +2,8 @@
 
 > 游戏版本：v1.4.8
 > 源码：`TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` 的 `OnInitialize`、`OnNewGameCreated`；
+> `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` 的 `AddModel`、`GetModel`；
+> `TaleWorlds.Core/TaleWorlds.Core/GameModelsManager.cs` 的 `GetGameModel`；
 > `TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBGameManager.cs` 的 `OnGameStart`；
 > `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/ClanVariablesCampaignBehavior.cs` 的 `OnNewGameCreated`
 > 模组接入：[公共底座](../state/infrastructure.md#战役状态生命周期)、[玩家声望](../state/player-justice.md#声望playerbehaviorpool)
@@ -26,6 +28,14 @@
 原版 `ClanVariablesCampaignBehavior.OnNewGameCreated` 会遍历非强盗家族并调用
 `UpdateGovernorsOfClan`。因此总督分配会在新档事件期间发生，并非必须等到第一个日结。
 仅在较晚的行为监听器中清除旧状态，无法保证较早的初始化和候选检查不读到它。
+
+## 战役模型的注册顺序
+
+各模块依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到
+已注册的最后一个兼容模型，调用新模型的 `Initialize` 将它设为 `BaseModel`，再追加新模型。非泛型重载只追加。
+战役从该列表建立 `GameModels`，其中 `GetGameModel<T>` 也从后往前取第一个匹配项。
+因此属性（如 `SettlementMilitiaModel`）返回最后注册的兼容模型。此前注册的实例仍在列表中，
+新模型可以通过 `BaseModel` 委托给前一个模型，也可以自行覆盖其规则。
 
 ## 容易想错的地方
 

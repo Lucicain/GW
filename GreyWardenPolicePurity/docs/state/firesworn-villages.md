@@ -1,6 +1,6 @@
 # 火誓者村庄：信众户、守村队与祭司
 
-> 当前状态：自然补兵保持；超额低阶焚烧升阶已部署待实测
+> 当前状态：守村补兵的民兵模型类型冲突已修并部署，待实机日结；超额低阶焚烧升阶已部署待实测
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpFireswornBehavior.cs` `GwpFireswornPriestStays.cs` `GwpFireswornMenus.cs` `GwpFireswornExperience.cs` `GwpFireswornUpgradePayment.cs` `GwpPatrolBeats.cs`
 > 待实测：见文末
@@ -43,6 +43,7 @@
     祭司最强以后原版民兵不再长，守村队接过原版民兵的增长项：每天 0.5 + 户数/400（加政策、文化加成；原版增减把退役项加回来，`GwpFireswornMilitiaModel.VanillaGrowth`），同样只补到上限。
     村庄不安静时不补。
     （依据：用户裁定 2026-10-07、2026-10-08、2026-10-15；C#反编译 v1.4.8 DefaultSettlementProsperityModel、DefaultSettlementMilitiaModel）
+- 守村日结从本局注册的灰袍民兵模型读取增长项。r15/r16 曾把[当前战役民兵模型](../vanilla/campaign-lifecycle.md#战役模型的注册顺序)强转为灰袍类型；Bellum Civile 1.4.11 在灰袍之后注册 `BellumCouncilSettlementMilitiaModel`，日结走到祭司势力居首的守村补兵计算时会抛出 `InvalidCastException`。灰袍的模型按原顺序注册和委托，日结直接持有本局注册的同一个实例。（依据：玩家截图、本机游戏及内战 DLL 反编译、r15/r16 源码存档、r16 发行 DLL 的类型转换离线对照 2026-11-11）
 - 招走或调拨现有守村灰袍兵不扣户数（家还在）；烧不信教的户会减少户数。原版村民队新建与补员另沿原版扣户数，生成比例和扣除只在[村民队](firesworn-villagers.md)定义，不把现有兵员调拨与新增村民混为一件事。（依据：用户裁定2026-10-07、2026-10-16；C#反编译与源码复核）
 - 守村队和原版民兵站在同一支民兵队里，一起守村。
   - 游戏中的民兵队可以混有未烧的原版民兵和外出解救、招来的非灰袍兵；内部守村队账本只记录各阶灰袍兵，外出总数也按兵种筛选。杂兵与地牢俘虏不占灰袍补兵名额；当前不派巡逻或紧急出动，物流队处理见 [队伍](firesworn-parties.md)。（依据：用户反馈、源码复核 2026-10-09）
@@ -130,6 +131,7 @@
 
 ## 待实测
 
+- 同开 Bellum Civile 1.4.11，内战排在灰袍后面时正常游玩，覆盖祭司势力居首的信众村日结及同版读档后的接续。核对 `SWORN_MILITIA_MODEL` 的经过次数、同次故障报告及守村补兵。玩家原始堆栈和加载顺序尚未取得。
 - 村子被劫掠时守村兵在村里参战，打完幸存守村兵获得原版战斗经验；烧人后留守灰袍兵经验增加，村内杂兵不分走。agent核对 `GUARD_EXPERIENCE`（damnation）与每日 `guardXp`。
 - 多场经验在村内累积并达到升级门槛；伤兵恢复后升级，同版存读档后余量接续。现有升级费用条件仍由当前升级器决定。
 - 守村灰袍升级发生金币支出时扣灰袍公库，外族村主不付款；混编杂兵照原规则。agent核对 `GUARD_UPGRADE_PAYMENT` 的付款人、报价与实扣；缴获覆盖后实际金币可为0。
