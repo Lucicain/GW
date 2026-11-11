@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,125 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+230 个源文件、60,107 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -61,7 +61,7 @@
 | `Equipment` | `GetRandomEquipmentElements` | Prefix | `GwpWholePresetEquipmentPatch` | GwpTroopCombat.cs:449 |
 | `GameMenuTroopSelectionVM` | `InitList` | Postfix | `InitListPatch` | GwpCitySearchSupportSelection.cs:29 |
 | `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaClanPageWidgetPatch` | GwpEncyclopediaClanPageVM.cs:84 |
-| `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaHeroPageWidgetPatch` | GwpEncyclopediaHeroPageVM.cs:330 |
+| `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaHeroPageWidgetPatch` | GwpEncyclopediaHeroPageVM.cs:327 |
 | `GauntletMovie` | `Load` | Postfix | `GwpSingleQueryPopupWidgetPatch` | GwpSingleQueryLinkPatch.cs:45 |
 | `GiveGoldAction` | `ApplyBetweenCharacters` | Postfix/Prefix | `GwpFireswornUpgradePaymentTracePatch` | GwpFireswornUpgradePayment.cs:85 |
 | `HeroSpawnCampaignBehavior` | `GetBestAvailableCommander` | Transpiler | `GwpCityCaseNewCommanderPatch` | GwpCityCaseMovementPatch.cs:68 |
@@ -128,7 +128,7 @@
 | `动态/未静态解析` | `TargetMethod()` | Prefix | `GwpAssistanceArmyTooltipPatch` | GwpAssistanceArmyTooltipPatch.cs:26 |
 | `动态/未静态解析` | `TargetMethod()` | Prefix | `GwpBellumExileCandidatePatch` | GwpKingdomMembershipPatch.cs:43 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpEncyclopediaClanPageExtensionPatch` | GwpEncyclopediaClanPageVM.cs:48 |
-| `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpEncyclopediaHeroPageExtensionPatch` | GwpEncyclopediaHeroPageVM.cs:291 |
+| `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpEncyclopediaHeroPageExtensionPatch` | GwpEncyclopediaHeroPageVM.cs:288 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipPurchaseTownPatch` | GwpLandlessShipTradePatch.cs:109 |
 | `动态/未静态解析` | `TargetMethod()` | Postfix | `GwpLandlessShipSaleTownPatch` | GwpLandlessShipTradePatch.cs:127 |
 | `动态/未静态解析` | `TargetMethods()` | Transpiler | `GwpCityCaseReplacementCommanderPatch` | GwpCityCaseMovementPatch.cs:77 |
@@ -757,8 +757,8 @@
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
-- `GwpEncyclopediaHeroPageVM.cs` — 436 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpCitySearchBehavior.Flow.cs` — 388 行 · `GwpCitySearchPlace` : MissionLogic，另含 3 个类型
 - `GwpCitySearchMission.Progress.cs` — 373 行 · `GwpCitySearchMissionController` : IAgentStateDecider，另含 4 个类型

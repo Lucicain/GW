@@ -38,10 +38,13 @@ This guide describes v1.4-r16.2 (2026-11-11) for Bannerlord 1.4.8. Release packa
 
 ### 2026-11-11 v1.4-r16.2 (Bannerlord 1.4.8)
 
+If you downloaded the original r16.2 package, download the updated archive and reinstall it.
+
 #### Additions and changes
 
 - Offenders have more ways to respond in negotiations based on their personality. They may pay extra, name their own price, retreat to a settlement with their troops, or pay in full and lead a party to rebuild a village.
 - An offender who agrees to surrender to an envoy can lead their party back to a settlement in their own realm before handing themselves over.
+- Aethelflaed is the adoptive mother of the other five founding lords. Three of her daughters each adopt one child at the start, and children later adopted from villages are also recorded in the family tree.
 
 #### Fixes
 
