@@ -41,6 +41,7 @@
 - [npc-voices](npc-voices.md)：普通 NPC 的对白、战场喊声与指令
 - [party-settlement-entry](party-settlement-entry.md)：部队访问聚落、军团统帅与附属部队进城
 
+- [module-loading](module-loading.md)：启动器怎样解析依赖、决定加载顺序及把模块列表交给游戏
 - [campaign-lifecycle](campaign-lifecycle.md)：模块启动、新档事件与行为数据恢复的先后
 - [kingdom-membership](kingdom-membership.md)：家族入国动作、属性写入、外交评分与存档恢复的区别
 - [town-scenes](town-scenes.md)：城镇与城堡的走动场景，无部队领主住哪、地点与点位、地点人物与切场景

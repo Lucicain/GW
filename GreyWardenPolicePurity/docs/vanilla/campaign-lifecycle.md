@@ -31,7 +31,7 @@
 
 ## 战役模型的注册顺序
 
-各模块依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到
+各模块按[当前模块列表的加载顺序](module-loading.md#怎么运作)，依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到
 已注册的最后一个兼容模型，调用新模型的 `Initialize` 将它设为 `BaseModel`，再追加新模型。非泛型重载只追加。
 战役从该列表建立 `GameModels`，其中 `GetGameModel<T>` 也从后往前取第一个匹配项。
 因此属性（如 `SettlementMilitiaModel`）返回最后注册的兼容模型。此前注册的实例仍在列表中，
