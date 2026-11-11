@@ -221,6 +221,30 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        internal static bool IsAdoptiveParent(Hero parent, Hero child)
+        {
+            if ((child.Mother != parent || child.Father != null) &&
+                (child.Father != parent || child.Mother != null))
+                return false;
+
+            if (IsCoreLeader(child))
+                return parent.StringId == CoreLeaderIds[0];
+
+            if (GreyWardenVillageAdoptionBehavior.TryGetAdoptionOrigin(child.StringId, out _))
+                return true;
+
+            if (!IsCoreLeader(parent) || parent.StringId == CoreLeaderIds[0])
+                return false;
+
+            // 开局收养的孩子在战役前出生，原版在战役中出生的孩子会同时记录父母。
+            // 关闭生老病死时 BirthDay 随当前日期变化，改用仍可识别的灰袍后继身份。
+            if (CampaignOptions.IsLifeDeathCycleDisabled)
+                return IsGeneratedPoliceHero(child);
+
+            return Campaign.Current?.Models?.CampaignTimeModel is { } timeModel &&
+                child.BirthDay < timeModel.CampaignStartTime;
+        }
+
         private void OnDailyTick()
         {
             RefreshPoliceClanFamilyPresentation();

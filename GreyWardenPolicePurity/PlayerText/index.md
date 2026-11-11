@@ -8,6 +8,10 @@
 | gwp_cs_support_commission_failed | The search was unsuccessful, and your commission has ended. The Grey Wardens will continue pursuing {TARGET}. | 这次搜捕未能办成，委托到此结束。灰袍会继续追查{TARGET}。 | 用户审核通过2026-10-28：已实际入场的支援搜捕真正失败或主动结束，释放玩家占案，原案交灰袍继续追查。 |
 | gwp_adoption_chat_notice | {HERO.LINK} was taken in by the Grey Wardens from {VILLAGE}. | {HERO.LINK}被灰袍守卫从{VILLAGE}收留了。 | GreyWardenAdoptionLogEntry.cs:57 |
 | gwp_adoption_log_entry | {HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised. | {HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。 | GreyWardenAdoptionLogEntry.cs:77 |
+| gwp_family_role_taken_in | Taken in | 由其收养 | 人物百科头像称呼，页主直接收养的成员。 |
+| gwp_family_role_caregiver | Caregiver | 抚育者 | 人物百科头像称呼，收养页主的人。 |
+| gwp_family_role_junior | Younger member | 修会后辈 | 人物百科头像称呼，从页主往下隔一代，且中间经过灰袍收养关系。 |
+| gwp_family_role_senior | Senior member | 修会前辈 | 人物百科头像称呼，从页主往上隔一代，且中间经过灰袍收养关系。 |
 | gwp_clan_description | The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven's commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment. | 灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。 | 家族百科总介绍；出身、政教分离与严苛惩戒为按用户方向拟写的模组设定，非原版事实。 |
 | gwp_clan_intro | We are the Grey Wardens, bound by Heaven's commandments to watch over these lands. The order answers to no lord. We pursue those who raid villages or attack travellers, whoever they serve. | 我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。 | 首次相识时的灰袍组织介绍，来自comment_strings.xml。 |
 | gwp_clan_name | Grey Wardens | 灰袍守卫 | 家族百科与名牌的组织名，保留。 |
@@ -86,7 +90,7 @@
 | gwp_greywardenfamilybehavior_043 |  VIII | 八 | GreyWardenFamilyBehavior.cs:105 |
 | gwp_greywardenfamilybehavior_044 |  IX | 九 | GreyWardenFamilyBehavior.cs:106 |
 | gwp_greywardenfamilybehavior_045 |  X | 十 | GreyWardenFamilyBehavior.cs:107 |
-| gwp_greywardenfamilybehavior_046 | she | 她 | GreyWardenFamilyBehavior.cs:575 |
+| gwp_greywardenfamilybehavior_046 | she | 她 | GreyWardenFamilyBehavior.cs:599 |
 | gwp_greywardenfamilybehavior_047 | The Grey Wardens took {VAR_1} in after {VAR_2} was sacked and burned. She now lives within the order's house. Still young, she knows the patrol calls and learns the commandments from her elders. | {VAR_1}在{VAR_2}遭劫焚毁后被灰袍收养，如今住在修会内院。她还年幼，已熟悉巡察队出门时的口令，也跟着长辈学习戒律。 | 收养女孩不足12岁时的百科介绍。 |
 | gwp_greywardenfamilybehavior_048 | The Wardens adopted {VAR_1} after {VAR_2} was burned in her childhood. She is learning to read, examine cases, and follow the order's rule in preparation for her adult duties. | {VAR_1}幼时在{VAR_2}被焚后由灰袍收养。她正在修会学习读写、辨认案情和遵守戒律，为成年后的职责做准备。 | 收养女孩年满12岁、尚未成年时的百科介绍。 |
 | gwp_greywardenfamilybehavior_049 | — | {VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。她的来历常被灰袍内部视作这支执法修会存在意义的证明之一：缉捕罪犯并非终点，替灾后幸存者续起秩序与归宿，同样是灰袍法职责的一部分。 | 当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。 |
@@ -739,8 +743,8 @@
 | gwp_gwpcasearchivescreen_046 | unknown | 未知 | GwpCaseArchiveItemVM.cs:482, GwpCaseArchiveItemVM.cs:496, GwpCaseArchiveItemVM.cs:510, GwpCaseArchiveItemVM.cs:528, GwpCaseArchiveItemVM.cs:538 |
 | gwp_gwpcasearchivescreen_047 | Unknown Grey Warden party | 未知灰袍队伍 | GwpCaseArchiveItemVM.cs:72, GwpCaseArchiveItemVM.cs:114, GwpCaseArchiveItemVM.cs:117, GwpCaseArchiveItemVM.cs:148, GwpCaseArchiveItemVM.cs:172, GwpCaseArchiveItemVM.cs:205, GwpCaseArchiveItemVM.cs:232, GwpCaseArchiveItemVM.cs:293, GwpCaseArchiveItemVM.cs:383, GwpCaseArchiveItemVM.cs:396 |
 | gwp_gwpcasearchivescreen_048 | Unknown target | 未知目标 | GwpCaseArchiveItemVM.cs:70, GwpCaseArchiveItemVM.cs:123, GwpCaseArchiveItemVM.cs:455 |
-| gwp_greywardenfamilybehavior_053 | Village Reconstruction Warden | 灰袍村庄重建官 | GreyWardenFamilyBehavior.cs:353, GwpAffairsData.cs:60 |
-| gwp_greywardenfamilybehavior_054 | Grey Warden Lawkeeper | 灰袍巡法官 | GreyWardenFamilyBehavior.cs:345, GreyWardenFamilyBehavior.cs:355 |
+| gwp_greywardenfamilybehavior_053 | Village Reconstruction Warden | 灰袍村庄重建官 | GreyWardenFamilyBehavior.cs:377, GwpAffairsData.cs:60 |
+| gwp_greywardenfamilybehavior_054 | Grey Warden Lawkeeper | 灰袍巡法官 | GreyWardenFamilyBehavior.cs:369, GreyWardenFamilyBehavior.cs:379 |
 | gwp_greywardenfamilybehavior_055 | — | {VAR_1}幼年时因{VAR_2}毁于罪犯劫掠而失去旧日生活，后被灰袍守卫收养。成年后，她正式受职为{VAR_3}并承担对应职责；她的经历证明，法律不仅要缉捕罪犯，也必须替灾后幸存者恢复秩序与归宿。 | 未检出直接引用；保留 |
 | gwp_greywardenfamilybehavior_056 | — | {VAR_1}在灰袍守卫保存的旧帝国法律、家族血脉与严整纪律中长大。成年后，她正式受职为{VAR_2}并承担对应职责。对民众而言，她代表着灰袍仍会守护道路、缉捕罪犯、修复暴力造成的破坏并维持和平。 | 未检出直接引用；保留 |
 | gwp_reconstruction_001 | nameless village | 无名村庄 | GreyWardenVillageReconstructionBehavior.cs:295 |
@@ -780,11 +784,11 @@
 | gwp_join_recruits_granted | {VAR_1} Grey Warden recruits have joined your party. | {VAR_1} 名灰袍新兵加入了你的队伍。 | PlayerBountyBehavior.DialogueAndNotification.cs:445 |
 | gwp_gwpencyclopediaheropagevm_020 | — | 村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaheropagevm_021 | — | 商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}） | 未检出直接引用；保留 |
-| gwp_duty_training | Training Warden | 灰袍练兵者 | GreyWardenFamilyBehavior.cs:349, GwpAffairsData.cs:56 |
-| gwp_duty_caravan | Caravan Protection Warden | 灰袍商路巡法者 | GreyWardenFamilyBehavior.cs:350, GwpAffairsData.cs:57 |
-| gwp_duty_village | Village Protection Warden | 灰袍乡土巡法者 | GreyWardenFamilyBehavior.cs:351, GwpAffairsData.cs:58 |
-| gwp_duty_issues | Petition Warden | 灰袍请愿巡行者 | GreyWardenFamilyBehavior.cs:352, GwpAffairsData.cs:59 |
-| gwp_duty_player | Noble Affairs Liaison | 贵族事务协调官 | GreyWardenFamilyBehavior.cs:354, GwpAffairsData.cs:61 |
+| gwp_duty_training | Training Warden | 灰袍练兵者 | GreyWardenFamilyBehavior.cs:373, GwpAffairsData.cs:56 |
+| gwp_duty_caravan | Caravan Protection Warden | 灰袍商路巡法者 | GreyWardenFamilyBehavior.cs:374, GwpAffairsData.cs:57 |
+| gwp_duty_village | Village Protection Warden | 灰袍乡土巡法者 | GreyWardenFamilyBehavior.cs:375, GwpAffairsData.cs:58 |
+| gwp_duty_issues | Petition Warden | 灰袍请愿巡行者 | GreyWardenFamilyBehavior.cs:376, GwpAffairsData.cs:59 |
+| gwp_duty_player | Noble Affairs Liaison | 贵族事务协调官 | GreyWardenFamilyBehavior.cs:378, GwpAffairsData.cs:61 |
 | gwp_adult_adopted_origin | {VAR_1} was taken in by the Grey Wardens after {VAR_2} was sacked and burned in her childhood. She remained to serve the order as an adult. {VAR_3} | {VAR_1}幼时因{VAR_2}遭劫焚毁而被灰袍收养，成年后留在修会任职。{VAR_3} | 收养成员成年后的百科开头，再拼接实际本职简介VAR_3。 |
 | gwp_adult_born_origin | {VAR_1} grew up under the Grey Warden order's rule and took up its duties on reaching adulthood. {VAR_2} | {VAR_1}在灰袍修会长大，从小受戒律约束，成年后承担修会的职责。{VAR_2} | 非收养成员成年后的百科开头，再拼接实际本职简介VAR_2。 |
 | gwp_bio_hint_law | She serves with the patrols, dealing with cases across the land. | 她随巡察队处理各地案件。 | 成年成员没有本职记录时的百科职责片段。 |

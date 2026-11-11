@@ -729,6 +729,10 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fa_task_war = "{=gwp_fa_task_war}There is a war on. Taking an enemy's goods is not a crime, it is the work.";
         internal const string gwp_fa_task_war_variant_1 = "{=gwp_fa_task_war_variant_1}We cannot take enemy goods in war now? The Wardens reach too far.";
         internal const string gwp_fa_task_war_variant_2 = "{=gwp_fa_task_war_variant_2}That was an enemy caravan. I am fighting a war, not robbing travellers.";
+        internal const string gwp_family_role_caregiver = "{=gwp_family_role_caregiver}Caregiver";
+        internal const string gwp_family_role_junior = "{=gwp_family_role_junior}Younger member";
+        internal const string gwp_family_role_senior = "{=gwp_family_role_senior}Senior member";
+        internal const string gwp_family_role_taken_in = "{=gwp_family_role_taken_in}Taken in";
         internal const string gwp_fief_appeal_file = "{=gwp_fief_appeal_file}I wish to file a petition for reconsideration of a fief.";
         internal const string gwp_fief_appeal_recorded = "{=gwp_fief_appeal_recorded}I will enter the petition. The Noble Affairs Liaison will come to you personally before any fee is collected.";
         internal const string gwp_fief_appeal_refunded = "{=gwp_fief_appeal_refunded}Your petition could not be brought forward. The fee has been returned in full.";

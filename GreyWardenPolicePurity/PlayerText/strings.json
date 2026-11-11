@@ -18,6 +18,26 @@
       "en": "{HERO.LINK} was taken in by the Grey Wardens from {VILLAGE} and brought back to the inner courtyard to be raised.",
       "zh": "{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。"
     },
+    "gwp_family_role_taken_in": {
+      "en": "Taken in",
+      "zh": "由其收养",
+      "context": "人物百科头像称呼，页主直接收养的成员。"
+    },
+    "gwp_family_role_caregiver": {
+      "en": "Caregiver",
+      "zh": "抚育者",
+      "context": "人物百科头像称呼，收养页主的人。"
+    },
+    "gwp_family_role_junior": {
+      "en": "Younger member",
+      "zh": "修会后辈",
+      "context": "人物百科头像称呼，从页主往下隔一代，且中间经过灰袍收养关系。"
+    },
+    "gwp_family_role_senior": {
+      "en": "Senior member",
+      "zh": "修会前辈",
+      "context": "人物百科头像称呼，从页主往上隔一代，且中间经过灰袍收养关系。"
+    },
     "gwp_clan_description": {
       "en": "The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven's commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment.",
       "zh": "灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。",

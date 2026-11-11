@@ -1,8 +1,8 @@
 # 灰袍家族：成员、本职、婚姻与身份
 
-> 当前状态：内战同开新档的家谱显示已验收，首次任命与旧档接续待实测；满关系锁定已取消，免费求婚保留
+> 当前状态：内战同开新档的家谱已验收，百科称呼、首次任命与旧档接续待实测；满关系锁定已取消，免费求婚保留
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `_Module/ModuleData/heroes.xml` `GwpFounderVoiceRegisterPatch.cs`
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpEncyclopediaFamilyRolePatch.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `_Module/ModuleData/heroes.xml` `GwpFounderVoiceRegisterPatch.cs`
 > 待实测：见文末
 
 家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
@@ -17,6 +17,8 @@
 梵蒂开局 38 岁，是另外五位创始领主的养母。原版生成的三个开局孩子依人物编号分给约珥、弥瑟、圣铎各一位。后续村庄收养由完成善后的领主作为养亲，所有收养使用[原版父母字段](../vanilla/campaign-lifecycle.md#开局孩子与家谱)随档保存。旧档在战役早期只给仍属灰袍且没有父母记录的创始领主补上梵蒂，开局年龄来自新档模板。诊断版每次补关系写一条 `ADOPTIVE_PARENT_LINKED`，验收后退休。（依据：用户裁定 2026-11-11；三个孩子的分配为实现选择；原版 C# 核对）
 
 同开内战 1.4.11 的新档已核对梵蒂实际年龄 38 岁、三名开局孩子各登记一位养亲。16:47 同一局的百科记录显示，结识前梵蒂详情隐藏，原版家人列表为空，内战家人栏隐藏。结识后原版家人列表恢复、内战家人栏显示，前后五条养女关系一致。已结识的弥瑟页同样显示家人栏，原版记录的母亲为梵蒂、养女为昭宁。内战家谱读取同一份原版父母和子女字段，头像称呼由自己的 `EncyclopediaHeroFamilyVM` 按位置和性别选本地化文本。用户确认未结识时看不到，百科专项诊断已退休。（依据：2026-11-11 同开新档日志、用户实机确认及安装版百科 C#）
+
+人物百科按修会的收养与抚育关系显示称呼。直接收养的头像写「由其收养」，收养页主的人写「抚育者」。隔一代且经过收养的后辈写「修会后辈」，内战家人栏列出的隔代前辈写「修会前辈」。用现有创始领主身份、村庄收养记录与原版父母字段识别关系。开局孩子有一位创始领主养亲、出生早于战役开始，关闭生老病死时用灰袍后继身份识别。可沿两条链相认时，亲生一链沿用原版称呼。内战布局加载后，在它的头像列表内逐项替换显示文本。安装版 DLL 离线核对了创始和开局收养、村庄收养、亲生对照、隔代称呼、内战旧称呼缓存与头像重建。（依据：用户裁定 2026-11-11；四个称呼为实现选择；安装版 C# 核对）
 
 **创始领主外貌**
 
@@ -121,7 +123,7 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 待实测
 
-- 同开内战新档过首次任命复核后，核对六队仍有领主带队。旧档补齐缺失关系后另存，连续同版读档，核对双方家谱各记一次。后续村庄收养核对完成善后的领主登记为养亲。
+- 同开内战新档过首次任命复核后，核对六队仍有领主带队。旧档补齐缺失关系后另存，连续同版读档，核对双方家谱各记一次。后续村庄收养核对完成善后的领主登记为养亲。用 r16.2 修复包的存档打开梵蒂和弥瑟百科，单开灰袍与同开内战时分别核对直接收养、隔代和反向头像称呼。
 - 正常游玩中的关系变化不再被恢复100，免费求婚入口及婚后身份保持。旧档现值保留，不将取消锁定误报为已还原历史关系。
 - 新档分别会面六人，听原版配音台词的声线与口吻；百科可见各自性格，战斗叫喊按六套声音/音高组合区分。文字自写台词没有新增录音。
 - 求的是灰袍族长时，族长位子和灰袍公库先交给编号最前的另一位灰袍领主，灰袍事务照常运转。

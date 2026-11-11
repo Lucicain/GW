@@ -8,6 +8,10 @@
   <string id="gwp_cs_support_commission_failed" text="这次搜捕未能办成，委托到此结束。灰袍会继续追查{TARGET}。" />
   <string id="gwp_adoption_chat_notice" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留了。" />
   <string id="gwp_adoption_log_entry" text="{HERO.LINK}被灰袍守卫从{VILLAGE}收留，并带回内院抚养。" />
+  <string id="gwp_family_role_taken_in" text="由其收养" />
+  <string id="gwp_family_role_caregiver" text="抚育者" />
+  <string id="gwp_family_role_junior" text="修会后辈" />
+  <string id="gwp_family_role_senior" text="修会前辈" />
   <string id="gwp_clan_description" text="灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。" />
   <string id="gwp_clan_intro" text="我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。" />
   <string id="gwp_clan_name" text="灰袍守卫" />

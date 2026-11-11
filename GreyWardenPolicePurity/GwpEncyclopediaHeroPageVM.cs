@@ -310,6 +310,8 @@ namespace GreyWardenPolicePurity
             Extensions.Add(
                 __instance,
                 new GwpEncyclopediaHeroPageExtension(hero));
+            if (hero != null)
+                GwpEncyclopediaFamilyRolePatch.AttachBellumFamily(__instance, hero);
         }
 
         internal static bool TryGetExtension(

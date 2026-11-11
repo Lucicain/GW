@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-230 个源文件、60,107 行、440 个公开类型、120 条 Harmony 目标声明（含动态入口，共 120 个补丁类）。
+231 个源文件、60,255 行、441 个公开类型、121 条 Harmony 目标声明（含动态入口，共 121 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -58,10 +58,11 @@
 | `EncounterGameMenuBehavior` | `army_encounter_background_on_init` | Prefix | `GwpAssistanceArmyEncounterBackgroundPatch` | GwpAssistanceArmyLifecyclePatch.cs:178 |
 | `EncounterGameMenuBehavior` | `game_menu_army_talk_to_other_members_item_on_condition` | Prefix | `GwpLeaderlessSupportConversationItemPatch` | GwpAssistanceArmyLifecyclePatch.cs:200 |
 | `EncounterGameMenuBehavior` | `game_menu_army_talk_to_other_members_on_condition` | Postfix | `GwpLeaderlessSupportConversationMenuPatch` | GwpAssistanceArmyLifecyclePatch.cs:226 |
+| `EncyclopediaFamilyMemberVM` | `RefreshValues` | Postfix | `GwpEncyclopediaFamilyRolePatch` | GwpEncyclopediaFamilyRolePatch.cs:14 |
 | `Equipment` | `GetRandomEquipmentElements` | Prefix | `GwpWholePresetEquipmentPatch` | GwpTroopCombat.cs:449 |
 | `GameMenuTroopSelectionVM` | `InitList` | Postfix | `InitListPatch` | GwpCitySearchSupportSelection.cs:29 |
 | `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaClanPageWidgetPatch` | GwpEncyclopediaClanPageVM.cs:84 |
-| `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaHeroPageWidgetPatch` | GwpEncyclopediaHeroPageVM.cs:327 |
+| `GauntletMovie` | `Load` | Postfix | `GwpEncyclopediaHeroPageWidgetPatch` | GwpEncyclopediaHeroPageVM.cs:329 |
 | `GauntletMovie` | `Load` | Postfix | `GwpSingleQueryPopupWidgetPatch` | GwpSingleQueryLinkPatch.cs:45 |
 | `GiveGoldAction` | `ApplyBetweenCharacters` | Postfix/Prefix | `GwpFireswornUpgradePaymentTracePatch` | GwpFireswornUpgradePayment.cs:85 |
 | `HeroSpawnCampaignBehavior` | `GetBestAvailableCommander` | Transpiler | `GwpCityCaseNewCommanderPatch` | GwpCityCaseMovementPatch.cs:68 |
@@ -394,6 +395,7 @@
 - `GwpEncyclopediaClanPageExtension` → GwpEncyclopediaClanPageVM.cs ←
 - `GwpEncyclopediaClanPageExtensionPatch` → GwpEncyclopediaClanPageVM.cs ←
 - `GwpEncyclopediaClanPageWidgetPatch` → GwpEncyclopediaClanPageVM.cs ←
+- `GwpEncyclopediaFamilyRolePatch` → GwpEncyclopediaFamilyRolePatch.cs
 - `GwpEncyclopediaHeroPageExtension` → GwpEncyclopediaHeroPageVM.cs ←
 - `GwpEncyclopediaHeroPageExtensionPatch` → GwpEncyclopediaHeroPageVM.cs ←
 - `GwpEncyclopediaHeroPageWidgetPatch` → GwpEncyclopediaHeroPageVM.cs ←
@@ -719,7 +721,7 @@
 ### 家族与村庄（5 个文件）
 
 - `GreyWardenVillageAdoptionBehavior.cs` — 789 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GreyWardenFamilyBehavior.cs` — 657 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
+- `GreyWardenFamilyBehavior.cs` — 681 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenVillageReconstructionBehavior.cs` — 550 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
 - `GreyWardenVillageRewardBehavior.cs` — 194 行 · `GreyWardenVillageRewardBehavior` : CampaignBehaviorBase
@@ -749,16 +751,16 @@
 
 - `SubModule.cs` — 190 行 · `SubModule` : MBSubModuleBase
 
-### 其他（135 个文件）
+### 其他（136 个文件）
 
-- `GwpTextCatalog.g.cs` — 1422 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1426 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1356 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 888 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
 - `GwpFireswornParties.cs` — 560 行 · `GwpFireswornBehavior`
 - `GwpTroopCombat.cs` — 484 行 · `GwpWarhorseDamageTransferBehavior` : MissionBehavior，另含 4 个类型
 - `GreyWardenIssueResolutionBehavior.cs` — 422 行 · `GreyWardenIssueResolutionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpEncyclopediaHeroPageVM.cs` — 418 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
+- `GwpEncyclopediaHeroPageVM.cs` — 420 行 · `GwpEncyclopediaHeroPageExtension`，另含 2 个类型
 - `GwpFieldReportLedger.cs` — 410 行 · `GwpFieldReportLedger` : CampaignBehaviorBase，另含 1 个类型
 - `GwpCitySearchBehavior.Flow.cs` — 388 行 · `GwpCitySearchPlace` : MissionLogic，另含 3 个类型
 - `GwpCitySearchMission.Progress.cs` — 373 行 · `GwpCitySearchMissionController` : IAgentStateDecider，另含 4 个类型
@@ -807,6 +809,7 @@
 - `GwpRitualMapSoundView.cs` — 137 行 · `GwpRitualMapSoundView` : MapView，另含 1 个类型
 - `GwpMapBarReputationPatch.cs` — 134 行 · `GwpMapBarReputation`，另含 2 个类型
 - `GwpRitualSoundOutput.cs` — 133 行 · `GwpRitualSoundOutput` : IDisposable
+- `GwpEncyclopediaFamilyRolePatch.cs` — 118 行 · `GwpEncyclopediaFamilyRolePatch`
 - `GwpPeace.cs` — 118 行 · `GwpPeace`
 - `GwpCharacterPreviewDiagnostics.cs` — 115 行 · `GwpActionCacheDiagnostics`，另含 1 个类型
 - `GwpNegotiationResistance.cs` — 113 行 · `GwpNegotiationResistance`
