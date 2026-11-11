@@ -12,6 +12,7 @@
 | gwp_family_role_caregiver | Caregiver | 抚育者 | 人物百科头像称呼，收养页主的人。 |
 | gwp_family_role_junior | Younger member | 修会后辈 | 人物百科头像称呼，从页主往下隔一代，且中间经过灰袍收养关系。 |
 | gwp_family_role_senior | Senior member | 修会前辈 | 人物百科头像称呼，从页主往上隔一代，且中间经过灰袍收养关系。 |
+| gwp_family_role_peer | Fellow Warden | 修会同袍 | 原版人物百科头像称呼，共同的抚育者至少收养了两人中的一人。 |
 | gwp_clan_description | The Grey Wardens began as an order within the Imperial priesthood, charged with patrol and punishment. After the Empire fractured, they broke from the rule of its lords but continued to bind themselves and others to Heaven's commandments. Women command the order, priests preach its faith, and village congregations supply recruits and provisions. They pursue raiders and protect villages and trade routes, regarding punishment as a religious duty. The common folk rely on their protection and fear the severity of their judgment. | 灰袍起初是帝国教会中承担巡察与惩戒的一支修会。帝国分裂后，她们脱离了诸侯的统辖，仍奉上天的诫命约束自身，也要求旁人守戒。修会由女性统领，教士在各地传教，村中的教众为她们提供兵员与供给。她们缉捕劫掠者，保护村庄与商路，并把惩戒罪行视为信仰的一部分。平民依靠她们的庇护，也畏惧她们严苛的审判。 | 家族百科总介绍；出身、政教分离与严苛惩戒为按用户方向拟写的模组设定，非原版事实。 |
 | gwp_clan_intro | We are the Grey Wardens, bound by Heaven's commandments to watch over these lands. The order answers to no lord. We pursue those who raid villages or attack travellers, whoever they serve. | 我们是灰袍，奉上天的诫命巡察各地。修会不受诸侯差遣。有人劫掠村庄、袭击行旅，我们就会追捕，不论他为谁效命。 | 首次相识时的灰袍组织介绍，来自comment_strings.xml。 |
 | gwp_clan_name | Grey Wardens | 灰袍守卫 | 家族百科与名牌的组织名，保留。 |

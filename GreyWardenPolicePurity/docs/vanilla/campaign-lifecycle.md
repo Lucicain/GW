@@ -37,6 +37,8 @@
 
 人物百科 `EncyclopediaHeroPageVM` 收集父母、配偶和前配偶、兄弟姐妹、子女及孙辈，后两项由 `CampaignUIHelper.GetChildrenAndGrandchildrenOfHero` 取得。该方法只展开当前人物的 `Children` 与每位子女的 `Children`。因此人物页往下最多列两代，往上只列父母。曾孙辈仍通过逐代保存的父母与子女关系接在家谱上，从他们的父母或祖辈各自的人物页查看。页面信息可见时，为符合收录条件的亲属创建 `EncyclopediaFamilyMemberVM`。每项的 `RefreshValues` 用 `ConversationHelper.GetHeroRelationToHeroTextShort` 比较页主和亲属，从父母、子女及孙辈等关系选本地化称呼。原版保存的父母及子女字段不记录亲生或收养。家族百科列家族成员，个人亲属称谓在人物页查看。原版对玩家还未获知详情的人物隐藏亲属区，人物页创建时读取这一状态。（依据：安装版 v1.4.8 `Hero`、`EncyclopediaHeroPageVM`、`EncyclopediaFamilyMemberVM`、`ConversationHelper`、`DefaultInformationRestrictionModel`、`DefaultEncyclopediaHeroPage` 核对 2026-11-11）
 
+`Hero.Siblings` 优先遍历父亲的子女，缺少父亲时才遍历母亲的子女。人物百科据此收集同辈。人物信息区的职业取自 `CampaignUIHelper.GetHeroOccupationName`，女性 `Occupation.Lord` 在通常的领主分支显示「女士」，`Occupation.Preacher` 显示「传教士」。（依据：安装版 v1.4.8 `Hero.Siblings`、`EncyclopediaHeroPageVM.Refresh`、`CampaignUIHelper` 与用户截图核对 2026-11-11）
+
 ## 战役模型的注册顺序
 
 各模块按[当前模块列表的加载顺序](module-loading.md#怎么运作)，依次在 `OnGameStart` 向同一个 `CampaignGameStarter` 注册模型。泛型 `AddModel<T>` 从后往前找到

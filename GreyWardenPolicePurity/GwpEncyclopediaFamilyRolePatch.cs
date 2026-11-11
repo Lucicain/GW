@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -17,6 +18,7 @@ namespace GreyWardenPolicePurity
         {
             Parent,
             Child,
+            Sibling,
             Grandparent,
             Grandchild
         }
@@ -36,6 +38,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             Role role = HasParent(____baseHero, relative) ? Role.Parent :
+                ____baseHero.Siblings.Contains(relative) ? Role.Sibling :
                 HasParent(relative, ____baseHero) ? Role.Child : Role.Grandchild;
             if (GetRole(____baseHero, relative, role) is { } text)
                 __instance.Role = GwpText.Get(text);
@@ -89,12 +92,22 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_family_role_taken_in,
             Role.Parent when GreyWardenFamilyBehavior.IsAdoptiveParent(relative, hero) =>
                 GwpTextCatalog.gwp_family_role_caregiver,
+            Role.Sibling when SharesAdoptiveParent(hero, relative) =>
+                GwpTextCatalog.gwp_family_role_peer,
             Role.Grandchild when IsAdoptiveGrandparent(hero, relative) =>
                 GwpTextCatalog.gwp_family_role_junior,
             Role.Grandparent when IsAdoptiveGrandparent(relative, hero) =>
                 GwpTextCatalog.gwp_family_role_senior,
             _ => null
         };
+
+        private static bool SharesAdoptiveParent(Hero hero, Hero relative)
+        {
+            Hero? parent = hero.Father ?? hero.Mother;
+            return parent != null && HasParent(relative, parent) &&
+                (GreyWardenFamilyBehavior.IsAdoptiveParent(parent, hero) ||
+                 GreyWardenFamilyBehavior.IsAdoptiveParent(parent, relative));
+        }
 
         private static bool IsAdoptiveGrandparent(Hero grandparent, Hero grandchild)
         {
