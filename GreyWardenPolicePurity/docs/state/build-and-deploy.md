@@ -166,12 +166,17 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 ## 已发布版本与下一版的对比基线
 
-- 最新正式版为 v1.4-r16.2（模组版本 1.4.16.2），2026-11-11 同号重发并设为 latest。发布页和下载地址沿用 `v1.4-r16.2`，首发 tag 指向 `55fd717`，修复包源码 tag `v1.4-r16.2-refresh` 指向 `9505b6d`。**下一版的玩家说明对比 `v1.4-r16.2-refresh`。**（依据：用户要求同号重发、远端 Release 与 tag 核验 2026-11-11） [GitHub 发布页](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)
+- 最新正式内容为 2026-11-12 的 r16.2：Bannerlord 1.4.8 用 [v1.4-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)，1.5.7 用 [v1.5-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.5-r16.2)。1.4 发布页与同名下载地址沿用；首发 tag `55fd717` 与 11 月 11 日的 `v1.4-r16.2-refresh`（`9505b6d`）均保留。两份现行包的源码 tag `v1.4-r16.2-sync` 和 `v1.5-r16.2` 同指 `485bcc4`，后者设为 latest。**下一版的玩家说明对比 `v1.5-r16.2`。**（依据：用户要求两份正式玩家包内容一致、公开 Release 和 tag 核验 2026-11-12）
 - 上一正式版 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本 1.4.16），2026-10-29 发布，tag 指向 `fc87267`。
 - 较早正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
 
 ## 当前正式玩家包
 
-v1.4-r16.2 修复包有 78 项，ZIP 为 442,781,486 字节，SHA-256 `ca14af3401e95d6725139c0cd94c666c11147cb61502e8821e891d697667d00f`。隔离玩家 DLL 的 SHA-256 为 `17F2BDFAC33D6935D2E9EA1EAC82C048DEE355AEFB6C69233D051DEEA784D5E3`。安装版 v1.4.8 兼容预检通过，115 个补丁成功绑定。Release 附件已换为修复版 ZIP 与 SHA-256 校验文件。从公开下载地址重新取包，字节数、哈希、78 项逐项清单与诊断标记双编码复核通过，两份 README 与 live 一致。游戏 Modules 目录只留这对包。核验证据在 `build-check/package-v1.4-r16.2/`，首发包核验证据在 `build-check/package-v1.4-r16.2-original/`。（依据：发布与重新下载核验 2026-11-11）
+| 游戏 / 模组版本 | ZIP 字节数 | ZIP SHA-256 | 玩家 DLL SHA-256 |
+| --- | ---: | --- | --- |
+| 1.4.8 / 1.4.16.2 | 442,783,759 | `27dc778a112016e115b3dc44cc51e5aa243e770f2af9d74d192bdefb562a5a22` | `4ac84644613a8d37fb6aba430c0c412265af365a6de549acc9da9279c2887e72` |
+| 1.5.7 / 1.5.16.2 | 442,783,935 | `d7b747ce5b44802e40304dfd30ff8429a7aa8735114a7fca2bc5e197494ef2f5` | `a6def6edc3d7cc5aab20163646633c816b58c841ed6c0f50f5a2f03f444f75b2` |
+
+两个 Release 各有 ZIP 与校验文件。由公开链接重新下载，字节数、哈希、78 项清单、监控标记双编码与 README 均核验通过；DLL 与 `SubModule.xml` 的修订号按目标游戏构建，其余 76 项逐字节相同。两份都包含最新收养称呼，11 月 11 日公开的 1.4 附件缺少「修会同袍」改动。游戏 Modules 目录只留最新 v1.5-r16.2 包对。各版核验证据在 `build-check/package-<version>/`，旧 1.4 的核验分别见 `package-v1.4-r16.2-original/` 和 `package-v1.4-r16.2/published-20261111/`。（依据：发布与公开下载核验 2026-11-12）
 
 Windows PowerShell 5.1 直接加载 `build-check` 目录中的 DLL 曾报 0x80131515，兼容预检使用本机临时隔离目录的构建产物。
