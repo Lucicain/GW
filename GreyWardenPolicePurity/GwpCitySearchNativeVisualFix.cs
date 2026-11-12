@@ -9,14 +9,18 @@ using System.Security.Cryptography;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// 本机1.4.8离场转储及整段原生更新负对照：空实体不能进入资源重建，-1会被继续当索引使用。
+    /// 1.4.8离场转储及1.5.7原生更新器复核：空实体不能进入资源重建，-1会被继续当索引使用。
     /// 保留原有旧资源清理，在新资源分配前跳过空实体；非空仍执行原指令。
     /// 只修改进程内指令，完整3028字节原函数签名相同才安装。
     /// </summary>
     internal static class GwpCitySearchNativeVisualFix
     {
+#if GWP_GAME_157_OR_LATER
+        internal const int FunctionRva = 0x59B3D0;
+#else
         internal const int FunctionRva = 0x5AE760;
-        internal const int PatchRva = 0x5AE8BA;
+#endif
+        internal const int PatchRva = FunctionRva + 0x15A;
         private const int FunctionLength = 3028;
         private const int OverwrittenLength = 16;
         private const int PageSize = 4096;
@@ -25,8 +29,13 @@ namespace GreyWardenPolicePurity
         // 覆盖旧资源清理、插入点、资源重建、栈和寄存器恢复；该范围没有PE基址重定位项。
         private static readonly byte[] FunctionHash =
         {
+#if GWP_GAME_157_OR_LATER
+            0xC7, 0x4C, 0x72, 0x86, 0x14, 0x2A, 0xB8, 0x42, 0x57, 0xA5, 0x8D, 0x00, 0x4A, 0xF7, 0xA8, 0xD2,
+            0xE9, 0x94, 0x63, 0x35, 0x50, 0x51, 0x87, 0x45, 0x95, 0xCD, 0x96, 0x8F, 0x85, 0x02, 0x5C, 0x58
+#else
             0xC8, 0xAE, 0xE6, 0xF8, 0x15, 0x25, 0x75, 0x18, 0x43, 0x92, 0x6B, 0xEE, 0x6A, 0x33, 0xFF, 0xD8,
             0x67, 0x5A, 0xBE, 0x54, 0x6C, 0x84, 0xD7, 0xB3, 0xFA, 0x5D, 0x09, 0xE0, 0xA6, 0x21, 0x7B, 0xC9
+#endif
         };
 
         private static readonly byte[] Expected =
@@ -98,12 +107,12 @@ namespace GreyWardenPolicePurity
             code.AddRange(new byte[] { 0, 0x5A }); // pop rdx
 #endif
             code.Add(0x58); // pop rax
-            AppendJump(code, IntPtr.Add(site, 0xA5E)); // +0x5AF318：恢复XMM6、栈、全部非易失寄存器后返回
+            AppendJump(code, IntPtr.Add(site, 0xA5E)); // 两版均从这里恢复XMM6、栈和非易失寄存器后返回
             byte[] validOffset = BitConverter.GetBytes(code.Count - 19);
             for (int i = 0; i < validOffset.Length; i++) code[15 + i] = validOffset[i];
             code.Add(0x58); // pop rax
             code.AddRange(Expected);
-            AppendJump(code, IntPtr.Add(site, OverwrittenLength)); // +0x5AE8CA：继续原有资源分配
+            AppendJump(code, IntPtr.Add(site, OverwrittenLength)); // 继续原有资源分配
             return code.ToArray();
         }
 

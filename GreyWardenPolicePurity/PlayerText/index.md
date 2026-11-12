@@ -527,7 +527,7 @@
 | gwp_policepatrolbehavior_encyclopedia_004 | Provost enforcement: after the player refuses a lawful order while under warrant, the Grey Wardens declare war upon the player’s faction to compel arrest. Present stage: {VAR_1}; present standing: {VAR_2}. | 纠察队执法：玩家在负声望执法阶段拒绝配合后，灰袍守卫会对玩家所属势力宣战以强制缉拿。当前阶段：{VAR_1}；当前模组声望：{VAR_2}。 | PolicePatrolBehavior.Encyclopedia.cs:45 |
 | gwp_policepatrolbehavior_helpers_001 | Through the Wardens' mediation, you are at peace with {VAR_1}. | 经灰袍调停，你与{VAR_1}恢复了和平。 | GwpPeace.cs:99 |
 | gwp_policepatrolbehavior_helpers_002 | Through the Wardens' mediation, {VAR_1} no longer holds your crimes against you. | 经灰袍调停，{VAR_1}不再追究你的罪行。 | GwpPeace.cs:106 |
-| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:466 |
+| gwp_policeresourcemanager_001 | You lack the coin, so the Wardens take goods worth {VAR_1} denars. | 你的钱不够，灰袍没收了价值 {VAR_1} 第纳尔的物品。 | PoliceResourceManager.cs:475 |
 | gwp_troop_archer | Grey Warden Archer | 灰袍守护者弓箭手 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_heavy_infantry | Grey Warden Heavy Infantry | 灰袍守护者重步兵 | _Module/ModuleData/spnpccharacters.xml |
 | gwp_troop_knight | Grey Warden Knight | 灰袍守护者骑士 | _Module/ModuleData/spnpccharacters.xml |

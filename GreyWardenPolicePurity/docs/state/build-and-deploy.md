@@ -1,13 +1,15 @@
 # 构建、校验与部署
 
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
-> 最后验收：2026-10-28；正式包基线见下文
+> 最后验收：2026-11-12 用户在 v1.5.7 启动并读档进大地图；正式包基线见下文
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：辅助模组Better Time/Useful Skips的一键新档与地图快进
+> 待实测：v1.5.7 的新档、战斗结算、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
 
 ## 当前开发部署
 
-live 为 r16.2 诊断开发版，版本号 1.4.16.2，包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱及百科称呼](family.md#成员)。诊断和隔离玩家版构建均为 0 警告，安装版 v1.4.8 兼容预检绑定 live 的 121 个补丁。Client/Editor 的 SHA-256 同为 `748A5C732CB0EB1E30F13AA84A8DA5930645ADF1549CEB7DEB1152C4C05C6CE6`，live 镜像无缺失、差异或散落。（依据：构建、部署、哈希与兼容预检 2026-11-11）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版（开发修订号仍为 1.4.16.2），包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱及百科称呼](family.md#成员)。Client/Editor 的 SHA-256 同为 `265E344F79026864C5CA9748489DF8E79C45E3541B09222831B8DEC93A5D2870`，live 镜像与安装版兼容预检通过。（依据：构建、部署、哈希与兼容预检 2026-11-12）
+
+v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 
 同日审计清理包含战役启动时清空不进存档的部队意图表与推迟讲和，待重试讲和表改为行为实例字段，删除无人写入的旧存档字段 `gwp_enf_war_streak_*` 与若干死代码、过期注释，押送费率收进 `GwpTuning`，玩家版诊断空壳标 `Conditional`，执法每帧回调取消无条件新建集合。跨战役清空的验收见[公共底座](infrastructure.md#待实测)。2026-11-07 部署的约斗、躲城、同城巡逻涉及的真实进城、首场结算和同版存读验收分归[野外执法](field-arrest.md)、[使者](case-envoy.md)和[搜捕支援](city-search-support.md)。
 
@@ -29,7 +31,7 @@ live 为 r16.2 诊断开发版，版本号 1.4.16.2，包含[守村补兵兼容�
 
 安装清单与原配置备份：`C:/Users/lucif/Downloads/Bannerlord-DeveloperTools-20261018/`（`installed-files.sha256.json`、`LauncherData.before.xml`、`UsefulSkips.before.json`）。卸载可删两新模块目录、恢复这两配置备份，BetterTime配置为本次新建；不涉及灰袍源码读档。原7z保留在Downloads。本轮未启动游戏，待用户确认一键新档及地图快进。（依据：安装与配置核查2026-10-18）
 
-本机 Native 声明 v1.4.8。原版 `Campaign.SpeedUpMultiplier` 默认 4；作弊模式控制台 `campaign.set_campaign_speed_multiplier 10` 可设快进倍率，普通模式上限 15、开发模式 30；倍率不保证实际吞吐。官方 `FastMode` 模块设置 `CampaignOptions.AccelerationMode`，不能据名称当作地图快进。（依据：本机模块与 C#反编译 2026-10-18）
+安装辅助模组时的 Native 为 v1.4.8。原版 `Campaign.SpeedUpMultiplier` 默认 4；作弊模式控制台 `campaign.set_campaign_speed_multiplier 10` 可设快进倍率，普通模式上限 15、开发模式 30；倍率不保证实际吞吐。官方 `FastMode` 模块设置 `CampaignOptions.AccelerationMode`，不能据名称当作地图快进。（依据：当时的本机模块与 C#反编译 2026-10-18）
 
 ## 自动化验证边界
 
@@ -56,11 +58,9 @@ live 为 r16.2 诊断开发版，版本号 1.4.16.2，包含[守村补兵兼容�
 
 ### 游戏世代检测
 
-`GwpDetectTargetGame` 从引用程序集检测，不手工设置。1.5.0 改了
-`AgentApplyDamageModel.CalculatePassiveAttackDamage` 的签名
-（`(BasicCharacterObject, in AttackCollisionData, float)` →
-`(in AttackInformation, in AttackCollisionData, float)`），单个程序集无法同时满足，
-因此**每个游戏世代各构建一次包**。
+`GwpDetectTargetGame` 读取目标安装的 `Modules/Native/SubModule.xml` 版本：`148`、`150`（1.5.0 起）、`157`（1.5.7 起）分别接对应 API。没有安装目录时可用精确版本引用程序集并显式指定 `GwpTargetGame`。1.5.0 改了被动撞击伤害的签名；1.5.7 又改了自动结算等接口，因此**对目标游戏版本分别编译**，不能只看 `1.5` 前缀推定兼容。当前 r16.2 玩家目标是 1.4.8 和 1.5.7；1.4.8 用 `Bannerlord.ReferenceAssemblies` 1.4.8.119303 重建的玩家 DLL，与此前以该安装版验证的同内容 DLL 的 IL 一致。打包只给 `SubModule.xml` 写该包的修订号，共用源数据。（依据：原版接口与隔离构建对照 2026-11-12）
+
+1.4.8 和 1.5.7 的最终玩家包以同一份灰袍玩法、资源和称呼为验收目标，版本分支限于原版接口差异；逐项核对两包数据并单独登记游戏内验证范围。（依据：用户裁定 2026-11-12）
 
 ## 校验脚本（`tools/`）
 

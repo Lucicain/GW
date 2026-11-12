@@ -35,35 +35,27 @@
     <Exec Command="python &quot;$(MSBuildProjectDirectory)\..\tools\Generate-PlayerText.py&quot; --check" />
   </Target>
 
-  <!-- Which game generation this build targets. 1.5.0 changed the abstract
-       AgentApplyDamageModel.CalculatePassiveAttackDamage from
-       (BasicCharacterObject, in AttackCollisionData, float) to
-       (in AttackInformation, in AttackCollisionData, float). A single
-       assembly cannot satisfy both, so the override is compiled per target
-       and the package is built once per game generation. Detected from the
-       referenced assemblies rather than hand-set, so a build always matches
-       whatever game is actually installed unless overridden. -->
-  <Target Name="GwpDetectTargetGame" BeforeTargets="CoreCompile"
-          Condition="'$(GwpTargetGame)' == ''">
+  <!-- Compile the game API used by the referenced installation. 1.5 changed
+       passive attack damage, and 1.5.7 uses the newer campaign model APIs. -->
+  <Target Name="GwpDetectTargetGame" BeforeTargets="CoreCompile">
     <XmlPeek XmlInputPath="$(GameFolder)\Modules\Native\SubModule.xml"
-             Query="/Module/Version/@value">
+             Query="/Module/Version/@value"
+             Condition="'$(GwpTargetGame)' == ''">
       <Output TaskParameter="Result" PropertyName="GwpNativeVersion" />
     </XmlPeek>
-    <PropertyGroup>
-      <!-- "v1.5.2" -> 1.5; anything at or past 1.5 uses the new signature. -->
+    <PropertyGroup Condition="'$(GwpTargetGame)' == ''">
       <GwpVersionNumber>$(GwpNativeVersion.TrimStart('vV'))</GwpVersionNumber>
-      <GwpVersionMajorMinor>$(GwpVersionNumber.Split('.')[0]).$(GwpVersionNumber.Split('.')[1])</GwpVersionMajorMinor>
       <GwpTargetGame>148</GwpTargetGame>
-      <GwpTargetGame Condition="$([System.Version]::Parse('$(GwpVersionMajorMinor)').CompareTo($([System.Version]::Parse('1.5')))) &gt;= 0">150</GwpTargetGame>
-      <DefineConstants Condition="'$(GwpTargetGame)' == '150'">$(DefineConstants);GWP_GAME_150_OR_LATER</DefineConstants>
+      <GwpTargetGame Condition="$([System.Version]::Parse('$(GwpVersionNumber)').CompareTo($([System.Version]::Parse('1.5')))) &gt;= 0">150</GwpTargetGame>
+      <GwpTargetGame Condition="$([System.Version]::Parse('$(GwpVersionNumber)').CompareTo($([System.Version]::Parse('1.5.7')))) &gt;= 0">157</GwpTargetGame>
     </PropertyGroup>
-    <Message Importance="high"
+    <PropertyGroup>
+      <DefineConstants Condition="'$(GwpTargetGame)' == '150' Or '$(GwpTargetGame)' == '157'">$(DefineConstants);GWP_GAME_150_OR_LATER</DefineConstants>
+      <DefineConstants Condition="'$(GwpTargetGame)' == '157'">$(DefineConstants);GWP_GAME_157_OR_LATER</DefineConstants>
+    </PropertyGroup>
+    <Message Importance="high" Condition="'$(GwpNativeVersion)' != ''"
              Text="GreyWarden: installed game $(GwpNativeVersion) -> GwpTargetGame=$(GwpTargetGame)" />
   </Target>
-
-  <PropertyGroup Condition="'$(GwpTargetGame)' == '150'">
-    <DefineConstants>$(DefineConstants);GWP_GAME_150_OR_LATER</DefineConstants>
-  </PropertyGroup>
 
   <PropertyGroup Condition="$(TargetFramework) == 'net472'">
     <BuildForWindows>true</BuildForWindows>

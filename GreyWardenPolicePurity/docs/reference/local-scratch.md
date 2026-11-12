@@ -44,7 +44,7 @@
 | `package-v1.4-r14-original`、`package-v1.4-r14-refresh` | r14 同号替换前后两份 |
 | `package-v1.4-r15` | r15，含公开文字审批与远端玩家 DLL 复核 |
 | `package-v1.4-r16` | r16 正式包核验归档 |
-| `package-v1.4-r16.2-original`、`package-v1.4-r16.2` | r16.2 首发包和同号修复包核验归档，当前玩家包见 `build-and-deploy.md` |
+| `package-v1.4-r16.2-original`、`package-v1.4-r16.2`、`package-v1.5-r16.2` | r16.2 首发和两个游戏版本的包核验归档；1.4 修复包的 11 月 11 日公开证据保留于 `package-v1.4-r16.2/published-20261111/`。当前公开包见 `build-and-deploy.md` |
 
 r12、r13 两版的归档在 `GreyWardenPolicePurity/build-check/` 下且进了 git，位置与此不一致，见清理待办。
 

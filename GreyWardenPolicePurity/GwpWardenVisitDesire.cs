@@ -290,8 +290,10 @@ namespace GreyWardenPolicePurity
 
         public override int GetSkillXpFromHealingTroop(PartyBase party) => Inner.GetSkillXpFromHealingTroop(party);
 
+#if !GWP_GAME_157_OR_LATER
         public override int GetHeroesEffectedHealingAmount(Hero hero, float healingRate) =>
             Inner.GetHeroesEffectedHealingAmount(hero, healingRate);
+#endif
 
         public override float GetSiegeBombardmentHitSurgeryChance(PartyBase party) =>
             Inner.GetSiegeBombardmentHitSurgeryChance(party);

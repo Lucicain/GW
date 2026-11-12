@@ -23,8 +23,10 @@ def digest(handle):
 
 
 def build(binary, label, output):
-    if not re.fullmatch(r"v\d+\.\d+-r\d+(?:\.\d+)?", label):
+    version = re.fullmatch(r"v(\d+\.\d+)-r(\d+(?:\.\d+)?)", label)
+    if version is None:
         raise ValueError("Expected a version label such as v1.4-r16 or v1.4-r16.2")
+    module_version = f"v{version[1]}.{version[2]}".encode("ascii")
     data = binary.read_bytes()
     for marker in MARKERS:
         if marker.encode("ascii") in data or marker.encode("utf-16-le") in data:
@@ -41,16 +43,30 @@ def build(binary, label, output):
         files["GreyWarden/" + relative.as_posix()] = path
     files["GreyWarden/bin/Win64_Shipping_Client/GreyWardenPolicePurity.dll"] = binary
     files["GreyWarden/bin/Win64_Shipping_Client/0Harmony.dll"] = binary.with_name("0Harmony.dll")
+    submodule_path = "GreyWarden/SubModule.xml"
     required = {"GreyWarden/AssetPackages/pack0.tpac", "GreyWarden/README.md", "GreyWarden/README_EN.md",
-                "GreyWarden/SubModule.xml", "GreyWarden/bin/Win64_Shipping_Client/0Harmony.dll"}
+                submodule_path, "GreyWarden/bin/Win64_Shipping_Client/0Harmony.dll"}
     if not required.issubset(files):
         raise ValueError(f"Package is missing required files: {required - files.keys()}")
+    submodule, replacements = re.subn(
+        rb'(?m)^([ \t]*<Version value=")[^"]+("[ \t]*/>)',
+        lambda match: match[1] + module_version + match[2],
+        files[submodule_path].read_bytes(),
+    )
+    if replacements != 1:
+        raise ValueError("Expected one module version in SubModule.xml")
+    submodule = re.sub(rb'(?<=Module revision for GreyWarden )v\d+\.\d+-r\d+(?:\.\d+)?',
+                       label.encode("ascii"), submodule)
     output.mkdir(parents=True, exist_ok=True)
     archive = output / f"GreyWarden-{label}.zip"
     temporary = archive.with_suffix(".zip.partial")
     manifest = []
     with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as package:
         for name, path in sorted(files.items()):
+            if name == submodule_path:
+                manifest.append({"path": name, "bytes": len(submodule), "sha256": hashlib.sha256(submodule).hexdigest()})
+                package.writestr(name, submodule)
+                continue
             with path.open("rb") as handle:
                 checksum = digest(handle)
             manifest.append({"path": name, "bytes": path.stat().st_size, "sha256": checksum})

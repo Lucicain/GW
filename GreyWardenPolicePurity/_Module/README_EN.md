@@ -2,7 +2,7 @@
 
 GreyWarden adds an independent religious order descended from the Imperial church to Mount & Blade II: Bannerlord. Its members protect civilians, pursue raiders, support villages and train successors. Village priests and believers provide recruits and supplies. Players can face the Wardens for their crimes, or earn their trust, join the order and take commissions.
 
-This guide describes v1.4-r16.2 (2026-11-11) for Bannerlord 1.4.8. Release packages include runtime art and exclude editable sources and editor folders. For Bannerlord 1.5.2, use the previously released v1.5-r1.
+This guide covers r16.2 (2026-11-12). Use v1.4-r16.2 for Bannerlord 1.4.8 or v1.5-r16.2 for Bannerlord 1.5.7. Both downloads contain the same Grey Warden gameplay, art and text.
 中文：README.md
 
 ## Main features
@@ -36,18 +36,20 @@ This guide describes v1.4-r16.2 (2026-11-11) for Bannerlord 1.4.8. Release packa
 
 ## Changelog
 
-### 2026-11-11 v1.4-r16.2 (Bannerlord 1.4.8)
+### 2026-11-12 r16.2 (Bannerlord 1.4.8 / 1.5.7)
 
-If you downloaded the original r16.2 package, download the updated archive and reinstall it.
+If you downloaded the November 11 build of v1.4-r16.2, download the updated archive. After upgrading to Bannerlord 1.5.7, use v1.5-r16.2.
 
 #### Additions and changes
 
 - Offenders have more ways to respond in negotiations based on their personality. They may pay extra, name their own price, retreat to a settlement with their troops, or pay in full and lead a party to rebuild a village.
 - An offender who agrees to surrender to an envoy can lead their party back to a settlement in their own realm before handing themselves over.
 - Aethelflaed is the adoptive mother of the other five founding lords. Three of her daughters each adopt one child at the start, and children later adopted from villages are also recorded in the family tree.
+- The hero encyclopedia uses the order's own terms for Grey Warden adoptive relationships. The standard encyclopedia calls adopted peers Fellow Wardens.
 
 #### Fixes
 
+- Fixed GreyWarden failing to load after the Bannerlord 1.5.7 update.
 - Fixed a mod compatibility error.
 - Fixed an error when smelting paired blades.
 - Fixed arranged duels that stayed open after the winner was decided, and parties that kept patrolling outside their duel venue.

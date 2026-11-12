@@ -345,8 +345,17 @@ namespace GreyWardenPolicePurity
             // 离那处锚点的远近算，与出借方自己下水一样。
             if (lender.Anchor?.IsValid == true && borrower.Anchor != null)
             {
+#if GWP_GAME_157_OR_LATER
+                borrower.Anchor.ResetPosition();
+                if (lender.Anchor.Settlement is { } port)
+                    borrower.Anchor.Settlement = port;
+                else
+                    borrower.Anchor.Position = lender.Anchor.Position;
+                borrower.Anchor.SetLastUsedDisembarkPosition(lender.Anchor.GetInteractionPosition(borrower));
+#else
                 borrower.Anchor.SetPosition(lender.Anchor.Position);
                 borrower.Anchor.SetLastUsedDisembarkPosition(lender.Anchor.GetLastUsedDisembarkPosition());
+#endif
             }
             borrower.SetNavalVisualAsDirty();
             lender.SetNavalVisualAsDirty();

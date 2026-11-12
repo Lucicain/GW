@@ -18,14 +18,22 @@ namespace GreyWardenPolicePurity
     public sealed class GwpPartySizeLimitModel : DefaultPartySizeLimitModel
     {
         public override ExplainedNumber GetPartyMemberSizeLimit(
-            PartyBase party, bool includeDescriptions = false)
+            PartyBase party,
+#if GWP_GAME_157_OR_LATER
+            bool isCurrentlyAtSea,
+#endif
+            bool includeDescriptions = false)
         {
             int cohortLimit = GreyWardenTroopRequestBehavior
                 .GetCohortSizeLimit(party?.MobileParty);
             if (cohortLimit > 0)
                 return new ExplainedNumber(cohortLimit, includeDescriptions);
 
-            ExplainedNumber limit = base.GetPartyMemberSizeLimit(party!, includeDescriptions);
+            ExplainedNumber limit = base.GetPartyMemberSizeLimit(party!,
+#if GWP_GAME_157_OR_LATER
+                isCurrentlyAtSea,
+#endif
+                includeDescriptions);
             int faithLimit = GwpFireswornBehavior.FaithPartySizeLimit(party?.MobileParty);
             if (faithLimit > limit.ResultNumber)
                 return new ExplainedNumber(faithLimit, includeDescriptions);

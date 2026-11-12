@@ -1,6 +1,6 @@
 # 原版启动器与模块加载顺序
 
-> 游戏版本：v1.4.8
+> 游戏版本：启动器排序与 XML 合并 v1.4.8；子模块类型加载失败 v1.5.7
 > 源码：`TaleWorlds.MountAndBlade.Launcher.Library/TaleWorlds.MountAndBlade.Launcher.Library/LauncherModsVM.cs` 的 `LoadSubModules`、`ChangeLoadingOrderOf`、`ModuleListCode`，同目录 `LauncherUI.cs` 的 `AdditionalArgs`；
 > `TaleWorlds.ModuleManager/TaleWorlds.ModuleManager/ModuleInfo.cs` 的 `LoadWithFullPath`，同目录 `ModuleHelper.cs` 的 `GetDependentModulesOf`、`InitializeModules`；
 > `TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` 的 `Initialize`、`LoadSubModules`、`CollectSubModules`；
@@ -14,6 +14,10 @@
 3. 启动器刷新、拖动和开始游戏时，都按这两种声明做拓扑排序。它按输入列表访问各模块，先排入该模块的前置，再排入该模块。两个模块的相对位置由整个依赖图和输入顺序共同决定。
 4. `ModuleListCode` 从排好序的列表中取出勾选项，将模块 ID 按顺序写入游戏启动参数。游戏取得这份顺序，在 `InitializeModules` 按 ID 装入模块列表。`Module.LoadSubModules` 按此顺序登记 XML 并加载子模块程序集、构造实例。正常启动时先完成这一批 DLL 的加载与实例创建，再调用各子模块的 `OnSubModuleLoad`。
 5. 开新局或读档时，`MBGameManager.OnGameStart` 按当前模块列表调用各子模块的战役启动回调。注册同一种战役模型时，游戏选择最后注册的实例。该实例可以委托给先前的模型，具体见[战役模型的注册顺序](campaign-lifecycle.md#战役模型的注册顺序)。
+
+### v1.5.7 子模块类型加载失败
+
+`Module.AddSubModule` 先找入口类型与无参构造，再由 `CollectModuleAssemblyTypes` 调用 `Assembly.GetTypes()`，通过后才实例化子模块。即使入口类型本身能加载，程序集里的其他类型也可能因原版抽象方法签名变化而无法加载。`CollectModuleAssemblyTypes` 会记下 `ReflectionTypeLoadException.LoaderExceptions`，并返回 `CriticalError`。`LoadSubModules` 汇总这类错误后中止游戏，尚未运行 `OnSubModuleLoad`，也未进入存档或战役逻辑。
 
 ## 容易想错的地方
 

@@ -92,7 +92,13 @@ namespace GreyWardenPolicePurity
             GwpTextCatalog.gwp_dispatch_manifest_offer, "VAR_1", payment.OfferedValue, "VAR_2", payment.SuggestedTarget);
     }
 
-    [HarmonyPatch(typeof(BarterVM), "RefreshOfferLabel")]
+    [HarmonyPatch(typeof(BarterVM),
+#if GWP_GAME_157_OR_LATER
+        nameof(BarterVM.InitializeStaticContent)
+#else
+        "RefreshOfferLabel"
+#endif
+    )]
     internal static class GwpDispatchOfferLabelPatch
     {
         private static void Postfix(BarterVM __instance, BarterData ____barterData)

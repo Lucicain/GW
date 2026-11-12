@@ -832,10 +832,17 @@ namespace GreyWardenPolicePurity
 
         public override ExplainedNumber SimulateHit(CharacterObject strikerTroop, CharacterObject struckTroop,
             PartyBase strikerParty, PartyBase struckParty, float strikerAdvantage, MapEvent battle,
+#if GWP_GAME_157_OR_LATER
+            BattleEnvironment battleEnvironment,
+#endif
             float strikerSideMorale, float struckSideMorale)
         {
             ExplainedNumber damage = Inner.SimulateHit(strikerTroop, struckTroop, strikerParty, struckParty,
-                strikerAdvantage, battle, strikerSideMorale, struckSideMorale);
+                strikerAdvantage, battle,
+#if GWP_GAME_157_OR_LATER
+                battleEnvironment,
+#endif
+                strikerSideMorale, struckSideMorale);
             if (GwpFireswornBehavior.TryGetArmoryTiers(strikerParty, strikerTroop, out float weapon, out _))
                 damage.AddFactor(weapon * GwpTuning.Firesworn.ArmoryWeaponTierDamage);
             if (GwpFireswornBehavior.TryGetArmoryTiers(struckParty, struckTroop, out _, out float armor))
@@ -878,9 +885,15 @@ namespace GreyWardenPolicePurity
         public override CampaignTime GetSimulationTickInterval(MapEvent mapEvent) =>
             Inner.GetSimulationTickInterval(mapEvent);
 
+#if GWP_GAME_157_OR_LATER
+        public override float GetShipCombatImportance(Ship ship) => Inner.GetShipCombatImportance(ship);
+
+        public override float GetShipCombatScore(Ship ship) => Inner.GetShipCombatScore(ship);
+#else
         public override MBList<(Ship, MapEventParty)> GetSimulationShips(MapEvent mapEvent,
             MBList<MapEventParty> battleParties) =>
             Inner.GetSimulationShips(mapEvent, battleParties);
+#endif
 
         public override int GetParticipatingTroopCount(MapEventSide side) => Inner.GetParticipatingTroopCount(side);
     }
