@@ -1023,6 +1023,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_mapbar_reputation_hint = "{=gwp_mapbar_reputation_hint}How the Grey Wardens judge you. Crimes lower it, good deeds raise it.";
         internal const string gwp_mapbar_reputation_title = "{=gwp_mapbar_reputation_title}Grey Warden Standing";
         internal const string gwp_mapbar_reputation_wanted = "{=gwp_mapbar_reputation_wanted}You are wanted. Grey Warden lords will open a case against you.";
+        internal const string gwp_mapbar_warden_troops = "{=gwp_mapbar_warden_troops}Grey Warden troops";
         internal const string gwp_membership_leave_cancel = "{=gwp_membership_leave_cancel}No. I will remain.";
         internal const string gwp_membership_leave_cancelled = "{=gwp_membership_leave_cancelled}Then your place on the roll remains unchanged.";
         internal const string gwp_membership_leave_confirm = "{=gwp_membership_leave_confirm}Yes. Remove my name from the roll.";
@@ -1089,6 +1090,8 @@ namespace GreyWardenPolicePurity
         internal const string gwp_player_troop_order_unaffordable = "{=gwp_player_troop_order_unaffordable}You cannot afford this order. It was not placed.";
         internal const string gwp_player_troop_stage_delivery = "{=gwp_player_troop_stage_delivery}Delivering troops";
         internal const string gwp_player_troop_stage_training = "{=gwp_player_troop_stage_training}Training";
+        internal const string gwp_player_troop_stage_waiting_for_capacity = "{=gwp_player_troop_stage_waiting_for_capacity}Awaiting room for delivery";
+        internal const string gwp_player_warden_capacity = "{=gwp_player_warden_capacity}Your current reputation allows {CAPACITY} Grey Warden troops. There is no room for these recruits.";
         internal const string gwp_playerbehaviormonitor_005 = "{=gwp_playerbehaviormonitor_005}Raid village";
         internal const string gwp_playerbehaviormonitor_006 = "{=gwp_playerbehaviormonitor_006}Unknown village";
         internal const string gwp_playerbehaviormonitor_007 = "{=gwp_playerbehaviormonitor_007}The Grey Wardens record your raid on {VAR_1}.";
@@ -1263,6 +1266,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_sparring_accept = "{=gwp_sparring_accept}Of course. Just a friendly match.";
         internal const string gwp_sparring_begin = "{=gwp_sparring_begin}The match has started.";
         internal const string gwp_sparring_challenge = "{=gwp_sparring_challenge}Would you like to spar with me? I want to test my skill.";
+        internal const string gwp_sparring_cooldown = "{=gwp_sparring_cooldown}You can spar with the Grey Wardens again in {HOURS} hours.";
         internal const string gwp_sparring_field_centre = "{=gwp_sparring_field_centre}How do you want to fight?";
         internal const string gwp_sparring_field_foot = "{=gwp_sparring_field_foot}Let's fight on foot.";
         internal const string gwp_sparring_field_loss = "{=gwp_sparring_field_loss}You lost to {OPPONENT}.";
@@ -1274,6 +1278,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_sparring_field_post_win = "{=gwp_sparring_field_post_win}You fought well and earned that win. Keep it up.";
         internal const string gwp_sparring_field_rule_loss = "{=gwp_sparring_field_rule_loss}You did not dismount in time. You lose.";
         internal const string gwp_sparring_field_win = "{=gwp_sparring_field_win}{OPPONENT} gives up. You won.";
+        internal const string gwp_sparring_reputation = "{=gwp_sparring_reputation}You earned {POINTS} Grey Warden reputation for winning the bout.";
         internal const string gwp_sparring_talk = "{=gwp_sparring_talk}Talk";
         internal const string gwp_status_petition = "{=gwp_status_petition}Settling a petition in {SETTLEMENT} ({HOURS} hours left).";
         internal const string gwp_status_rebuilding = "{=gwp_status_rebuilding}Rebuilding {VILLAGE} ({HOURS} hours left).";
@@ -1422,5 +1427,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_warden_mediation_done = "{=gwp_warden_mediation_done}Consider it carried. Word goes out today, and the quarrels you took up for us are closed.";
         internal const string gwp_warden_mediation_moot = "{=gwp_warden_mediation_moot}There is nothing left for us to carry. Whatever you took up on our account is already settled.";
         internal const string gwp_warden_mediation_owed = "{=gwp_warden_mediation_owed}This war began when you fought for the Wardens. You may ask them to mediate.";
+        internal const string gwp_warden_upgrade_hint = "{=gwp_warden_upgrade_hint}Each {COUNT} troop upgrades cost 1 Grey Warden reputation. This screen will spend {COST} on confirmation.";
+        internal const string gwp_warden_upgrade_insufficient = "{=gwp_warden_upgrade_insufficient}You need more Grey Warden reputation to upgrade these troops.";
     }
 }

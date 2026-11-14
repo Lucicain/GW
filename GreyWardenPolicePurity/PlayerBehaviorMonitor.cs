@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if GWP_DIAGNOSTICS
-using System.Runtime.CompilerServices;
-#endif
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
@@ -290,15 +287,6 @@ namespace GreyWardenPolicePurity
             {
                 // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
                 int repGain = PlayerBehaviorPool.AccumulateGoodDeedKills(playerKillCount);
-#if GWP_DIAGNOSTICS
-                if (defendedVillage != null)
-                {
-                    GwpAiDiagnostics.WritePlayerJusticeState("VILLAGE_DEFENSE_REPUTATION_SETTLED",
-                        "village=" + defendedVillage.StringId + "; battleRef=" + RuntimeHelpers.GetHashCode(mapEvent) +
-                        "; battleStartMs=" + (long)mapEvent.BattleStartTime.ToMilliseconds + "; playerKnockouts=" + playerKillCount +
-                        "; reputationGain=" + repGain + "; remainder=" + PlayerBehaviorPool.GoodDeedKillProgress);
-                }
-#endif
 
                 if (repGain > 0)
                 {

@@ -13,13 +13,18 @@ namespace GreyWardenPolicePurity
     /// draw from several troop trees, but it turns the Grey Wardens' single
     /// three-way regular tree into an almost permanent one-branch pipeline.
     ///
-    /// Keep the native upgrader, costs, requirements, timing, and batch size.
-    /// Only make the available branches of Grey Warden regulars equally likely
-    /// when a Grey Warden AI party performs the native weighted selection.
+    /// Keep native experience and equipment requirements. The party screen
+    /// settles the player’s Warden upgrades in reputation on confirmation.
     /// </summary>
     public sealed class PolicePartyTroopUpgradeModel :
         DefaultPartyTroopUpgradeModel
     {
+        public override ExplainedNumber GetGoldCostForUpgrade(PartyBase party,
+            CharacterObject characterObject, CharacterObject upgradeTarget) =>
+            GwpPlayerWardenTroops.IsPlayerWardenTroop(party, characterObject)
+                ? new ExplainedNumber(0f)
+                : base.GetGoldCostForUpgrade(party, characterObject, upgradeTarget);
+
         public override bool IsTroopUpgradeable(PartyBase party,
             CharacterObject character)
         {

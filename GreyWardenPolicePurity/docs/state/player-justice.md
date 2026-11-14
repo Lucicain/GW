@@ -1,9 +1,9 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：可取消的参战准备，以及护村转场后的声望和调停均已部署待实测
-> 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
+> 当前状态：护村结算及灰袍招募使者经用户确认，专项诊断已退休
+> 最后验收：`ec2eeb5`（2026-11-14 用户确认护村与招募相关反馈已解决）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBehaviorPool.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
-> 待实测：护村转场后个人击倒累计、调停登记和战斗轮次间存读档；招募使者移动中主动接触、接受或拒绝后返城、在途存读档；四类现场选边后返回/不介入，确认进攻/派兵及两侧结算；办案名牌恢复与自选案件交差
+> 待实测：四类现场选边后返回/不介入，派兵与帮助攻击侧的结算；招募使者拒绝分支；办案名牌恢复与自选案件交差
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
@@ -39,6 +39,7 @@
   按玩家亲手击倒人数累计，每满 10 人 +1。余数跨战斗保留、存进存档。
 - 亲手击倒还开着案的罪犯部队，同样按每 10 人 +1 计。
   协助灰袍抓人走另一条结算路径，两条互斥，同一场战斗不会重复记分。
+- 赢得[灰袍领主切磋](sparring.md#声望与冷却)加 1 点。灰袍兵升阶用声望及兵员额度见[兵源与声望](warden-recruitment.md#玩家兵源与声望方案)。（依据：用户裁定 2026-11-14）
 
 ### 现场介入正在发生的犯罪与执法
 
@@ -55,7 +56,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 
 护村按[原版帮助守方的转场](../vanilla/village-raids.md#玩家援救村庄的转场)记录原村庄和实际参战侧，在开打宣战前由 `PlayerBehaviorMonitor.DefendedVillage` 供[调停](warden-mediation.md#调停申请替灰袍打出来的战争)读取。胜利结算用同一份记录，优先于普通旧案击倒结算，释放或俘虏原劫掠领主仍按原选边计。参战侧引用和击倒统计起点随本场存档，战斗结束清掉该场记录。旧档没有护村记录时，从下一次选择护村开始记录。（依据：两场实机日志、v1.5.7 战斗及轮次间存读链复核 2026-11-14）
 
-旧构建 `rgl_log_36972.txt` 两次在厄毗诺萨确认护村（22:02、22:04），战斗均报告 `DefenderVictory`。第一场记下开战扣关系，调停登记与灰袍声望变化均未出现；第二场原 `Raid` 在 22:04:37 确认时已结束并先结算民兵伤亡。旧日志未记录个人击倒数和声望余数，无法还原两场具体应得点数。新版用同一场战斗的 `VILLAGE_DEFENSE_JOINED` 与 `VILLAGE_DEFENSE_REPUTATION_SETTLED` 核对原事件、转场、新战斗结果与实际累计，用户确认后退休这两条诊断。
+旧构建 `rgl_log_36972.txt` 两次在厄毗诺萨确认护村，第二场确认时原 `Raid` 已结束并先结算民兵伤亡。修复后 `rgl_log_6648.txt` 记录 22:49 从 `land_raid` 返回遭遇菜单后保存，22:50 读档回该遭遇、再进 `land_raid` 并胜利，随后三次出现灰袍调停问答。日志未保留这次读档前后的个人击倒明细。用户确认上一轮问题解决，当轮退休护村专项诊断。（依据：实机日志及用户确认 2026-11-14）
 
 ### 原版参战与离开的依据
 
@@ -92,11 +93,11 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 
 - 声望 ≥ 20 且从未被招募过时，从离玩家最近的城镇派一支 20 人招募队。出发和续派移动意图用送信队出程的 `RequestRush`，持续以主队实体为目标，由[原版会面](../vanilla/party-encounters.md)主动开启对话。保留原版避险和海陆接触条件。追了 5 天还没碰上就去最近城镇解散，再从离玩家最近的城派下一支。答复后立即切换返城命令并结束本次遭遇，返程期间再次会面只说事务已了结。记录当前队伍、返城目标、阶段及出发时间供读档接续。（依据：用户裁定 2026-11-14、实机移动记录与 v1.5.7 原版会面源码）
 
-旧版 `gwp_recruit_1` 在 2026-11-14 的诊断里累计 11 次 `POINT_WINNER_TO_GOTOPOINT`，直到双方接近才切 `EngageParty`。当次海上由原版 `encounter_meeting` 开启招募对话，接受后 0 次重复邀请。新版由 `DUTY_RUSH_ENGAGE_WINNER`、`RECRUIT_DIALOG_OPENED` 的发起方和 `RECRUIT_NATIVE_RETURN_APPLIED` 的玩家目标清除状态核对。保留这些诊断到用户确认主动会面及返程可用。
+修复版日志记录招募使者主动向移动玩家开对话，接受后目标切换至 `town_K3`，清理遭遇后仍保持返城。`rgl_log_6648.txt` 的另一次接受发生在重新载入存档之前。用户确认上一轮问题解决，当轮退休招募专项诊断。（依据：实机日志及用户确认 2026-11-14）
 
 - 首次接受（使者或先拒绝后经领主申请）：
   - 发放黑袍指挥官全套、黑曜指挥官盾、一副双刀；执勤旗独立发放；
-  - 发 5 名 `gwnewrecruit`。
+  - 最多发 5 名 `gwnewrecruit`，以[主队余下名额](warden-recruitment.md#玩家兵源与声望方案)为限。
   
   装备品质规则见 `warden-gear.md`。拒绝后不再派使者，但可以去找任一灰袍领主申请。
 - 退会：找任一普通灰袍领主，撤职权并收回玩家行囊中的全部执勤旗、玩家战斗/便装旗槽的执勤旗；其他物品和普通旗帜保持，已经代收的罚金、已经押着的犯人仍要交。再次加入只发执勤旗，不再发整套装备；沿已有主动退出次数区分首次/重入，不新增发装记账或读档补发。新兵规则保持。（依据：用户裁定 2026-10-17）

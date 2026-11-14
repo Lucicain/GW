@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-#if GWP_DIAGNOSTICS
-using System.Runtime.CompilerServices;
-#endif
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
@@ -152,16 +149,10 @@ namespace GreyWardenPolicePurity
             {
                 Village = village;
                 Raider = raid.AttackerSide.LeaderParty;
-#if GWP_DIAGNOSTICS
-                Raid = raid;
-#endif
             }
 
             internal Settlement Village { get; }
             internal PartyBase Raider { get; }
-#if GWP_DIAGNOSTICS
-            internal MapEvent Raid { get; }
-#endif
         }
 
         private static IEnumerable<MethodBase> TargetMethods()
@@ -189,14 +180,6 @@ namespace GreyWardenPolicePurity
             if (playerSide == null || playerSide.OtherSide.LeaderParty != defense.Raider) return;
 
             Campaign.Current.GetCampaignBehavior<PlayerBehaviorMonitor>().RecordVillageDefense(playerSide, defense.Village);
-#if GWP_DIAGNOSTICS
-            MapEvent battle = playerSide.MapEvent;
-            GwpAiDiagnostics.WritePlayerJusticeState("VILLAGE_DEFENSE_JOINED",
-                "village=" + defense.Village.StringId + "; raidRef=" + RuntimeHelpers.GetHashCode(defense.Raid) +
-                "; battleRef=" + RuntimeHelpers.GetHashCode(battle) + "; battleStartMs=" + (long)battle.BattleStartTime.ToMilliseconds +
-                "; type=" + battle.EventType + "; playerSide=" + playerSide.MissionSide +
-                "; enemy=" + defense.Raider.MapFaction?.StringId);
-#endif
         }
     }
 }

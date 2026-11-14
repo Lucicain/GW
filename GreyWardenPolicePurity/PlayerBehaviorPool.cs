@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GreyWardenPolicePurity.Core.Troops;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
 
@@ -20,6 +21,7 @@ namespace GreyWardenPolicePurity
 
         public static int Reputation { get; private set; } = 0;
         public static int GoodDeedKillProgress { get; private set; } = 0;
+        private static int _wardenUpgradeProgress;
         public static bool IsWanted => Reputation <= -11;
         public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
@@ -81,12 +83,27 @@ namespace GreyWardenPolicePurity
                 "CUSTOM_REPUTATION_CHANGED",
                 "before=" + before + "; delta=" + delta + "; after=" + Reputation);
         }
+
+        internal static int WardenUpgradeCost(int count) =>
+            WardenReputationRules.UpgradeCost(_wardenUpgradeProgress, count);
+
+        internal static int AffordableWardenUpgrades =>
+            WardenReputationRules.AffordableUpgrades(Reputation, _wardenUpgradeProgress);
+
+        internal static void PayForWardenUpgrades(int count)
+        {
+            int cost = WardenUpgradeCost(count);
+            _wardenUpgradeProgress = WardenReputationRules.UpgradeProgress(_wardenUpgradeProgress, count);
+            if (cost > 0) ChangeReputation(-cost);
+        }
+
         public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
         public static void ClearAll()
         {
             Reputation = 0;
             GoodDeedKillProgress = 0;
+            _wardenUpgradeProgress = 0;
             HasAtonementTask = false;
             _victimFactions.Clear();
         }
@@ -99,6 +116,7 @@ namespace GreyWardenPolicePurity
 
                 int goodDeedKillProgress = GoodDeedKillProgress;
                 dataStore.SyncData("gwp_good_deed_kill_progress", ref goodDeedKillProgress);
+                dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
 
                 List<string> victimFactionIds = VictimFactions
                     .Where(static faction => faction != null)
@@ -128,6 +146,7 @@ namespace GreyWardenPolicePurity
             int loadedGoodDeedKillProgress = 0;
             dataStore.SyncData("gwp_good_deed_kill_progress", ref loadedGoodDeedKillProgress);
             ResetGoodDeedKillProgress(loadedGoodDeedKillProgress);
+            dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
 
             int victimCountOnLoad = 0;
             dataStore.SyncData("gwp_victim_count", ref victimCountOnLoad);

@@ -63,6 +63,7 @@ namespace GreyWardenPolicePurity
         private bool _postBoutConversationQueued;
         private bool _postBoutConversationActive;
         private bool _postBoutWasEnforcement;
+        private CampaignTime _friendlySparringAvailableAt = CampaignTime.Zero;
 
         public override void RegisterEvents()
         {
@@ -79,6 +80,7 @@ namespace GreyWardenPolicePurity
         {
             // A pending bout exists only while the conversation mission closes;
             // it is intentionally not persisted into a campaign save.
+            dataStore.SyncData("gwp_friendly_sparring_available_at", ref _friendlySparringAvailableAt);
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
@@ -107,7 +109,8 @@ namespace GreyWardenPolicePurity
                     GwpTextCatalog.gwp_sparring_challenge),
                 CanChallengeConversationHero,
                 null,
-                115);
+                115,
+                CanSparAgain);
 
             starter.AddDialogLine(
                 "gwp_sparring_accept",
@@ -233,6 +236,28 @@ namespace GreyWardenPolicePurity
                 && opponentParty != MobileParty.MainParty;
         }
 
+        private bool CanSparAgain(out TextObject reason)
+        {
+            bool coolingDown = _friendlySparringAvailableAt.IsFuture;
+            reason = coolingDown ? GwpText.Create(GwpTextCatalog.gwp_sparring_cooldown,
+                "HOURS", (int)Math.Ceiling(_friendlySparringAvailableAt.RemainingHoursFromNow)) : TextObject.GetEmpty();
+            return !coolingDown;
+        }
+
+        private void SettleFriendlyBout(bool playerWon)
+        {
+            if (_friendlySparringAvailableAt.IsFuture) return;
+
+            _friendlySparringAvailableAt = CampaignTime.DaysFromNow(GwpTuning.Sparring.CooldownDays);
+            if (!playerWon) return;
+
+            int previous = PlayerBehaviorPool.Reputation;
+            PlayerBehaviorPool.ChangeReputation(GwpTuning.Sparring.VictoryReputation);
+            int gained = PlayerBehaviorPool.Reputation - previous;
+            if (gained > 0)
+                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_sparring_reputation, "POINTS", gained));
+        }
+
         /// <summary>
         /// 野战执法专用的入口：罪犯要求单挑定输赢时，直接借用这套已经成熟的野外
         /// 切磋流程，不再另起一套战斗场景。调用方负责先结束自己的对话状态。
@@ -262,7 +287,7 @@ namespace GreyWardenPolicePurity
         private void QueueSparring()
         {
             Hero? opponent = Hero.OneToOneConversationHero;
-            if (opponent == null)
+            if (opponent == null || _friendlySparringAvailableAt.IsFuture)
                 return;
 
             _pendingOpponent = opponent;
@@ -362,6 +387,8 @@ namespace GreyWardenPolicePurity
             if (behavior == null)
                 return;
 
+            bool playerWon = winner == CharacterObject.PlayerCharacter;
+            behavior.SettleFriendlyBout(playerWon);
             PlayArenaVictoryCheer();
 
             Settlement conversationSettlement =
@@ -370,11 +397,11 @@ namespace GreyWardenPolicePurity
             behavior.QueueTownResultConversation(
                 opponent,
                 conversationSettlement,
-                winner == CharacterObject.PlayerCharacter,
+                playerWon,
                 GetLordHallConversationScene(conversationSettlement));
             Debug.Print(
                 "[GreyWarden Sparring] town arena duel resolved; "
-                + $"playerWon={winner == CharacterObject.PlayerCharacter}; "
+                + $"playerWon={playerWon}; "
                 + "waiting for the player to leave with Tab");
         }
 
@@ -425,7 +452,10 @@ namespace GreyWardenPolicePurity
             // 执法单挑借用的是同一条切磋管线。胜负一出就交回执法那边结算，
             // 之后再照常走切磋自己的赛后对话。
             behavior._postBoutWasEnforcement = GwpFieldArrestBehavior.IsEnforcementDuelPending(opponent);
-            GwpFieldArrestBehavior.OnEnforcementDuelFinished(opponent, playerWon && !ruleViolation);
+            if (behavior._postBoutWasEnforcement)
+                GwpFieldArrestBehavior.OnEnforcementDuelFinished(opponent, playerWon && !ruleViolation);
+            else
+                behavior.SettleFriendlyBout(playerWon && !ruleViolation);
 
             behavior._pendingPostBoutOpponent = opponent;
             behavior._pendingPostBoutSettlement = null;

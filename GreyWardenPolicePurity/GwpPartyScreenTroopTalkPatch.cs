@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Party;
 using TaleWorlds.Core;
@@ -63,6 +64,8 @@ namespace GreyWardenPolicePurity
 
             CharacterObject? troop = __instance?.Troop.Character;
             PartyScreenHelper.CloseScreen(true, false);
+            if (GameStateManager.Current.ActiveState is PartyState)
+                return false;
 
             GwpWardenDispatchDialogue.OpenWithTroop(troop);
             return false;

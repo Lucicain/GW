@@ -178,7 +178,7 @@ namespace GreyWardenPolicePurity
             {
                 var entry = Formatted("order:" + item.TrainerPartyId, GreyWardenFamilyBehavior.DutyKind.Training,
                     new GwpCaseArchiveItemVM(item), item.TrainerPartyId, true);
-                entry.IsPaused = item.PausedBy != null;
+                entry.IsPaused = item.PausedBy != null || item.WaitingForCapacity;
                 result.Add(entry);
             }
             foreach (var item in GreyWardenPlayerRequestBehavior.GetTaskSnapshots())

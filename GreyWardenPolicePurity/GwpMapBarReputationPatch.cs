@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapBar;
 using TaleWorlds.Core.ViewModelCollection.Information;
@@ -72,6 +73,14 @@ namespace GreyWardenPolicePurity
                     GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_hint),
                     0, false, TooltipProperty.TooltipPropertyFlags.MultiLine)
             };
+
+            if (MobileParty.MainParty is { } player)
+            {
+                properties.Add(new TooltipProperty(
+                    GwpText.Get(GwpTextCatalog.gwp_mapbar_warden_troops),
+                    GwpPlayerWardenTroops.Count(player.MemberRoster) + "/" + GwpPlayerWardenTroops.Capacity(reputation),
+                    0, false));
+            }
 
             if (PlayerBehaviorPool.IsWanted)
             {

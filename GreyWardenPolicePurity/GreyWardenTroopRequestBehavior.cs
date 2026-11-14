@@ -72,6 +72,7 @@ namespace GreyWardenPolicePurity
             public CampaignTime FiledTime { get; set; }
             public PlayerTroopOrderStage Stage { get; set; }
             public WardenDuty? PausedBy { get; set; }
+            public bool WaitingForCapacity { get; set; }
         }
 
         private sealed class TroopKind
@@ -230,6 +231,8 @@ namespace GreyWardenPolicePurity
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
                 Stage = (PlayerTroopOrderStage)_instance._orderStage,
+                WaitingForCapacity = (PlayerTroopOrderStage)_instance._orderStage == PlayerTroopOrderStage.Delivering &&
+                                     !_instance.HasRoomForTroopDelivery(),
                 PausedBy = trainer == null ? null : GwpWardenDuties.BlockingDuty(trainer, WardenDuty.PlayerRequest)
             });
             return result;
@@ -310,7 +313,8 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_accept),
                 PrepareDeliveryConversation,
                 CompleteTroopDelivery,
-                310);
+                310,
+                CanAcceptTroopDelivery);
 
             starter.AddDialogLine(
                 "gwp_player_troop_delivery_accepted",
@@ -371,6 +375,7 @@ namespace GreyWardenPolicePurity
         {
             int reputation = PlayerBehaviorPool.Reputation;
             int orderLimit = GetOrderLimit(reputation);
+            int slots = GwpPlayerWardenTroops.RemainingSlots(MobileParty.MainParty.MemberRoster, reputation);
             var choices = new List<TroopOrderChoice>();
             foreach (TroopKind kind in TroopKinds.Where(kind =>
                          reputation >= kind.MinimumReputation))
@@ -393,6 +398,12 @@ namespace GreyWardenPolicePurity
                 }
             }
 
+            if (slots == 0)
+            {
+                MBInformationManager.AddQuickInformation(GwpPlayerWardenTroops.CapacityMessage(reputation));
+                return;
+            }
+
             var elements = choices.Select(choice =>
             {
                 CharacterObject? troop = CharacterObject.Find(
@@ -402,8 +413,8 @@ namespace GreyWardenPolicePurity
                     "VAR_1", choice.Count,
                     "VAR_2", troop?.Name?.ToString() ?? choice.Kind.TroopId,
                     "VAR_3", choice.Price);
-                return new InquiryElement(choice, label, null, true,
-                    string.Empty);
+                return new InquiryElement(choice, label, null, choice.Count <= slots,
+                    choice.Count <= slots ? string.Empty : GwpPlayerWardenTroops.CapacityMessage(reputation).ToString());
             }).ToList();
             if (elements.Count == 0) return;
 
@@ -477,6 +488,11 @@ namespace GreyWardenPolicePurity
             if (lord == null || lordParty?.IsActive != true ||
                 (PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.None)
                 return;
+            if (choice.Count > GwpPlayerWardenTroops.RemainingSlots(MobileParty.MainParty.MemberRoster, PlayerBehaviorPool.Reputation))
+            {
+                MBInformationManager.AddQuickInformation(GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.Reputation));
+                return;
+            }
 
             // selectionOnly：界面只让玩家挑用什么付，不做即时转移。挑完由本类实扣，
             // 折价总额记进公共金库——买兵的钱归公库，不进经手领主的口袋。
@@ -636,6 +652,15 @@ namespace GreyWardenPolicePurity
 
             ReleaseStockRendezvous("order_stock_ready");
             _orderStage = (int)PlayerTroopOrderStage.Delivering;
+            if (!HasRoomForTroopDelivery())
+            {
+                if (_nextContactHour >= 0d)
+                {
+                    StopPlayerContact(trainer);
+                    _nextContactHour = -1d;
+                }
+                return;
+            }
             if (_nextContactHour < 0d)
                 _nextContactHour = CampaignTime.Now.ToHours;
             if (CampaignTime.Now.ToHours >= _nextContactHour)
@@ -1099,6 +1124,9 @@ namespace GreyWardenPolicePurity
             int requested) =>
             GwpTroopTransfer.MoveBatches(source, destination, batches, requested, healthyOnly: true);
 
+        private bool HasRoomForTroopDelivery() => MobileParty.MainParty is { IsActive: true } player &&
+            _orderedCount <= GwpPlayerWardenTroops.RemainingSlots(player.MemberRoster, PlayerBehaviorPool.Reputation);
+
         private bool PrepareDeliveryConversation()
         {
             if ((PlayerTroopOrderStage)_orderStage !=
@@ -1119,6 +1147,13 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
+        private bool CanAcceptTroopDelivery(out TextObject reason)
+        {
+            bool hasRoom = HasRoomForTroopDelivery();
+            reason = hasRoom ? TextObject.GetEmpty() : GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.Reputation);
+            return hasRoom;
+        }
+
         private void CompleteTroopDelivery()
         {
             MobileParty? trainer = ResolveTrainerParty();
@@ -1127,8 +1162,7 @@ namespace GreyWardenPolicePurity
             if (trainer?.IsActive != true || pool?.IsActive != true ||
                 troop == null ||
                 CountHealthy(pool, troop) < _orderedCount ||
-                // 订金在下单时就已结清，交付不再收款。
-                MobileParty.MainParty?.IsActive != true)
+                !HasRoomForTroopDelivery())
                 return;
 
             pool.MemberRoster.AddToCounts(troop, -_orderedCount,
@@ -1234,7 +1268,7 @@ namespace GreyWardenPolicePurity
             _ = attackerParty;
             _ = defenderParty;
             if ((PlayerTroopOrderStage)_orderStage !=
-                PlayerTroopOrderStage.Delivering)
+                PlayerTroopOrderStage.Delivering || !HasRoomForTroopDelivery())
                 return;
 
             MobileParty? trainer = ResolveTrainerParty();

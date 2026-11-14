@@ -51,3 +51,4 @@
 - [town-mission-troops](town-mission-troops.md)：在城镇任务里带兵，队伍归属、编队、命令表、中立不受伤与场内开打
 - [tournaments](tournaments.md)：比武大会何时开、何时结，后台结算、跳过比赛与实际比赛的胜负与装备
 - [village-raids](village-raids.md)：AI 选不选这个村去烧、村里守备怎么算、烧村过程
+- [party-screen-upgrades](party-screen-upgrades.md)：部队页升阶、批量确认与取消，战后独立升阶

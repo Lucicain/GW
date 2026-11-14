@@ -2178,6 +2178,34 @@
       "en": "Of course. Just a friendly match.",
       "zh": "当然。只是友好切磋，不伤和气。"
     },
+    "gwp_sparring_cooldown": {
+      "en": "You can spar with the Grey Wardens again in {HOURS} hours.",
+      "zh": "再过 {HOURS} 小时就能和灰袍领主切磋。"
+    },
+    "gwp_sparring_reputation": {
+      "en": "You earned {POINTS} Grey Warden reputation for winning the bout.",
+      "zh": "切磋获胜，灰袍声望 +{POINTS}。"
+    },
+    "gwp_warden_upgrade_hint": {
+      "en": "Each {COUNT} troop upgrades cost 1 Grey Warden reputation. This screen will spend {COST} on confirmation.",
+      "zh": "每累计 {COUNT} 次灰袍兵升阶消耗 1 点灰袍声望。当前确认将扣除 {COST} 点。"
+    },
+    "gwp_warden_upgrade_insufficient": {
+      "en": "You need more Grey Warden reputation to upgrade these troops.",
+      "zh": "灰袍声望不足，无法继续升级。"
+    },
+    "gwp_player_warden_capacity": {
+      "en": "Your current reputation allows {CAPACITY} Grey Warden troops. There is no room for these recruits.",
+      "zh": "当前声望允许接收至多 {CAPACITY} 名灰袍士兵，名额不足。"
+    },
+    "gwp_mapbar_warden_troops": {
+      "en": "Grey Warden troops",
+      "zh": "主队灰袍兵"
+    },
+    "gwp_player_troop_stage_waiting_for_capacity": {
+      "en": "Awaiting room for delivery",
+      "zh": "兵员已备齐，等待灰袍名额"
+    },
     "gwp_sparring_launch_failed": {
       "en": null,
       "zh": "这里不适合切磋，这次就先算了。"

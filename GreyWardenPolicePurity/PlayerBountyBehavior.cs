@@ -542,8 +542,6 @@ namespace GreyWardenPolicePurity
             patrol.Ai.SetDoNotAttackMainParty(2);
             patrol.Ai.SetDoNotMakeNewDecisions(false);
             patrol.SetMoveGoToSettlement(target, patrol.NavigationCapability, false);
-            WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
-                "cleared native EngageParty and ordered immediate travel to " + target.StringId);
         }
 
         private void DestroyRecruitmentPatrol()

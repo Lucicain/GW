@@ -32,12 +32,7 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_options",
                 "{" + GwpTextKeys.RecruitGreeting + "}",
                 RecruitDialogCondition,
-#if GWP_DIAGNOSTICS
-                () => WriteRecruitmentTrace(MobileParty.ConversationParty, "RECRUIT_DIALOG_OPENED",
-                    "playerIsAttacker=" + (PlayerEncounter.IsActive && PlayerEncounter.PlayerIsAttacker)),
-#else
                 null,
-#endif
                 100);
 
             starter.AddPlayerLine(
@@ -202,12 +197,8 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? herald = MobileParty.ConversationParty;
             if (!CanOfferRecruitment(herald)) return;
-            WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_SELECTED",
-                "player selected acceptance");
             _recruitmentAccepted = true;
             _recruitmentOffered = true;
-            WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_COMMITTED",
-                "membership state committed on player choice");
             GiveCommanderEquipment();
             GiveDutyBanner();
             GiveStarterRecruits();
@@ -222,11 +213,7 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? herald = MobileParty.ConversationParty;
             if (!CanOfferRecruitment(herald)) return;
-            WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_SELECTED",
-                "player selected refusal");
             _recruitmentOffered = true;
-            WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_COMMITTED",
-                "refusal state committed on player choice");
             CloseRecruitmentEncounterAndReturn(herald);
 
             InformationManager.DisplayMessage(new InformationMessage(
@@ -240,15 +227,11 @@ namespace GreyWardenPolicePurity
         private void CloseRecruitmentEncounterAndReturn(MobileParty? herald)
         {
             if (herald == null) return;
-            WriteRecruitmentTrace(herald, "RECRUIT_CLOSE_QUEUED",
-                "mark encounter for departure and queue conversation-end cleanup");
 
             if (PlayerEncounter.EncounteredMobileParty == herald)
                 PlayerEncounter.LeaveEncounter = true;
 
             ReturnRecruitmentPatrol(herald);
-            WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REQUESTED",
-                "initial return order issued");
 
             Campaign.Current.ConversationManager.ConversationEndOneShot +=
                 () => FinishRecruitmentEncounterAndReturn(herald);
@@ -256,8 +239,6 @@ namespace GreyWardenPolicePurity
 
         private void FinishRecruitmentEncounterAndReturn(MobileParty herald)
         {
-            WriteRecruitmentTrace(herald, "RECRUIT_CONVERSATION_ENDED",
-                "conversation-end callback entered");
             if (PlayerEncounter.EncounteredMobileParty == herald)
             {
                 PlayerEncounter.LeaveEncounter = true;
@@ -265,31 +246,6 @@ namespace GreyWardenPolicePurity
             }
 
             ReturnRecruitmentPatrol(herald);
-            WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REISSUED",
-                "native return order reissued after conversation cleanup");
-        }
-
-        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
-        private void WriteRecruitmentTrace(MobileParty? herald, string action,
-            string details)
-        {
-#if GWP_DIAGNOSTICS
-            if (herald == null) return;
-
-            string encounteredId = PlayerEncounter.IsActive
-                ? PlayerEncounter.EncounteredMobileParty?.StringId ?? "-"
-                : "-";
-            string conversationId = MobileParty.ConversationParty?.StringId ?? "-";
-            GwpAiDiagnostics.WriteAction(herald, action,
-                details +
-                "; offered=" + _recruitmentOffered +
-                "; accepted=" + _recruitmentAccepted +
-                "; returning=" + _recruitmentPatrolReturning +
-                "; tracked=" + (_recruitmentPatrolId ?? "-") +
-                "; encounterActive=" + PlayerEncounter.IsActive +
-                "; encountered=" + encounteredId +
-                "; conversation=" + conversationId);
-#endif
         }
 
         private bool CanRejoinThroughLord()
@@ -418,10 +374,13 @@ namespace GreyWardenPolicePurity
             CharacterObject? recruit = CharacterObject.Find(GwpIds.NewRecruitId);
             if (recruit == null) return;
 
-            roster.AddToCounts(recruit, GwpTuning.Bounty.JoinRecruitCount);
+            int count = Math.Min(GwpTuning.Bounty.JoinRecruitCount,
+                GwpPlayerWardenTroops.RemainingSlots(roster, PlayerBehaviorPool.Reputation));
+            if (count == 0) return;
+            roster.AddToCounts(recruit, count);
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_join_recruits_granted,
-                    "VAR_1", GwpTuning.Bounty.JoinRecruitCount),
+                    "VAR_1", count),
                 Colors.Green));
         }
 

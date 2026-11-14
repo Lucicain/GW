@@ -301,7 +301,9 @@ namespace GreyWardenPolicePurity
             AssignmentText = GwpText.Get(
                 GwpTextCatalog.gwp_player_troop_ledger_assignment,
                 "VAR_1", trainerName,
-                "VAR_2", order.PausedBy switch
+                "VAR_2", order.WaitingForCapacity
+                    ? GwpText.Get(GwpTextCatalog.gwp_player_troop_stage_waiting_for_capacity)
+                    : order.PausedBy switch
                 {
                     WardenDuty.PlayerEscort => GwpText.Get(GwpTextCatalog.gwp_player_order_wait_support),
                     WardenDuty.PlayerCase => GwpText.Get(GwpTextCatalog.gwp_player_order_wait_case),

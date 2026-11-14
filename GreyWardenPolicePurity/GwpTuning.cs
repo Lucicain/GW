@@ -2,6 +2,12 @@ namespace GreyWardenPolicePurity
 {
     internal static class GwpTuning
     {
+        internal static class Sparring
+        {
+            public const float CooldownDays = 1f;
+            public const int VictoryReputation = 1;
+        }
+
         internal static class Bounty
         {
             public const float IntelReportIntervalDays = 2f;

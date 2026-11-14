@@ -538,6 +538,13 @@
   <string id="gwp_troop_req_mid" text="你已证明自己值得托付。灰袍新兵之外，只要我自己的部队中数量足够，也可以调出重装步兵或执勤弓手。" />
   <string id="gwp_sparring_challenge" text="愿意和我切磋一下吗？我想试试自己的水平。" />
   <string id="gwp_sparring_accept" text="当然。只是友好切磋，不伤和气。" />
+  <string id="gwp_sparring_cooldown" text="再过 {HOURS} 小时就能和灰袍领主切磋。" />
+  <string id="gwp_sparring_reputation" text="切磋获胜，灰袍声望 +{POINTS}。" />
+  <string id="gwp_warden_upgrade_hint" text="每累计 {COUNT} 次灰袍兵升阶消耗 1 点灰袍声望。当前确认将扣除 {COST} 点。" />
+  <string id="gwp_warden_upgrade_insufficient" text="灰袍声望不足，无法继续升级。" />
+  <string id="gwp_player_warden_capacity" text="当前声望允许接收至多 {CAPACITY} 名灰袍士兵，名额不足。" />
+  <string id="gwp_mapbar_warden_troops" text="主队灰袍兵" />
+  <string id="gwp_player_troop_stage_waiting_for_capacity" text="兵员已备齐，等待灰袍名额" />
   <string id="gwp_sparring_launch_failed" text="这里不适合切磋，这次就先算了。" />
   <string id="gwp_sparring_town_win" text="{OPPONENT}认输了，你赢得了这场切磋。" />
   <string id="gwp_sparring_town_loss" text="你输给了{OPPONENT}。" />

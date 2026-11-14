@@ -44,7 +44,7 @@ fi
 # The logic layer must compile without any game DLL and keep its unit tests green.
 # Only when it changed: the run costs a few seconds.
 if git diff --cached --name-only | grep -qE '^GreyWardenPolicePurity/Core/|^GreyWardenPolicePurity\.Core(\.Tests)?/'; then
-  if ! core_report=$(dotnet run --project GreyWardenPolicePurity.Core.Tests -nologo 2>&1); then
+  if ! core_report=$(dotnet run --project GreyWardenPolicePurity.Core.Tests 2>&1); then
     echo "$core_report" | tail -30
     echo "pre-commit: commit refused - logic layer build or unit tests failed, see above." >&2
     exit 1
