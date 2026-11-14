@@ -5714,6 +5714,86 @@
       "zh": "这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。",
       "context": "仅开发版：MEN为各阶灰袍兵的配装记录数，ARMED包含原配或库装主武器/远程武器。库存含已分配库装，备用与多余分开。"
     },
+    "gwp_fs_trade_prisoners_ask": {
+      "en": "I have prisoners to hand over.",
+      "zh": "我有些俘虏想交给你。"
+    },
+    "gwp_fs_trade_prisoners_reply": {
+      "en": "Let me see whom you've brought. The Wardens will remember this.",
+      "zh": "让我看看你押来了谁。灰袍会记下这份人情。"
+    },
+    "gwp_fs_trade_troops_ask": {
+      "en": "Some of my soldiers could serve here.",
+      "zh": "我想留些士兵下来帮你们守村。"
+    },
+    "gwp_fs_trade_troops_reply": {
+      "en": "Show me whom you can spare. We could use some veterans on the watch.",
+      "zh": "你能留下哪些人？村里正缺有经验的人值守。"
+    },
+    "gwp_fs_trade_armory_ask": {
+      "en": "I can spare some gear from my armoury.",
+      "zh": "我能从军械库匀些装备给你们。"
+    },
+    "gwp_fs_trade_armory_reply": {
+      "en": "Show me what you can spare. We'll put it to use here.",
+      "zh": "让我看看你能匀出哪些。这些东西在村里派得上用场。"
+    },
+    "gwp_fs_trade_armory_prepare_ask": {
+      "en": "I'd like to sort out my company's arms and armour first.",
+      "zh": "我想先整理一下随军的军械。"
+    },
+    "gwp_fs_trade_armory_prepare_reply": {
+      "en": "Go ahead. Set aside the gear you can spare, then come and see me again.",
+      "zh": "你先去清点军械。匀得出什么，再来找我。"
+    },
+    "gwp_fs_trade_return": {
+      "en": "Was there anything else?",
+      "zh": "还有别的事吗？"
+    },
+    "gwp_fs_trade_prisoners_title": {
+      "en": "Hand Over Prisoners",
+      "zh": "交付俘虏"
+    },
+    "gwp_fs_trade_troops_title": {
+      "en": "Send Soldiers to the Village Militia",
+      "zh": "调入村庄民兵"
+    },
+    "gwp_fs_trade_armory_title": {
+      "en": "Supply the Village Armoury",
+      "zh": "交付军械"
+    },
+    "gwp_fs_trade_armory_choose": {
+      "en": "Choose one item from your company's armoury, then enter the quantity.",
+      "zh": "从主队军械库选一项装备，再填写交付数量。"
+    },
+    "gwp_fs_trade_armory_item": {
+      "en": "{NAME} × {COUNT}",
+      "zh": "{NAME} × {COUNT}"
+    },
+    "gwp_fs_trade_armory_quantity": {
+      "en": "Enter a quantity from 1 to {MAX}. Each piece is valued at {VALUE} denars. Every {RATE} denars of value earns 1 Grey Warden reputation.",
+      "zh": "填写交付数量（1–{MAX}）。每件估价 {VALUE} 第纳尔，每攒满 {RATE} 第纳尔的货值记 1 点灰袍声望。"
+    },
+    "gwp_fs_trade_armory_quantity_invalid": {
+      "en": "Enter a whole number between 1 and {MAX}.",
+      "zh": "请输入 1 到 {MAX} 之间的整数。"
+    },
+    "gwp_fs_trade_submit": {
+      "en": "Hand Over",
+      "zh": "确认交付"
+    },
+    "gwp_fs_trade_preview": {
+      "en": "On confirmation, Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.",
+      "zh": "确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。"
+    },
+    "gwp_fs_trade_receipt": {
+      "en": "Delivery accepted. Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.",
+      "zh": "祭司已收下。灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。"
+    },
+    "gwp_fs_trade_unavailable": {
+      "en": "This delivery can no longer be made. Speak to the priest again.",
+      "zh": "这笔交付已无法完成，请再与祭司交谈。"
+    },
     "gwp_fs_party_pretalk": {
       "en": "Anything else?",
       "zh": "还有什么事？",

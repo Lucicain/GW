@@ -152,8 +152,8 @@
 | gwp_battle_support_enemy | Grey Warden reinforcements have joined the enemy! | 敌方的灰袍援军抵达战场！ | GwpBattleReinforcementBehavior.cs:183 |
 | gwp_gwpdata_001 | The Grey Wardens have declared you wanted. | 你已被灰袍通缉。 | GwpData.cs:410 |
 | gwp_gwpdata_002 | The Grey Wardens no longer seek you. | 灰袍已撤销对你的通缉。 | GwpData.cs:425 |
-| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | PlayerBehaviorPool.cs:43 |
-| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | PlayerBehaviorPool.cs:57 |
+| gwp_gwpdata_003 | The Grey Wardens have recorded your crime: {VAR_1} ({VAR_2}). | 灰袍记下了你的罪行：{VAR_1}（{VAR_2}）。 | PlayerBehaviorPool.cs:46 |
+| gwp_gwpdata_005 | Reputation: {VAR_1} | 声望：{VAR_1} | PlayerBehaviorPool.cs:60 |
 | gwp_gwpencyclopediaclanpagevm_001 | — | 关闭 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_002 | — | 宣战详情 | 未检出直接引用；保留 |
 | gwp_gwpencyclopediaclanpagevm_003 | — | 查看灰袍守卫当前对各势力宣战的详细原因。 | 未检出直接引用；保留 |
@@ -853,7 +853,7 @@
 | gwp_fief_select_description | Choose the recently captured fief whose ownership should be reconsidered. | 选择一座近期攻下、需要重新审议归属的城镇或城堡。 | GreyWardenPlayerRequestBehavior.cs:360 |
 | gwp_fief_select_hint | Captured with your participation and awarded to another clan. | 你参加了这场攻城战，但封地最终授予了其他家族。 | GreyWardenPlayerRequestBehavior.cs:353 |
 | gwp_file_petition | File petition | 提交请愿 | GreyWardenPlayerRequestBehavior.cs:362 |
-| gwp_cancel | Cancel | 取消 | GreyWardenPlayerRequestBehavior.cs:363, GreyWardenTroopRequestBehavior.cs:427 |
+| gwp_cancel | Cancel | 取消 | GreyWardenPlayerRequestBehavior.cs:363, GreyWardenTroopRequestBehavior.cs:427, GwpFireswornPlayerTrade.cs:192, GwpFireswornPlayerTrade.cs:205 |
 | gwp_fief_auto_triggered | The Wardens' officer for noble affairs is on her way to see you. | 灰袍的贵族事务官正前来见你。 | GreyWardenPlayerRequestBehavior.cs:400 |
 | gwp_fief_request_filed | Your petition for a fief is filed. The Wardens' officer for noble affairs is on her way to you. | 封地请愿已经登记，贵族事务官正前来见你。 | GreyWardenPlayerRequestBehavior.cs:401 |
 | gwp_fief_vote_reopened | The Wardens have petitioned over {VAR_1}. The realm will deliberate the fief again, and you are among the candidates. | 灰袍已就{VAR_1}提出请愿，王国将重新商议封地归属，你在候选之列。 | GreyWardenPlayerRequestBehavior.cs:631 |
@@ -1407,6 +1407,26 @@
 | gwp_fs_armory_party | Armory of {PARTY} ({ITEMS} pieces) | {PARTY}的军械库（{ITEMS}件） | 仅开发版：领主部队库房弹窗标题。 |
 | gwp_fs_armory_empty | The stores are empty. | 库房为空。 | 仅开发版：该持有者尚无军械账本时的说明。 |
 | gwp_fs_armory_summary | These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces. | 这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。 | 仅开发版：MEN为各阶灰袍兵的配装记录数，ARMED包含原配或库装主武器/远程武器。库存含已分配库装，备用与多余分开。 |
+| gwp_fs_trade_prisoners_ask | I have prisoners to hand over. | 我有些俘虏想交给你。 | GwpFireswornPlayerTrade.cs:25 |
+| gwp_fs_trade_prisoners_reply | Let me see whom you've brought. The Wardens will remember this. | 让我看看你押来了谁。灰袍会记下这份人情。 | GwpFireswornPlayerTrade.cs:25 |
+| gwp_fs_trade_troops_ask | Some of my soldiers could serve here. | 我想留些士兵下来帮你们守村。 | GwpFireswornPlayerTrade.cs:27 |
+| gwp_fs_trade_troops_reply | Show me whom you can spare. We could use some veterans on the watch. | 你能留下哪些人？村里正缺有经验的人值守。 | GwpFireswornPlayerTrade.cs:27 |
+| gwp_fs_trade_armory_ask | I can spare some gear from my armoury. | 我能从军械库匀些装备给你们。 | GwpFireswornPlayerTrade.cs:29 |
+| gwp_fs_trade_armory_reply | Show me what you can spare. We'll put it to use here. | 让我看看你能匀出哪些。这些东西在村里派得上用场。 | GwpFireswornPlayerTrade.cs:29 |
+| gwp_fs_trade_armory_prepare_ask | I'd like to sort out my company's arms and armour first. | 我想先整理一下随军的军械。 | GwpFireswornPlayerTrade.cs:31 |
+| gwp_fs_trade_armory_prepare_reply | Go ahead. Set aside the gear you can spare, then come and see me again. | 你先去清点军械。匀得出什么，再来找我。 | GwpFireswornPlayerTrade.cs:34 |
+| gwp_fs_trade_return | Was there anything else? | 还有别的事吗？ | GwpFireswornPlayerTrade.cs:40 |
+| gwp_fs_trade_prisoners_title | Hand Over Prisoners | 交付俘虏 | GwpFireswornPlayerTrade.cs:123 |
+| gwp_fs_trade_troops_title | Send Soldiers to the Village Militia | 调入村庄民兵 | GwpFireswornPlayerTrade.cs:123 |
+| gwp_fs_trade_armory_title | Supply the Village Armoury | 交付军械 | GwpFireswornPlayerTrade.cs:190 |
+| gwp_fs_trade_armory_choose | Choose one item from your company's armoury, then enter the quantity. | 从主队军械库选一项装备，再填写交付数量。 | GwpFireswornPlayerTrade.cs:191 |
+| gwp_fs_trade_armory_item | {NAME} × {COUNT} | {NAME} × {COUNT} | GwpFireswornPlayerTrade.cs:184 |
+| gwp_fs_trade_armory_quantity | Enter a quantity from 1 to {MAX}. Each piece is valued at {VALUE} denars. Every {RATE} denars of value earns 1 Grey Warden reputation. | 填写交付数量（1–{MAX}）。每件估价 {VALUE} 第纳尔，每攒满 {RATE} 第纳尔的货值记 1 点灰袍声望。 | GwpFireswornPlayerTrade.cs:202 |
+| gwp_fs_trade_armory_quantity_invalid | Enter a whole number between 1 and {MAX}. | 请输入 1 到 {MAX} 之间的整数。 | GwpFireswornPlayerTrade.cs:210 |
+| gwp_fs_trade_submit | Hand Over | 确认交付 | GwpFireswornPlayerTrade.cs:205 |
+| gwp_fs_trade_preview | On confirmation, Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}. | 确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。 | GwpFireswornPlayerTrade.cs:134 |
+| gwp_fs_trade_receipt | Delivery accepted. Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}. | 祭司已收下。灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。 | GwpFireswornPlayerTrade.cs:245 |
+| gwp_fs_trade_unavailable | This delivery can no longer be made. Speak to the priest again. | 这笔交付已无法完成，请再与祭司交谈。 | GwpFireswornPlayerTrade.cs:238 |
 | gwp_fs_party_pretalk | Anything else? | 还有什么事？ | 地图遇到教众队伍，买卖取消后回到主对话。 |
 | gwp_fs_party_buy | What goods are you carrying? | 你们带了什么货？ | 只有卖货队有货、总价大于零且玩家付得起时显示的购买选项。 |
 | gwp_fs_party_offer | We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful. | 有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。 | 卖货队报价，不把钱说成归某团火所有。 |

@@ -476,6 +476,7 @@ namespace GreyWardenPolicePurity
             BindExistingLordArmories();
             GwpFireswornMenus.Register(starter);
             GwpFireswornPartyDialogs.Register(starter);
+            RegisterPlayerTrade(starter);
             RebuildPriestIndex();
             foreach (FaithVillage row in _villages.Values.ToList())
                 ObserveGuard(row);

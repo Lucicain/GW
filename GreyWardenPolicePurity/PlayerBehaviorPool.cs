@@ -22,6 +22,9 @@ namespace GreyWardenPolicePurity
         public static int Reputation { get; private set; } = 0;
         public static int GoodDeedKillProgress { get; private set; } = 0;
         private static int _wardenUpgradeProgress;
+        private static int _prisonerTradeProgress;
+        private static int _troopTradeProgress;
+        private static int _armoryTradeProgress;
         public static bool IsWanted => Reputation <= -11;
         public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
@@ -97,6 +100,35 @@ namespace GreyWardenPolicePurity
             if (cost > 0) ChangeReputation(-cost);
         }
 
+        internal static (int Points, int Remainder) QuoteFireswornTrade(FireswornTradeKind kind, long units) =>
+            FireswornTradeRules.Quote(kind, FireswornTradeProgress(kind), units, MaxReputation - Reputation);
+
+        internal static (int Points, int Remainder) CompleteFireswornTrade(FireswornTradeKind kind, long units)
+        {
+            var quote = QuoteFireswornTrade(kind, units);
+            FireswornTradeProgress(kind) = quote.Remainder;
+            if (quote.Points > 0) ChangeReputation(quote.Points);
+            return quote;
+        }
+
+        private static ref int FireswornTradeProgress(FireswornTradeKind kind)
+        {
+            switch (kind)
+            {
+                case FireswornTradeKind.Prisoners: return ref _prisonerTradeProgress;
+                case FireswornTradeKind.Troops: return ref _troopTradeProgress;
+                case FireswornTradeKind.Armory: return ref _armoryTradeProgress;
+                default: throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
+        private static void SyncFireswornTradeProgress(IDataStore dataStore)
+        {
+            dataStore.SyncData("gwp_player_prisoner_trade_progress", ref _prisonerTradeProgress);
+            dataStore.SyncData("gwp_player_troop_trade_progress", ref _troopTradeProgress);
+            dataStore.SyncData("gwp_player_armory_trade_progress", ref _armoryTradeProgress);
+        }
+
         public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
         public static void ClearAll()
@@ -104,6 +136,9 @@ namespace GreyWardenPolicePurity
             Reputation = 0;
             GoodDeedKillProgress = 0;
             _wardenUpgradeProgress = 0;
+            _prisonerTradeProgress = 0;
+            _troopTradeProgress = 0;
+            _armoryTradeProgress = 0;
             HasAtonementTask = false;
             _victimFactions.Clear();
         }
@@ -117,6 +152,7 @@ namespace GreyWardenPolicePurity
                 int goodDeedKillProgress = GoodDeedKillProgress;
                 dataStore.SyncData("gwp_good_deed_kill_progress", ref goodDeedKillProgress);
                 dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
+                SyncFireswornTradeProgress(dataStore);
 
                 List<string> victimFactionIds = VictimFactions
                     .Where(static faction => faction != null)
@@ -147,6 +183,7 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_good_deed_kill_progress", ref loadedGoodDeedKillProgress);
             ResetGoodDeedKillProgress(loadedGoodDeedKillProgress);
             dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
+            SyncFireswornTradeProgress(dataStore);
 
             int victimCountOnLoad = 0;
             dataStore.SyncData("gwp_victim_count", ref victimCountOnLoad);

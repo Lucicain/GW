@@ -158,6 +158,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 玩家为本案宣战（求援成立、进城搜捕动手） | `PlayerBountyBehavior.DeclarePlayerCaseWar` | `DeclareWarAction.Apply*`；宣战同时登记调停申请通道 |
 | 玩家护村身份 | `PlayerBehaviorMonitor.RaidedVillage` / `DefendedVillage` | 识别原版村庄劫掠，转场后按随档保存的参战侧认定，供声望和调停共用 |
 | 玩家主队灰袍兵名额 | `GwpPlayerWardenTroops` / `WardenReputationRules` | 同一个主队名册计数及声望换算，供升阶、接收、订兵和界面共用 |
+| 祭司交付声望结算 | `PlayerBehaviorPool.CompleteFireswornTrade` / `FireswornTradeRules` | 交付界面的报价和成交共用同一换算与余额，零头由玩家声望池保存 |
 | 讲和（含玩家战斗时序、灰袍交战理由） | `GwpPeace` | `FactionManager.SetNeutral`、`MakePeaceAction.Apply`；规则见 [调停](warden-mediation.md) |
 | 战场完整名册、预备兵与增援通知 | `IGwpBattleSceneSource`、`GwpBattleSceneContext` | 援军与音乐只查此入口；野战转接原供应器，城内由搜捕提供真实名册 |
 | 无战役伤亡回调的场景人物来源 | `GreyWardenSafePartyAgentOrigin` | 切磋、搜捕守军与提取身体表现复用此来源；玩家随行兵仍用原版PartyAgentOrigin结算伤亡 |

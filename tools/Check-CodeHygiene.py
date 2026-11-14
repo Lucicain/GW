@@ -225,6 +225,8 @@ OWNERS = [
      "PlayerBehaviorMonitor.cs", "PlayerBehaviorMonitor.RaidedVillage / PlayerBehaviorMonitor.DefendedVillage"),
     ("玩家主队灰袍兵名额", r"\bWardenReputationRules\.Capacity\s*\(",
      "GwpPlayerWardenTroops.cs", "GwpPlayerWardenTroops.Capacity / WardenReputationRules.Capacity"),
+    ("祭司交付声望结算", r"\b(?:FireswornTradeRules\.Quote|PlayerBehaviorPool\.CompleteFireswornTrade)\s*\(",
+     "PlayerBehaviorPool.cs|GwpFireswornPlayerTrade.cs", "PlayerBehaviorPool.CompleteFireswornTrade / FireswornTradeRules"),
     ("讲和", r"\b(?:FactionManager\.SetNeutral|MakePeaceAction\.Apply)\s*\(", "GwpPeace.cs", "GwpPeace.Make / EndPoliceWar"),
     ("临时队唯一编号", r"\bFindNextUniqueStringId\s*<\s*MobileParty\s*>\s*\(", "GwpPartyIdentity.cs", "GwpPartyIdentity.Next"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),

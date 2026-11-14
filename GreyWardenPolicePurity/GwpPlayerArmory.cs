@@ -21,8 +21,13 @@ namespace GreyWardenPolicePurity
         internal static bool OpenPlayerArmory()
         {
             if (!CanManagePlayerArmory) return false;
-            MobileParty party = MobileParty.MainParty;
-            ItemRoster ledger = ItemsOf(_instance!._armories, party.StringId);
+            _instance!.OpenPlayerArmoryLedger(MobileParty.MainParty);
+            return true;
+        }
+
+        private void OpenPlayerArmoryLedger(MobileParty party)
+        {
+            ItemRoster ledger = ItemsOf(_armories, party.StringId);
             InventoryScreenHelper.OpenScreenAsStash(ledger);
             InventoryState state = (InventoryState)Game.Current.GameStateManager.ActiveState;
             // 原版取消会恢复双方库存，但仍调用DoneLogicExtras；不要把取消当成提交。
@@ -30,9 +35,8 @@ namespace GreyWardenPolicePurity
             state.InventoryLogic.AfterReset += (_, fromCancel) => cancelled = fromCancel;
             state.DoneLogicExtrasDelegate = () =>
             {
-                if (!cancelled) _instance.TrimPlayerArmory(party);
+                if (!cancelled) TrimPlayerArmory(party);
             };
-            return true;
         }
 
         private void TrimPlayerArmory(MobileParty party)

@@ -3,11 +3,11 @@
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
 > 最后验收：2026-11-14 用户确认护村、调停和招募相关反馈已解决，见 `ec2eeb5` 及 `rgl_log_6648.txt`
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：灰袍领主切磋奖励与冷却、主队灰袍兵升阶和接收额度见所属页；v1.5.7 的新档、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
+> 待实测：玩家向祭司交付、灰袍领主切磋奖励与冷却、主队灰袍兵升阶和接收额度见所属页；v1.5.7 的新档、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[领主切磋奖励与冷却](sparring.md#声望与冷却)和[主队灰袍兵的升阶与额度](warden-recruitment.md#玩家兵源与声望方案)。Client/Editor DLL 的 SHA-256 同为 `82674048A62400382C2E395D2193051365C08334FD84A79C93DDF0AB634A39C5`；中文语言 XML 为 `937A39BD20B4B851133F12F3DD7D67E84E5C3A1BD0AA109332B9B17758DD6C30`，仓库与 live `SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。安装版兼容预检通过，部署后的 DLL 与受检文件等哈希，live 镜像核对无差异。（依据：构建、部署与兼容预检 2026-11-14）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[玩家向祭司交付](firesworn-economy.md#玩家向祭司交付)。Client/Editor DLL 的 SHA-256 同为 `58FAD92009BE81DB8C6794B6CE278690405C915DB41EDA301386E6CCF43A17D6`。仓库与 live 中文语言 XML 同为 `A15310291A463F112D5A314D954BC4A07604BF02EB6DBC85FC05F82AACF12D93`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。安装版兼容预检通过，部署后的 DLL 与受检文件等哈希，live 镜像核对无差异。（依据：构建、部署与兼容预检 2026-11-15）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 

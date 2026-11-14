@@ -1407,6 +1407,26 @@
   <string id="gwp_fs_armory_party" text="{PARTY}的军械库（{ITEMS}件）" />
   <string id="gwp_fs_armory_empty" text="库房为空。" />
   <string id="gwp_fs_armory_summary" text="这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。" />
+  <string id="gwp_fs_trade_prisoners_ask" text="我有些俘虏想交给你。" />
+  <string id="gwp_fs_trade_prisoners_reply" text="让我看看你押来了谁。灰袍会记下这份人情。" />
+  <string id="gwp_fs_trade_troops_ask" text="我想留些士兵下来帮你们守村。" />
+  <string id="gwp_fs_trade_troops_reply" text="你能留下哪些人？村里正缺有经验的人值守。" />
+  <string id="gwp_fs_trade_armory_ask" text="我能从军械库匀些装备给你们。" />
+  <string id="gwp_fs_trade_armory_reply" text="让我看看你能匀出哪些。这些东西在村里派得上用场。" />
+  <string id="gwp_fs_trade_armory_prepare_ask" text="我想先整理一下随军的军械。" />
+  <string id="gwp_fs_trade_armory_prepare_reply" text="你先去清点军械。匀得出什么，再来找我。" />
+  <string id="gwp_fs_trade_return" text="还有别的事吗？" />
+  <string id="gwp_fs_trade_prisoners_title" text="交付俘虏" />
+  <string id="gwp_fs_trade_troops_title" text="调入村庄民兵" />
+  <string id="gwp_fs_trade_armory_title" text="交付军械" />
+  <string id="gwp_fs_trade_armory_choose" text="从主队军械库选一项装备，再填写交付数量。" />
+  <string id="gwp_fs_trade_armory_item" text="{NAME} × {COUNT}" />
+  <string id="gwp_fs_trade_armory_quantity" text="填写交付数量（1–{MAX}）。每件估价 {VALUE} 第纳尔，每攒满 {RATE} 第纳尔的货值记 1 点灰袍声望。" />
+  <string id="gwp_fs_trade_armory_quantity_invalid" text="请输入 1 到 {MAX} 之间的整数。" />
+  <string id="gwp_fs_trade_submit" text="确认交付" />
+  <string id="gwp_fs_trade_preview" text="确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。" />
+  <string id="gwp_fs_trade_receipt" text="祭司已收下。灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。" />
+  <string id="gwp_fs_trade_unavailable" text="这笔交付已无法完成，请再与祭司交谈。" />
   <string id="gwp_fs_party_pretalk" text="还有什么事？" />
   <string id="gwp_fs_party_buy" text="你们带了什么货？" />
   <string id="gwp_fs_party_offer" text="有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。" />
