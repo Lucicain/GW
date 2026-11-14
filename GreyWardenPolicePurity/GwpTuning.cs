@@ -26,14 +26,6 @@ namespace GreyWardenPolicePurity
 
         internal static class TroopRequest
         {
-            public const int MinimumReputation = 20;
-            public const int VeteranReputation = 40;
-            public const int KnightReputation = 60;
-            public const int EliteOrderReputation = 80;
-            public const int LowStandingOrderLimit = 20;
-            public const int VeteranOrderLimit = 40;
-            public const int KnightOrderLimit = 60;
-            public const int EliteOrderLimit = 80;
             public const float PlayerOrderXpIntervalHours = 6f;
             public const int PlayerOrderXpPerTroop = 1000;
             /// <summary>

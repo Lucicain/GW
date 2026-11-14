@@ -367,7 +367,7 @@ namespace GreyWardenPolicePurity
                 ReturnSelection(members, prisoners);
                 _reportSelection = escort;
                 _afterPayment = () => GreyWardenTroopRequestBehavior.ShowCourierOrderInquiry(
-                    GwpPlayerWardenTroops.Count(escort), (troopId, count) => SendTroopOrder(escort, troopId, count),
+                    GwpPlayerWardenTroops.Count(escort), composition => SendTroopOrder(escort, composition),
                     () => { if (ReferenceEquals(_reportSelection, escort)) _reportSelection = null; });
                 return;
             }
@@ -480,11 +480,11 @@ namespace GreyWardenPolicePurity
                 true);
         }
 
-        private static void SendTroopOrder(TroopRoster escort, string troopId, int count)
+        private static void SendTroopOrder(TroopRoster escort, string composition)
         {
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
             if (dispatch == null || dispatch.HasActiveDispatch(GwpDispatchPurpose.TroopOrder) ||
-                !GreyWardenTroopRequestBehavior.CanSendCourierOrder(troopId, count, GwpPlayerWardenTroops.Count(escort)))
+                !GreyWardenTroopRequestBehavior.CanSendCourierOrder(composition, GwpPlayerWardenTroops.Count(escort)))
             {
                 if (ReferenceEquals(_reportSelection, escort)) _reportSelection = null;
                 return;
@@ -492,7 +492,7 @@ namespace GreyWardenPolicePurity
             if (!TryTakeSelectedEscort(escort)) return;
 
             MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
-                GwpDispatchPurpose.TroopOrder, 0, false, string.Empty, orderTroopId: troopId, orderCount: count);
+                GwpDispatchPurpose.TroopOrder, 0, false, string.Empty, orderComposition: composition);
             if (party == null) ReturnSelection(escort, null);
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using GreyWardenPolicePurity.Core.Troops;
 using TaleWorlds.CampaignSystem;
@@ -20,12 +21,15 @@ namespace GreyWardenPolicePurity
         public const int MinReputation = -100; // 声望下限
 
         public static int Reputation { get; private set; } = 0;
+        internal static int ReputationUnits => Reputation * WardenReputationRules.TroopUnitsPerPoint + _reputationRemainder;
+        internal static decimal PreciseReputation => ReputationUnits / (decimal)WardenReputationRules.TroopUnitsPerPoint;
+        private static int _reputationRemainder;
         public static int GoodDeedKillProgress { get; private set; } = 0;
         private static int _wardenUpgradeProgress;
         private static int _prisonerTradeProgress;
         private static int _troopTradeProgress;
         private static int _armoryTradeProgress;
-        public static bool IsWanted => Reputation <= -11;
+        public static bool IsWanted => PreciseReputation <= -11;
         public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
 
@@ -38,7 +42,7 @@ namespace GreyWardenPolicePurity
 
         public static void AddCrime(string type, Vec2 location, string detail, IFaction? victimFaction = null)
         {
-            Reputation = Math.Max(Reputation - 1, MinReputation);
+            SetReputationUnits(ReputationUnits - WardenReputationRules.TroopUnitsPerPoint);
 
             if (victimFaction != null) _victimFactions.Add(victimFaction);
 
@@ -57,12 +61,15 @@ namespace GreyWardenPolicePurity
             if (victimFaction != null) _victimFactions.Add(victimFaction);
         }
 
-        public static string GetReputationDisplay() => GwpText.Get(GwpTextCatalog.gwp_gwpdata_005, "VAR_1", Reputation);
+        internal static string FormatReputationUnits(int units) =>
+            (units / (decimal)WardenReputationRules.TroopUnitsPerPoint).ToString("0.#", CultureInfo.CurrentCulture);
+
+        public static string GetReputationDisplay() => GwpText.Get(GwpTextCatalog.gwp_gwpdata_005, "VAR_1", FormatReputationUnits(ReputationUnits));
 
         public static void ResetReputation(int value)
         {
             int before = Reputation;
-            Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, value));
+            SetReputationUnits(value * WardenReputationRules.TroopUnitsPerPoint);
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "CUSTOM_REPUTATION_RESET",
                 "before=" + before + "; requested=" + value + "; after=" + Reputation);
@@ -80,17 +87,32 @@ namespace GreyWardenPolicePurity
         }
         public static void ChangeReputation(int delta)
         {
-            int before = Reputation;
-            Reputation = Math.Max(MinReputation, Math.Min(MaxReputation, Reputation + delta));
-            GwpAiDiagnostics.WritePlayerJusticeState(
-                "CUSTOM_REPUTATION_CHANGED",
-                "before=" + before + "; delta=" + delta + "; after=" + Reputation);
+            ChangeReputationUnits(delta * WardenReputationRules.TroopUnitsPerPoint);
         }
 
-        internal static bool TrySpendReputation(int cost)
+        private static void ChangeReputationUnits(int delta)
         {
-            if (cost <= 0 || cost > Reputation) return false;
-            ChangeReputation(-cost);
+            int before = ReputationUnits;
+            SetReputationUnits(before + delta);
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WritePlayerJusticeState(
+                "CUSTOM_REPUTATION_CHANGED",
+                "before=" + FormatReputationUnits(before) + "; delta=" + FormatReputationUnits(delta) + "; after=" + FormatReputationUnits(ReputationUnits));
+#endif
+        }
+
+        private static void SetReputationUnits(int units)
+        {
+            const int scale = WardenReputationRules.TroopUnitsPerPoint;
+            int clamped = Math.Max(MinReputation * scale, Math.Min(MaxReputation * scale, units));
+            Reputation = WardenReputationRules.WholePointsFromUnits(clamped);
+            _reputationRemainder = clamped - Reputation * scale;
+        }
+
+        internal static bool TrySpendReputationUnits(int cost)
+        {
+            if (cost <= 0 || cost > ReputationUnits) return false;
+            ChangeReputationUnits(-cost);
             return true;
         }
 
@@ -107,14 +129,15 @@ namespace GreyWardenPolicePurity
             if (cost > 0) ChangeReputation(-cost);
         }
 
-        internal static (int Points, int Remainder) QuoteFireswornTrade(FireswornTradeKind kind, long units) =>
-            FireswornTradeRules.Quote(kind, FireswornTradeProgress(kind), units, MaxReputation - Reputation);
+        internal static (int ReputationUnits, int Remainder) QuoteFireswornTrade(FireswornTradeKind kind, long units) =>
+            FireswornTradeRules.Quote(kind, FireswornTradeProgress(kind), units,
+                MaxReputation * WardenReputationRules.TroopUnitsPerPoint - ReputationUnits);
 
-        internal static (int Points, int Remainder) CompleteFireswornTrade(FireswornTradeKind kind, long units)
+        internal static (int ReputationUnits, int Remainder) CompleteFireswornTrade(FireswornTradeKind kind, long units)
         {
             var quote = QuoteFireswornTrade(kind, units);
             FireswornTradeProgress(kind) = quote.Remainder;
-            if (quote.Points > 0) ChangeReputation(quote.Points);
+            if (quote.ReputationUnits > 0) ChangeReputationUnits(quote.ReputationUnits);
             return quote;
         }
 
@@ -141,6 +164,7 @@ namespace GreyWardenPolicePurity
         public static void ClearAll()
         {
             Reputation = 0;
+            _reputationRemainder = 0;
             GoodDeedKillProgress = 0;
             _wardenUpgradeProgress = 0;
             _prisonerTradeProgress = 0;
@@ -155,6 +179,7 @@ namespace GreyWardenPolicePurity
             {
                 int reputation = Reputation;
                 dataStore.SyncData("gwp_reputation", ref reputation);
+                dataStore.SyncData("gwp_reputation_order_remainder", ref _reputationRemainder);
 
                 int goodDeedKillProgress = GoodDeedKillProgress;
                 dataStore.SyncData("gwp_good_deed_kill_progress", ref goodDeedKillProgress);
@@ -185,6 +210,9 @@ namespace GreyWardenPolicePurity
             int loadedReputation = 0;
             dataStore.SyncData("gwp_reputation", ref loadedReputation);
             ResetReputation(loadedReputation);
+            int reputationRemainder = 0;
+            dataStore.SyncData("gwp_reputation_order_remainder", ref reputationRemainder);
+            SetReputationUnits(ReputationUnits + reputationRemainder);
 
             int loadedGoodDeedKillProgress = 0;
             dataStore.SyncData("gwp_good_deed_kill_progress", ref loadedGoodDeedKillProgress);

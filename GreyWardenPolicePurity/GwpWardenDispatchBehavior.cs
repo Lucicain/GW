@@ -188,7 +188,7 @@ namespace GreyWardenPolicePurity
             int carriedCaseGold,
             bool reportLie,
             string prisonerHeroId, List<ItemRosterElement>? cargo = null,
-            string orderTroopId = "", int orderCount = 0,
+            string orderComposition = "",
             string fiefSettlementId = "", double fiefCaptureHours = 0d)
         {
             MobileParty player = MobileParty.MainParty;
@@ -273,8 +273,7 @@ namespace GreyWardenPolicePurity
                 Phase = GwpDispatchPhase.Outbound,
                 ReceiverPartyId = receiver.StringId,
                 CaseGoldFloor = Math.Max(0, carriedCaseGold),
-                OrderTroopId = orderTroopId ?? string.Empty,
-                OrderCount = Math.Max(0, orderCount),
+                OrderComposition = orderComposition,
                 FiefSettlementId = fiefSettlementId ?? string.Empty,
                 FiefCaptureHours = fiefCaptureHours,
                 CaseHeroId = purpose == GwpDispatchPurpose.Report
@@ -666,7 +665,7 @@ namespace GreyWardenPolicePurity
             {
                 int legacyGold = record.LegacyOrderGold;
                 bool filed = (legacyGold <= 0 || party.PartyTradeGold >= legacyGold) &&
-                    GreyWardenTroopRequestBehavior.FileCourierOrder(record.OrderTroopId, record.OrderCount, legacyGold);
+                    GreyWardenTroopRequestBehavior.FileCourierOrder(record.OrderTroopId, record.OrderCount, legacyGold, record.OrderComposition);
                 if (filed && legacyGold > 0)
                 {
                     party.PartyTradeGold -= legacyGold;
@@ -676,8 +675,7 @@ namespace GreyWardenPolicePurity
 #if GWP_DIAGNOSTICS
                 if (filed)
                     GwpAiDiagnostics.WriteAction(receiver, "DISPATCH_TROOP_ORDER_FILED",
-                        "courier=" + party.StringId + "; troop=" + record.OrderTroopId +
-                        "; count=" + record.OrderCount + "; legacyGold=" + legacyGold);
+                        "courier=" + party.StringId + "; composition=" + record.OrderComposition + "; legacyGold=" + legacyGold);
 #endif
                 if (!filed)
                     InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(legacyGold > 0

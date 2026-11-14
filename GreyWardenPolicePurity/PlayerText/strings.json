@@ -3480,17 +3480,17 @@
       "en": "I want the Training Warden to prepare soldiers for my command.",
       "zh": "我想让练兵官为我准备一批士兵。"
     },
-    "gwp_player_troop_order_recorded": {
-      "en": "The Training Warden will bring the soldiers to you when they are ready.",
-      "zh": "练兵官会把兵训好，亲自给你送来。"
+    "gwp_player_troop_order_choose": {
+      "en": "Tell me which soldiers you need. The Training Warden will bring them when they are ready.",
+      "zh": "说说你要哪些兵。练兵官备齐了，就会亲自给你送来。"
     },
     "gwp_player_troop_order_return": {
       "en": "What else did you want to discuss?",
       "zh": "还有什么事要谈？"
     },
     "gwp_player_troop_delivery_offer": {
-      "en": "The {VAR_1} {VAR_2} you asked for are ready. We received your payment of {VAR_3} when the order was placed.",
-      "zh": "你要的 {VAR_1} 名{VAR_2}已经齐了。下单时付的{VAR_3}也已记在账上。"
+      "en": "All {VAR_1} soldiers are ready ({VAR_2}). We received your payment of {VAR_3} when the order was placed.",
+      "zh": "你要的 {VAR_1} 名士兵都齐了（{VAR_2}）。下单时付的{VAR_3}也已记在账上。"
     },
     "gwp_player_troop_delivery_accept": {
       "en": "Then place them under my command.",
@@ -3508,17 +3508,25 @@
       "en": "Very well. The order is cancelled. The soldiers will stay with us.",
       "zh": "好吧。订单已取消，士兵会留在我们这里。"
     },
-    "gwp_player_troop_choice": {
-      "en": "{VAR_1} × {VAR_2} ({VAR_3} Grey Warden reputation)",
-      "zh": "{VAR_1} 名{VAR_2}（{VAR_3} 点灰袍声望）"
+    "gwp_player_troop_order_unit_price": {
+      "en": "{COST} standing each",
+      "zh": "每人 {COST} 点声望"
+    },
+    "gwp_player_troop_order_line": {
+      "en": "{COUNT} × {NAME}",
+      "zh": "{COUNT} 名{NAME}"
+    },
+    "gwp_player_troop_order_summary": {
+      "en": "{COUNT} soldiers  |  Cost {COST} reputation  |  Balance {REPUTATION}",
+      "zh": "{COUNT} 名士兵　应付 {COST} 点声望　现有 {REPUTATION} 点"
     },
     "gwp_player_troop_order_title": {
       "en": "Place a troop order",
       "zh": "提交调兵订单"
     },
     "gwp_player_troop_order_description": {
-      "en": "Each order costs Grey Warden reputation when it is registered. Your remaining reputation determines how many Grey Warden troops you can take in.",
-      "zh": "订单登记时扣除灰袍声望。付款后剩余的声望决定主队还能接纳多少灰袍兵。"
+      "en": "Choose how many soldiers to order for each troop type. Pay the total reputation when the order is registered.",
+      "zh": "可分别填写各兵种人数。订单登记时扣除显示的声望总价。"
     },
     "gwp_player_troop_order_confirm": {
       "en": "Send order",
@@ -3589,8 +3597,8 @@
       "zh": "贵族事务官将回来继续处理你的封地请愿。"
     },
     "gwp_player_troop_ledger_header": {
-      "en": "Troop order: {VAR_1} {VAR_2}",
-      "zh": "调兵：{VAR_1}名{VAR_2}"
+      "en": "Troop order: {VAR_1} soldiers ({VAR_2})",
+      "zh": "调兵 {VAR_1} 人（{VAR_2}）"
     },
     "gwp_player_troop_ledger_assignment": {
       "en": "Trainer: {VAR_1} | {VAR_2}",
@@ -5778,26 +5786,6 @@
       "en": "Supply the Village Armoury",
       "zh": "交付军械"
     },
-    "gwp_fs_trade_armory_choose": {
-      "en": "Choose one item from your company's armoury, then enter the quantity.",
-      "zh": "从主队军械库选一项装备，再填写交付数量。"
-    },
-    "gwp_fs_trade_armory_item": {
-      "en": "{NAME} × {COUNT}",
-      "zh": "{NAME} × {COUNT}"
-    },
-    "gwp_fs_trade_armory_quantity": {
-      "en": "Enter a quantity from 1 to {MAX}. Each piece is valued at {VALUE} denars. Every {RATE} denars of value earns 1 Grey Warden reputation.",
-      "zh": "填写交付数量（1–{MAX}）。每件估价 {VALUE} 第纳尔，每攒满 {RATE} 第纳尔的货值记 1 点灰袍声望。"
-    },
-    "gwp_fs_trade_armory_quantity_invalid": {
-      "en": "Enter a whole number between 1 and {MAX}.",
-      "zh": "请输入 1 到 {MAX} 之间的整数。"
-    },
-    "gwp_fs_trade_submit": {
-      "en": "Hand Over",
-      "zh": "确认交付"
-    },
     "gwp_fs_trade_preview": {
       "en": "On confirmation, Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.",
       "zh": "确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。"
@@ -6740,8 +6728,8 @@
       "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
     },
     "gwp_player_armory_rules": {
-      "en": "The best equipment is kept for each category up to party capacity. Excess or unsuitable items return to your inventory.",
-      "zh": "每类按部队编制择优保留，多余或不适用的物品退回背包。",
+      "en": "The best equipment is kept for each category up to party capacity. Excess items return to your inventory.",
+      "zh": "每类按部队编制择优保留，多余的物品退回背包。",
       "context": "2026-10-20 玩家反馈：办案目标地图标识、玩家军械库实际存取。"
     },
     "gwp_player_armory_empty": {

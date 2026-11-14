@@ -6,11 +6,13 @@ namespace GreyWardenPolicePurity.Core.Troops
     {
         public const int UpgradesPerPoint = 5;
         public const int TroopUnitsPerPoint = 5;
-        private const int TroopsPerReputation = 2;
+        public const int TroopsPerReputation = 2;
 
-        public static int Capacity(int reputation) => Math.Max(0, reputation) * TroopsPerReputation;
+        public static int CapacityFromUnits(int units) => Math.Max(0, units) * TroopsPerReputation / TroopUnitsPerPoint;
 
-        public static int RemainingSlots(int troops, int reputation) => Math.Max(0, Capacity(reputation) - troops);
+        public static int WholePointsFromUnits(int units) => (int)Math.Floor(units / (decimal)TroopUnitsPerPoint);
+
+        public static int RemainingSlots(int troops, int units) => Math.Max(0, CapacityFromUnits(units) - troops);
 
         public static int TroopUnits(int tier) => tier switch
         {
@@ -22,12 +24,10 @@ namespace GreyWardenPolicePurity.Core.Troops
             _ => 8
         };
 
-        public static (int Cost, int Balance, bool HasRoom) QuoteOrder(int tier, int count, int reputation, int troops)
+        public static (int Balance, bool HasRoom) QuoteOrder(int cost, int count, int reputationUnits, int troops)
         {
-            // All order sizes are multiples of five, so the unit prices settle in whole points.
-            int cost = count * TroopUnits(tier) / TroopUnitsPerPoint;
-            int balance = reputation - cost;
-            return (cost, balance, count <= RemainingSlots(troops, balance));
+            int balance = reputationUnits - cost;
+            return (balance, count <= RemainingSlots(troops, balance));
         }
 
         public static int UpgradeCost(int previousProgress, int upgrades) =>

@@ -13,7 +13,7 @@ namespace GreyWardenPolicePurity.Core.Troops
     {
         public const int AdvancedTradeThreshold = 20;
 
-        public static bool IsAvailable(FireswornTradeKind kind, int reputation) =>
+        public static bool IsAvailable(FireswornTradeKind kind, decimal reputation) =>
             kind == FireswornTradeKind.Prisoners || reputation > AdvancedTradeThreshold;
 
         public static int UnitsPerPoint(FireswornTradeKind kind) => kind switch
@@ -23,12 +23,13 @@ namespace GreyWardenPolicePurity.Core.Troops
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
-        public static (int Points, int Remainder) Quote(FireswornTradeKind kind, int previousProgress,
-            long offeredUnits, int remainingReputation)
+        public static (int ReputationUnits, int Remainder) Quote(FireswornTradeKind kind, int previousProgress,
+            long offeredUnits, int remainingReputationUnits)
         {
             int rate = UnitsPerPoint(kind);
             long total = previousProgress + offeredUnits;
-            return ((int)Math.Min(total / rate, remainingReputation), (int)(total % rate));
+            return ((int)Math.Min(total / rate * WardenReputationRules.TroopUnitsPerPoint, remainingReputationUnits),
+                (int)(total % rate));
         }
     }
 }

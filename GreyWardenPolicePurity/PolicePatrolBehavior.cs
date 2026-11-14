@@ -415,7 +415,7 @@ namespace GreyWardenPolicePurity
                 "; bribeProtectionDays=" + _bribeProtectionDays);
 
             // 正面声望：取消所有通缉和巡逻
-            if (rep > 0)
+            if (PlayerBehaviorPool.PreciseReputation > 0)
             {
                 // 取消所有巡逻队
                 ReturnAllPatrols();
@@ -461,7 +461,7 @@ namespace GreyWardenPolicePurity
                 "; suppressMeetings=" + _suppressPatrolMeetings);
             // -1 到 -10：派出纠察队巡逻追踪
             // 每日检查：若无纠察队，则生成一支（上限仅允许一支）
-            if (reputation >= -10 && reputation <= -1)
+            if (!PlayerBehaviorPool.IsWanted)
             {
                 // 如果在放行保护期内，不再出动纠察队
                 if (_bribeProtectionDays > 0)
@@ -493,7 +493,7 @@ namespace GreyWardenPolicePurity
                 }
             }
             // 低于-11：转为追捕状态，由正式警察接管
-            else if (reputation <= -11)
+            else
             {
                 if (PlayerBehaviorPool.HasAtonementTask)
                     return;
@@ -589,7 +589,7 @@ namespace GreyWardenPolicePurity
             int rep = PlayerBehaviorPool.Reputation;
 
             // 只在 -1 到 -10 范围内工作
-            if (rep >= 0 || rep <= -11)
+            if (rep >= 0 || PlayerBehaviorPool.IsWanted)
             {
                 if (_activePatrolIds.Count > 0)
                     ReturnAllPatrols();

@@ -11,6 +11,8 @@
 3. `DoneLogic` 先检查金币并运行该屏的确认委托。委托返回成功后才转移金币、发 `OnPlayerUpgradedTroops`、清空本轮记录并更新初始快照。`Reset` 将名册及记录恢复为打开时的状态，`ResetToLastSavedPartyScreenData` 可以恢复最近保存的界面快照。原版强制应用仍经过 `DoneLogic`。地图导航条的「不应用」直接经 `MapNavigationHelper.SwitchToANewScreen` 弹出界面，不调用 `DoneLogic` 或 `Reset`；部队页通常直接持有主队名册。
 4. 战后领回解救士兵和从其他队伍调整兵员也复用 `PartyScreenLogic`，初始右侧和最终右侧名册可用于检查实际净增。AI 自动升阶走 `PartyUpgraderCampaignBehavior.UpgradeReadyTroops`，该方法跳过玩家主队。
 
+v1.5.7 的 AI 自动升级先用模型的 `IsTroopUpgradeable` 筛兵种，再把该行名册副本传给 `GetPossibleUpgradeTargets`。该方法从副本的总人数减伤兵数开始，以共享经验、工资和升级价格进一步收窄人数，随后 `UpgradeTroop` 按候选人数在真实名册扣经验并换兵。分支权重由模型提供。
+
 ## 赎金选人与结算
 
 v1.5.7 的酒馆赎金商在 `TavernEmployeesCampaignBehavior` 的对话结果里打开 `PartyScreenHelper.OpenScreenAsRansom`。它创建 `Ransom` 模式的 `PartyState`，右侧是主队成员和俘虏的副本，左侧从空名册开始。把俘虏移去左侧时，`TransferableWithTrade` 按赎金模型调整预览金额；确认委托 `SellPrisonersDoneHandler` 才交给 `SellPrisonersAction` 实际卖出和付款。返回对话后先接一条 NPC 答复，再重建玩家选项；若直接衔接玩家主选项，它们会在界面尚未成交时便被 `OnConversationContinue` 生成。

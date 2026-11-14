@@ -8,10 +8,22 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         [Theory]
         [InlineData(-7, 0)]
         [InlineData(0, 0)]
-        [InlineData(24, 48)]
-        public void CapacityUsesCurrentStanding(int reputation, int expected)
+        [InlineData(120, 48)]
+        [InlineData(123, 49)]
+        public void CapacityUsesCurrentStanding(int units, int expected)
         {
-            Assert.Equal(expected, WardenReputationRules.Capacity(reputation));
+            Assert.Equal(expected, WardenReputationRules.CapacityFromUnits(units));
+        }
+
+        [Theory]
+        [InlineData(-54, -11)]
+        [InlineData(-1, -1)]
+        [InlineData(0, 0)]
+        [InlineData(99, 19)]
+        [InlineData(100, 20)]
+        public void FractionalBalancePreservesWholePointThresholds(int units, int wholePoints)
+        {
+            Assert.Equal(wholePoints, WardenReputationRules.WholePointsFromUnits(units));
         }
 
         [Theory]
@@ -29,22 +41,41 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         }
 
         [Theory]
-        [InlineData(1, 20, 20, 0, 4, 16, true)]
-        [InlineData(3, 10, 20, 18, 6, 14, true)]
-        [InlineData(3, 10, 20, 19, 6, 14, false)]
-        [InlineData(6, 10, 60, 0, 16, 44, true)]
-        [InlineData(6, 40, 40, 0, 64, -24, false)]
-        [InlineData(6, 40, 64, 0, 64, 0, false)]
+        [InlineData(1, 20, 100, 0, 80, true)]
+        [InlineData(3, 10, 100, 18, 70, true)]
+        [InlineData(3, 10, 100, 19, 70, false)]
+        [InlineData(6, 10, 300, 0, 220, true)]
+        [InlineData(6, 40, 200, 0, -120, false)]
+        [InlineData(6, 40, 320, 0, 0, false)]
         public void OrderQuotesUseRemainingStandingForCapacity(int tier, int count, int reputation, int troops,
-            int cost, int balance, bool hasRoom)
+            int balance, bool hasRoom)
         {
-            Assert.Equal((cost, balance, hasRoom), WardenReputationRules.QuoteOrder(tier, count, reputation, troops));
+            Assert.Equal((balance, hasRoom), WardenReputationRules.QuoteOrder(
+                WardenReputationRules.TroopUnits(tier) * count, count, reputation, troops));
+        }
+
+        [Fact]
+        public void MixedOrderUsesExactCostAndFractionalCapacity()
+        {
+            int units = 3 * WardenReputationRules.TroopUnits(1) + 2 * WardenReputationRules.TroopUnits(3);
+            Assert.Equal((18, true), WardenReputationRules.QuoteOrder(units, 5, 27, 2));
+            Assert.Equal((18, false), WardenReputationRules.QuoteOrder(units, 5, 27, 3));
+        }
+
+        [Fact]
+        public void CompositionRoundTripsWithoutUsingDispatchFieldSeparators()
+        {
+            var lines = new[] { ("gwnewrecruit", 3), ("gwknight", 2) };
+            string encoded = TroopOrderComposition.Encode(lines);
+            Assert.DoesNotContain('|', encoded);
+            Assert.DoesNotContain(';', encoded);
+            Assert.Equal(lines, TroopOrderComposition.Decode(encoded));
         }
 
         [Theory]
-        [InlineData(12, 5, 0)]
-        [InlineData(10, 5, 0)]
-        [InlineData(7, 5, 3)]
+        [InlineData(12, 25, 0)]
+        [InlineData(10, 25, 0)]
+        [InlineData(7, 25, 3)]
         public void RemainingSlotsAreZeroAtOrOverTheSoftCap(int troops, int reputation, int expected)
         {
             Assert.Equal(expected, WardenReputationRules.RemainingSlots(troops, reputation));

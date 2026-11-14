@@ -21,16 +21,18 @@ namespace GreyWardenPolicePurity
         internal static int Count(TroopRoster roster) =>
             roster.GetTroopRoster().Where(entry => GwpCommon.IsGreyWardenTroop(entry.Character)).Sum(entry => entry.Number);
 
-        internal static int Capacity(int reputation) => WardenReputationRules.Capacity(reputation);
+        internal const int MaximumCapacity = PlayerBehaviorPool.MaxReputation * WardenReputationRules.TroopsPerReputation;
 
-        internal static int RemainingSlots(TroopRoster roster, int reputation) =>
-            WardenReputationRules.RemainingSlots(Count(roster), reputation);
+        internal static int Capacity(int reputationUnits) => WardenReputationRules.CapacityFromUnits(reputationUnits);
+
+        internal static int RemainingSlots(TroopRoster roster) =>
+            WardenReputationRules.RemainingSlots(Count(roster), PlayerBehaviorPool.ReputationUnits);
 
         internal static int PendingUpgrades(PartyScreenLogic screen) => screen.CurrentData.UpgradedTroopsHistory
             .Where(upgrade => GwpCommon.IsGreyWardenTroop(upgrade.Item1)).Sum(upgrade => upgrade.Item3);
 
-        internal static TextObject CapacityMessage(int reputation) =>
-            GwpText.Create(GwpTextCatalog.gwp_player_warden_capacity, "CAPACITY", Capacity(reputation));
+        internal static TextObject CapacityMessage(int reputationUnits) =>
+            GwpText.Create(GwpTextCatalog.gwp_player_warden_capacity, "CAPACITY", Capacity(reputationUnits));
 
         internal static TextObject? GetConfirmRestriction(PartyScreenLogic screen, TroopRoster initialRoster, int upgrades)
         {
@@ -39,8 +41,9 @@ namespace GreyWardenPolicePurity
 
             int previous = Count(initialRoster);
             int current = Count(screen.CurrentData.RightMemberRoster);
-            int reputation = PlayerBehaviorPool.Reputation - PlayerBehaviorPool.WardenUpgradeCost(upgrades);
-            return current > Math.Max(previous, Capacity(reputation)) ? CapacityMessage(reputation) : null;
+            int reputationUnits = PlayerBehaviorPool.ReputationUnits -
+                PlayerBehaviorPool.WardenUpgradeCost(upgrades) * WardenReputationRules.TroopUnitsPerPoint;
+            return current > Math.Max(previous, Capacity(reputationUnits)) ? CapacityMessage(reputationUnits) : null;
         }
 
         internal static void DiscardUnconfirmedChanges(PartyScreenLogic screen, TroopRoster initialRoster)

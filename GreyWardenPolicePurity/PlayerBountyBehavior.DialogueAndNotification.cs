@@ -375,7 +375,7 @@ namespace GreyWardenPolicePurity
             if (recruit == null) return;
 
             int count = Math.Min(GwpTuning.Bounty.JoinRecruitCount,
-                GwpPlayerWardenTroops.RemainingSlots(roster, PlayerBehaviorPool.Reputation));
+                GwpPlayerWardenTroops.RemainingSlots(roster));
             if (count == 0) return;
             roster.AddToCounts(recruit, count);
             InformationManager.DisplayMessage(new InformationMessage(

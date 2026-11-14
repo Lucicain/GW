@@ -19,26 +19,26 @@ namespace GreyWardenPolicePurity
     /// </summary>
     public sealed partial class GreyWardenTroopRequestBehavior : CampaignBehaviorBase
     {
-        private static readonly TroopKind[] TroopKinds =
+        private static readonly string[] OrderTroopIds =
         {
-            new TroopKind(GwpIds.NewRecruitId, GwpTuning.TroopRequest.MinimumReputation),
-            new TroopKind(GwpIds.HeavyInfantryId, GwpTuning.TroopRequest.VeteranReputation),
-            new TroopKind(GwpIds.ArcherId, GwpTuning.TroopRequest.VeteranReputation),
-            new TroopKind(GwpIds.KnightId, GwpTuning.TroopRequest.KnightReputation)
+            GwpIds.ZealotId, GwpIds.NewRecruitId, GwpIds.PoliceRecruitId,
+            GwpIds.HeavyInfantryId, GwpIds.ArcherId, GwpIds.KnightId
         };
-        private static readonly int[] OrderSizes = { 10, 20, 40, 60, 80 };
 
         private static GreyWardenTroopRequestBehavior? _instance;
         private string _orderedTroopId = string.Empty;
         private int _orderedCount;
+        private string _orderComposition = string.Empty;
+        private IReadOnlyList<(CharacterObject Troop, int Count)> _orderLines = Array.Empty<(CharacterObject, int)>();
         private int _orderPrice;
+        private int _orderPriceUnits;
         private bool _orderPaidWithReputation;
         private int _orderStage;
         private double _filedHour = -1d;
         private double _lastOrderXpHour = -1d;
         private double _nextContactHour = -1d;
-        private bool _isOrderedTroopUpgradeLocked;
         private string _stockSourcePartyId = string.Empty;
+        private string _stockTroopId = string.Empty;
         private string _stockRendezvousSettlementId = string.Empty;
         private double _stockStayStartHour = -1d;
         private string _lastStockSourcePartyId = string.Empty;
@@ -64,24 +64,6 @@ namespace GreyWardenPolicePurity
             public bool WaitingForCapacity { get; set; }
         }
 
-        private sealed class TroopKind
-        {
-            public TroopKind(string troopId, int minimumReputation)
-            {
-                TroopId = troopId;
-                MinimumReputation = minimumReputation;
-            }
-
-            public string TroopId { get; }
-            public int MinimumReputation { get; }
-        }
-
-        private sealed class TroopOrderChoice
-        {
-            public CharacterObject Troop { get; set; } = null!;
-            public int Count { get; set; }
-        }
-
         public GreyWardenTroopRequestBehavior() => _instance = this;
 
         public override void RegisterEvents()
@@ -102,8 +84,10 @@ namespace GreyWardenPolicePurity
                 ref _orderedTroopId);
             dataStore.SyncData("GWPP_PlayerTroopOrderCount",
                 ref _orderedCount);
+            dataStore.SyncData("GWPP_PlayerTroopOrderComposition", ref _orderComposition);
             dataStore.SyncData("GWPP_PlayerTroopOrderPrice",
                 ref _orderPrice);
+            dataStore.SyncData("GWPP_PlayerTroopOrderPriceUnits", ref _orderPriceUnits);
             dataStore.SyncData("GWPP_PlayerTroopOrderPaidWithReputation", ref _orderPaidWithReputation);
             dataStore.SyncData("GWPP_PlayerTroopOrderStage",
                 ref _orderStage);
@@ -113,10 +97,9 @@ namespace GreyWardenPolicePurity
                 ref _lastOrderXpHour);
             dataStore.SyncData("GWPP_PlayerTroopOrderNextContactHour",
                 ref _nextContactHour);
-            dataStore.SyncData("GWPP_PlayerTroopOrderUpgradeLocked",
-                ref _isOrderedTroopUpgradeLocked);
             dataStore.SyncData("GWPP_PlayerTroopOrderStockSourcePartyId",
                 ref _stockSourcePartyId);
+            dataStore.SyncData("GWPP_PlayerTroopOrderStockTroopId", ref _stockTroopId);
             dataStore.SyncData("GWPP_PlayerTroopOrderStockSettlementId",
                 ref _stockRendezvousSettlementId);
             dataStore.SyncData("GWPP_PlayerTroopOrderStockStayStartHour",
@@ -135,11 +118,12 @@ namespace GreyWardenPolicePurity
         {
             if (_instance == null || party?.IsActive != true ||
                 (PlayerTroopOrderStage)_instance._orderStage ==
-                    PlayerTroopOrderStage.None ||
-                _instance.ResolveTrainerParty() != party)
+                    PlayerTroopOrderStage.None)
                 return null;
-
-            return CharacterObject.Find(_instance._orderedTroopId);
+            if (_instance.ResolveTrainerParty() != party) return null;
+            MobileParty? cohort = _instance.ResolveCohortParty();
+            return _instance._orderLines.Count == 1 ? _instance.TrainingTarget(cohort ?? party).Troop :
+                _instance.TrainingTarget(cohort ?? party, cohort == null ? null : party).Troop;
         }
 
         internal static bool IsTrainerReservedForPlayerOrder(MobileParty? party)
@@ -166,15 +150,14 @@ namespace GreyWardenPolicePurity
             CharacterObject? troop)
         {
             if (_instance == null || party?.MobileParty?.IsActive != true ||
-                troop == null || !_instance._isOrderedTroopUpgradeLocked ||
-                (PlayerTroopOrderStage)_instance._orderStage ==
-                    PlayerTroopOrderStage.None ||
-                !string.Equals(troop.StringId, _instance._orderedTroopId,
-                    StringComparison.OrdinalIgnoreCase))
+                troop == null || _instance._orderStage == (int)PlayerTroopOrderStage.None)
                 return false;
 
-            return party.MobileParty ==
-                   _instance.ResolveOrderPool(_instance.ResolveTrainerParty());
+            // 单兵种与混合订单同一套逐兵预留：已备好的订单兵不升级。0 权重拦不住原版升级器
+            // （只有一个升级目标或全部为 0 时仍取第一个，C#反编译 v1.4.8 PartyUpgraderCampaignBehavior.SelectPossibleUpgrade）。
+            // （依据：独立审查 2026-11-15）
+            return _instance.RequestedCount(troop) > 0 &&
+                _instance.UnreservedHealthyTroops(party.MobileParty, troop, CountHealthy(party.MobileParty, troop)) == 0;
         }
 
         /// <summary>
@@ -186,14 +169,34 @@ namespace GreyWardenPolicePurity
             CharacterObject troop, CharacterObject branch)
         {
             if (_instance == null || party?.MobileParty == null ||
-                party.MobileParty != _instance.ResolveCohortParty())
+                party.MobileParty != _instance.ResolveOrderPool(_instance.ResolveTrainerParty()) ||
+                _instance._orderLines.Count == 1 && party.MobileParty != _instance.ResolveCohortParty())
                 return null;
-            CharacterObject? target = CharacterObject.Find(_instance._orderedTroopId);
+            CharacterObject? target = _instance.TrainingTarget(party.MobileParty).Troop;
             if (target == null || !CanReachTarget(troop, target,
                     new HashSet<string>(StringComparer.OrdinalIgnoreCase)))
                 return null;
             return CanReachTarget(branch, target,
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        internal static int AvailableForOrderUpgrade(PartyBase party, CharacterObject troop, int healthy)
+        {
+            if (_instance == null) return healthy;
+            return _instance.UnreservedHealthyTroops(party.MobileParty, troop, healthy);
+        }
+
+        private int UnreservedHealthyTroops(MobileParty? party, CharacterObject troop, int healthy)
+        {
+            int reserved = RequestedCount(troop);
+            if (reserved == 0 || healthy <= 0 || party == null) return healthy;
+            // 原版每天对每支队伍每个兵种问一次，先比 id，只有练兵官才去全图找练兵队。
+            if (!string.Equals(party.StringId, _cohortPartyId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (party != ResolveTrainerParty()) return healthy;
+                reserved = Math.Max(0, reserved - CountHealthy(ResolveCohortParty(), troop));
+            }
+            return Math.Max(0, healthy - reserved);
         }
 
         internal static IReadOnlyList<PlayerTroopOrderSnapshot> GetTaskSnapshots()
@@ -204,15 +207,13 @@ namespace GreyWardenPolicePurity
                 PlayerTroopOrderStage.None)
                 return result;
             MobileParty? trainer = _instance.ResolveTrainerParty();
-            CharacterObject? troop = CharacterObject.Find(
-                _instance._orderedTroopId);
+            MobileParty? pool = _instance.ResolveOrderPool(trainer);
             result.Add(new PlayerTroopOrderSnapshot
             {
                 TrainerPartyId = trainer?.StringId ?? string.Empty,
-                TroopName = troop?.Name?.ToString() ??
-                            _instance._orderedTroopId,
+                TroopName = _instance.DescribeComposition(),
                 Count = _instance._orderedCount,
-                ReadyCount = CountHealthy(_instance.ResolveOrderPool(trainer), troop),
+                ReadyCount = _instance.CountReady(pool),
                 PaymentText = _instance.DescribeOrderPayment(),
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
@@ -232,10 +233,12 @@ namespace GreyWardenPolicePurity
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-            MobileParty? trainer = ResolveTrainerParty();
-            CharacterObject? target = CharacterObject.Find(_orderedTroopId);
-            if (trainer?.IsActive == true && target != null)
-                LockOrderedTroopIfReady(trainer, target);
+            if (_orderStage != (int)PlayerTroopOrderStage.None)
+            {
+                _orderLines = ResolveOrderLines(_orderComposition, _orderedTroopId, _orderedCount);
+                if (string.IsNullOrEmpty(_stockTroopId) && _orderLines.Count == 1)
+                    _stockTroopId = _orderLines[0].Troop.StringId;
+            }
 
             starter.AddPlayerLine(
                 "gwp_warden_mediation_ask",
@@ -269,7 +272,7 @@ namespace GreyWardenPolicePurity
                 "gwp_player_troop_order_file_response",
                 "gwp_player_troop_order_file_response",
                 "gwp_player_troop_order_return",
-                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_recorded),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_choose),
                 null, ShowTroopOrderInquiry, 215);
             starter.AddDialogLine("gwp_player_troop_order_return", "gwp_player_troop_order_return", "hero_main_options",
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_order_return), null, null);
@@ -345,147 +348,127 @@ namespace GreyWardenPolicePurity
         private void ShowTroopOrderInquiry()
         {
             Hero? lord = Hero.OneToOneConversationHero;
-            ShowTroopOrderInquiry(choice =>
+            ShowTroopOrderScreen(0, composition =>
             {
                 if (lord == Hero.OneToOneConversationHero && GwpCommon.IsOrdinaryGreyWardenLordConversation())
-                    FileReputationOrder(choice.Troop.StringId, choice.Count);
-            });
-        }
-
-        private void ShowTroopOrderInquiry(Action<TroopOrderChoice> onChosen, int escortCount = 0, Action? onCancelled = null)
-        {
-            int reputation = PlayerBehaviorPool.Reputation;
-            int troops = GwpPlayerWardenTroops.Count(MobileParty.MainParty.MemberRoster) - escortCount;
-            var elements = new List<InquiryElement>();
-            foreach (TroopKind kind in TroopKinds.Where(kind => reputation >= kind.MinimumReputation))
-            {
-                CharacterObject? troop = CharacterObject.Find(kind.TroopId);
-                if (troop == null || troop.IsHero || !GwpCommon.IsGreyWardenTroop(troop)) continue;
-                foreach (int count in OrderSizes.Where(count => count <= GetKindOrderLimit(kind, reputation)))
-                {
-                    var quote = WardenReputationRules.QuoteOrder(troop.Tier, count, reputation, troops);
-                    var choice = new TroopOrderChoice { Troop = troop, Count = count };
-                    TextObject? restriction = GetOrderRestriction(quote);
-                    string label = GwpText.Get(GwpTextCatalog.gwp_player_troop_choice,
-                        "VAR_1", count, "VAR_2", troop.Name, "VAR_3", quote.Cost);
-                    elements.Add(new InquiryElement(choice, label, null, restriction == null,
-                        restriction?.ToString() ?? string.Empty));
-                }
-            }
-            if (elements.Count == 0)
-            {
-                onCancelled?.Invoke();
-                return;
-            }
-
-            MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_title),
-                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_description),
-                elements, true, 1, 1,
-                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_confirm),
-                GwpText.Get(GwpTextCatalog.gwp_cancel),
-                selected =>
-                {
-                    if (selected.FirstOrDefault()?.Identifier is TroopOrderChoice choice) onChosen(choice);
-                },
-                _ => onCancelled?.Invoke()), true);
+                    FileReputationOrder(composition);
+            }, null);
         }
 
         internal static bool CanChooseNewOrder() =>
-            _instance != null && _instance.CanStartOrder() && GwpCommon.IsPlayerGreyWardenMember() &&
-            PlayerBehaviorPool.Reputation >= GwpTuning.TroopRequest.MinimumReputation;
+            _instance != null && _instance.CanStartOrder() && GwpCommon.IsPlayerGreyWardenMember();
 
         private bool CanStartOrder() =>
-            (PlayerTroopOrderStage)_orderStage == PlayerTroopOrderStage.None && ResolveTrainerParty()?.IsActive == true;
+            _orderStage == (int)PlayerTroopOrderStage.None && ResolveTrainerParty()?.IsActive == true;
 
-        internal static void ShowCourierOrderInquiry(int escortCount, Action<string, int> onChosen, Action onCancelled)
+        private static void ShowTroopOrderScreen(int escortCount, Action<string> confirm, Action? cancel)
         {
             if (!CanChooseNewOrder())
             {
-                onCancelled();
+                cancel?.Invoke();
                 return;
             }
-            _instance!.ShowTroopOrderInquiry(choice => onChosen(choice.Troop.StringId, choice.Count), escortCount, onCancelled);
+            var troops = OrderTroopIds.Select(CharacterObject.Find).Where(GwpCommon.IsGreyWardenTroop).ToList();
+            GwpTroopOrderState.Open(troops, escortCount, confirm, cancel);
         }
 
-        internal static bool CanSendCourierOrder(string troopId, int count, int escortCount) =>
-            _instance != null && _instance.TryQuoteReputationOrder(troopId, count, escortCount, out _, out _);
+        internal static void ShowCourierOrderInquiry(int escortCount, Action<string> onChosen, Action onCancelled) =>
+            ShowTroopOrderScreen(escortCount, onChosen, onCancelled);
 
-        internal static bool FileCourierOrder(string troopId, int count, int legacyGold) =>
-            _instance != null && (legacyGold > 0
-                ? _instance.FileLegacyCourierOrder(troopId, count, legacyGold)
-                : _instance.FileReputationOrder(troopId, count));
+        internal static bool CanSendCourierOrder(string composition, int escortCount) =>
+            _instance != null && _instance.TryQuoteReputationOrder(
+                ResolveOrderLines(composition), escortCount, out _);
 
-        private bool FileLegacyCourierOrder(string troopId, int count, int legacyGold)
+        internal static bool FileCourierOrder(string troopId, int count, int legacyGold, string composition)
         {
-            if ((PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.None || count <= 0 ||
-                !TryFindOrderedTroop(troopId, out _, out CharacterObject troop))
-                return false;
-            FileTroopOrder(troop, count, legacyGold, paidWithReputation: false);
+            if (_instance == null) return false;
+            var lines = ResolveOrderLines(composition, troopId, count);
+            if (legacyGold <= 0) return _instance.FileReputationOrder(lines);
+            if (_instance._orderStage != (int)PlayerTroopOrderStage.None || lines.Count == 0) return false;
+            _instance.FileTroopOrder(lines, legacyGold, paidWithReputation: false);
             return true;
         }
 
-        private bool TryQuoteReputationOrder(string troopId, int count, int escortCount,
-            out CharacterObject troop, out int cost)
+        private bool TryQuoteReputationOrder(IReadOnlyList<(CharacterObject Troop, int Count)> lines,
+            int escortCount, out int cost)
         {
             cost = 0;
-            int reputation = PlayerBehaviorPool.Reputation;
-            if (!TryFindOrderedTroop(troopId, out TroopKind kind, out troop) || !CanStartOrder() ||
-                !GwpCommon.IsPlayerGreyWardenMember() || reputation < kind.MinimumReputation ||
-                !OrderSizes.Contains(count) || count > GetKindOrderLimit(kind, reputation) ||
-                MobileParty.MainParty is not { IsActive: true } player)
+            int maxTroops = GwpPlayerWardenTroops.MaximumCapacity;
+            if (lines.Count == 0 || lines.Sum(line => (long)line.Count) > maxTroops || !CanStartOrder() ||
+                !GwpCommon.IsPlayerGreyWardenMember() || MobileParty.MainParty?.IsActive != true)
             {
                 MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unavailable));
                 return false;
             }
-
-            int troops = GwpPlayerWardenTroops.Count(player.MemberRoster) - escortCount;
-            var quote = WardenReputationRules.QuoteOrder(troop.Tier, count, reputation, troops);
+            cost = lines.Sum(line => line.Count * GetUnitCost(line.Troop));
+            int count = lines.Sum(line => line.Count);
+            var quote = QuoteReputationOrder(cost, count, escortCount);
             TextObject? restriction = GetOrderRestriction(quote);
             if (restriction != null)
             {
                 MBInformationManager.AddQuickInformation(restriction);
                 return false;
             }
-            cost = quote.Cost;
             return true;
         }
 
-        private static TextObject? GetOrderRestriction((int Cost, int Balance, bool HasRoom) quote)
+        internal static int GetUnitCost(CharacterObject troop) => WardenReputationRules.TroopUnits(troop.Tier);
+
+        internal static string EncodeOrder(IEnumerable<(string TroopId, int Count)> lines) => TroopOrderComposition.Encode(lines);
+
+        internal static (int Balance, bool HasRoom) QuoteReputationOrder(int cost, int count, int escortCount) =>
+            WardenReputationRules.QuoteOrder(cost, count, PlayerBehaviorPool.ReputationUnits,
+                Math.Max(0, GwpPlayerWardenTroops.Count(MobileParty.MainParty.MemberRoster) - escortCount));
+
+        internal static TextObject? GetOrderRestriction((int Balance, bool HasRoom) quote)
         {
             if (quote.Balance < 0) return GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unaffordable);
             return quote.HasRoom ? null : GwpText.Create(GwpTextCatalog.gwp_player_troop_order_capacity,
-                "BUDGET", quote.Balance, "CAPACITY", GwpPlayerWardenTroops.Capacity(quote.Balance));
+                "BUDGET", PlayerBehaviorPool.FormatReputationUnits(quote.Balance), "CAPACITY", GwpPlayerWardenTroops.Capacity(quote.Balance));
         }
 
-        private static bool TryFindOrderedTroop(string troopId, out TroopKind kind, out CharacterObject troop)
+        private static IReadOnlyList<(CharacterObject Troop, int Count)> ResolveOrderLines(
+            string composition, string legacyTroop = "", int legacyCount = 0)
         {
-            kind = TroopKinds.FirstOrDefault(candidate =>
-                string.Equals(candidate.TroopId, troopId, StringComparison.OrdinalIgnoreCase))!;
-            troop = kind == null ? null! : CharacterObject.Find(kind.TroopId);
-            return troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
+            IReadOnlyList<(string TroopId, int Count)> decoded = string.IsNullOrEmpty(composition) && legacyCount > 0
+                ? new[] { (legacyTroop, legacyCount) } : TroopOrderComposition.Decode(composition);
+            var lines = new List<(CharacterObject Troop, int Count)>();
+            foreach (var line in decoded)
+            {
+                if (!OrderTroopIds.Contains(line.TroopId, StringComparer.OrdinalIgnoreCase) ||
+                    CharacterObject.Find(line.TroopId) is not { } troop || !GwpCommon.IsGreyWardenTroop(troop) ||
+                    lines.Any(current => current.Troop == troop))
+                    return Array.Empty<(CharacterObject, int)>();
+                lines.Add((troop, line.Count));
+            }
+            return lines.OrderByDescending(line => line.Troop.Tier)
+                .ThenBy(line => line.Troop.StringId, StringComparer.Ordinal).ToList();
         }
 
-        private bool FileReputationOrder(string troopId, int count)
+        private bool FileReputationOrder(string composition) => FileReputationOrder(ResolveOrderLines(composition));
+
+        private bool FileReputationOrder(IReadOnlyList<(CharacterObject Troop, int Count)> lines)
         {
-            if (!TryQuoteReputationOrder(troopId, count, 0, out CharacterObject troop, out int cost) ||
-                !PlayerBehaviorPool.TrySpendReputation(cost)) return false;
-            FileTroopOrder(troop, count, cost, paidWithReputation: true);
+            if (!TryQuoteReputationOrder(lines, 0, out int cost) || !PlayerBehaviorPool.TrySpendReputationUnits(cost)) return false;
+            FileTroopOrder(lines, cost, paidWithReputation: true);
             return true;
         }
 
-        private void FileTroopOrder(CharacterObject troop, int count, int price, bool paidWithReputation)
+        private void FileTroopOrder(IReadOnlyList<(CharacterObject Troop, int Count)> lines, int price, bool paidWithReputation)
         {
-            _orderedTroopId = troop.StringId;
-            _orderedCount = count;
-            _orderPrice = price;
+            _orderLines = lines;
+            _orderedTroopId = lines[0].Troop.StringId;
+            _orderedCount = lines.Sum(line => line.Count);
+            _orderComposition = EncodeOrder(lines.Select(line => (line.Troop.StringId, line.Count)));
+            _orderPrice = paidWithReputation ? 0 : price;
+            _orderPriceUnits = paidWithReputation ? price : 0;
             _orderPaidWithReputation = paidWithReputation;
             _orderStage = (int)PlayerTroopOrderStage.Training;
             _filedHour = CampaignTime.Now.ToHours;
             _lastOrderXpHour = -1d;
             _nextContactHour = -1d;
-            _isOrderedTroopUpgradeLocked = false;
             _stockSourcePartyId = string.Empty;
+            _stockTroopId = string.Empty;
             _stockRendezvousSettlementId = string.Empty;
             _stockStayStartHour = -1d;
             _lastStockSourcePartyId = string.Empty;
@@ -493,8 +476,8 @@ namespace GreyWardenPolicePurity
             MobileParty? trainer = ResolveTrainerParty();
             if (trainer?.IsActive == true)
                 GwpAiDiagnostics.WriteAction(trainer, "PLAYER_TROOP_ORDER_FILED",
-                    "target=" + _orderedTroopId + "; requested=" + _orderedCount +
-                    "; ready=" + CountHealthy(trainer, troop) + "; price=" + _orderPrice +
+                    "composition=" + _orderComposition + "; requested=" + _orderedCount +
+                    "; ready=" + CountReady(trainer) + "; price=" + FormattedPrice() +
                     "; paidWithReputation=" + _orderPaidWithReputation);
 #endif
             InformationManager.DisplayMessage(new InformationMessage(
@@ -503,51 +486,53 @@ namespace GreyWardenPolicePurity
 
         private string DescribeOrderPayment() => GwpText.Get(_orderPaidWithReputation
             ? GwpTextCatalog.gwp_player_troop_cost_reputation : GwpTextCatalog.gwp_player_troop_cost_denars,
-            "AMOUNT", _orderPrice);
+            "AMOUNT", FormattedPrice());
 
+        private string FormattedPrice() => _orderPaidWithReputation
+            ? PlayerBehaviorPool.FormatReputationUnits(_orderPriceUnits > 0 ? _orderPriceUnits :
+                _orderPrice * WardenReputationRules.TroopUnitsPerPoint) : _orderPrice.ToString();
 
+        private string DescribeComposition() => string.Join(", ", _orderLines.Select(line =>
+            GwpText.Get(GwpTextCatalog.gwp_player_troop_order_line, "COUNT", line.Count, "NAME", line.Troop.Name)));
+
+        private (CharacterObject? Troop, int Count) TrainingTarget(MobileParty? pool, MobileParty? extra = null)
+        {
+            foreach (var line in _orderLines)
+                if (CountHealthy(pool, line.Troop) + CountHealthy(extra, line.Troop) < line.Count) return line;
+            return (null, 0);
+        }
+
+        private int RequestedCount(CharacterObject troop) => _orderLines.FirstOrDefault(line => line.Troop == troop).Count;
+
+        private int CountReady(MobileParty? pool) => _orderLines.Sum(line => Math.Min(line.Count, CountHealthy(pool, line.Troop)));
 
         private void OnHourlyTick()
         {
-            if ((PlayerTroopOrderStage)_orderStage ==
-                PlayerTroopOrderStage.None)
-                return;
-
+            if (_orderStage == (int)PlayerTroopOrderStage.None || _orderLines.Count == 0) return;
             MobileParty? trainer = ResolveTrainerParty();
-            CharacterObject? target = CharacterObject.Find(_orderedTroopId);
-            if (trainer?.IsActive != true || target == null)
-                return;
+            if (trainer?.IsActive != true) return;
 
-            // 练兵队的照看不看练兵官能不能被订单占用，见 TendCohort。
             MobileParty? existingCohort = ResolveCohortParty();
-            if (existingCohort != null)
-                TendCohort(trainer, existingCohort, target);
+            if (existingCohort != null) TendCohort(trainer, existingCohort);
 
-            if (!PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(
-                    trainer))
-                return;
-
-            // 订单的人装在随行练兵队里：练兵官只管跑腿、调货和最后送货，
-            // 名额和超编惩罚都落在练兵队自己头上。拉不起来时落回练兵官，
-            // 行为与改动前一致。
-            MobileParty pool = AdvanceCohort(trainer, target) ?? trainer;
-            int ready = CountHealthy(pool, target);
-            LockOrderedTroopIfReady(pool, target);
-            if (ready < _orderedCount)
+            if (!PoliceEnforcementBehavior.TryReservePartyForPlayerRequest(trainer)) return;
+            MobileParty pool = AdvanceCohort(trainer) ?? trainer;
+            var missing = TrainingTarget(pool);
+            if (missing.Troop != null)
             {
                 _orderStage = (int)PlayerTroopOrderStage.Training;
-                AdvanceStockCollection(trainer, target);
-                // 调货刚卸在练兵官手上，立刻转进练兵队再清点。
-                if (pool != trainer) TopUpCohort(trainer, pool, target);
-                ready = CountHealthy(pool, target);
-                LockOrderedTroopIfReady(pool, target);
-                if (ready >= _orderedCount)
+                if (missing.Troop.StringId != _stockTroopId)
                 {
-                    ReleaseStockRendezvous("order_stock_ready");
+                    ReleaseStockRendezvous("order_line_changed");
+                    _lastStockSourcePartyId = string.Empty;
+                    _stockTroopId = missing.Troop.StringId;
                 }
-                else
+                AdvanceStockCollection(trainer, missing.Troop);
+                if (pool != trainer) TopUpCohort(trainer, pool);
+                missing = TrainingTarget(pool);
+                if (missing.Troop != null)
                 {
-                    TrainForOrderIfDue(pool, target);
+                    TrainForOrderIfDue(pool, missing.Troop);
                     return;
                 }
             }
@@ -563,10 +548,8 @@ namespace GreyWardenPolicePurity
                 }
                 return;
             }
-            if (_nextContactHour < 0d)
-                _nextContactHour = CampaignTime.Now.ToHours;
-            if (CampaignTime.Now.ToHours >= _nextContactHour)
-                MoveTrainerToPlayer(trainer);
+            if (_nextContactHour < 0d) _nextContactHour = CampaignTime.Now.ToHours;
+            if (CampaignTime.Now.ToHours >= _nextContactHour) MoveTrainerToPlayer(trainer);
         }
 
         /// <summary>
@@ -579,7 +562,7 @@ namespace GreyWardenPolicePurity
         private void DowngradeForOrderIfDue(MobileParty trainer,
             CharacterObject target, int trainableSupply)
         {
-            int needed = _orderedCount - CountHealthy(trainer, target);
+            int needed = RequestedCount(target) - CountHealthy(trainer, target);
             if (needed <= 0 || trainableSupply >= needed) return;
             int shortfall = needed - trainableSupply;
 
@@ -604,7 +587,7 @@ namespace GreyWardenPolicePurity
             foreach (TroopRosterElement element in descendants)
             {
                 if (moved >= budget) break;
-                int healthy = Math.Max(0, element.Number - element.WoundedNumber);
+                int healthy = AvailableForOrderUpgrade(trainer.Party, element.Character, element.Number - element.WoundedNumber);
                 int take = Math.Min(healthy, budget - moved);
                 if (take <= 0) continue;
                 trainer.MemberRoster.AddToCounts(element.Character, -take, false, 0);
@@ -641,12 +624,14 @@ namespace GreyWardenPolicePurity
                     CanReachTarget(element.Character, target,
                         new HashSet<string>(StringComparer.OrdinalIgnoreCase)))
                 .ToList();
-            int trainableSupply = cohorts.Sum(cohort =>
-                Math.Max(0, cohort.Number - cohort.WoundedNumber));
+            int trainableSupply = cohorts.Sum(cohort => AvailableForOrderUpgrade(trainer.Party, cohort.Character,
+                cohort.Number - cohort.WoundedNumber));
             int totalXp = 0;
             foreach (TroopRosterElement cohort in cohorts)
             {
-                int xp = cohort.Number *
+                int available = AvailableForOrderUpgrade(trainer.Party, cohort.Character,
+                    cohort.Number - cohort.WoundedNumber);
+                int xp = available *
                          GwpTuning.TroopRequest.PlayerOrderXpPerTroop;
                 trainer.MemberRoster.AddXpToTroop(cohort.Character, xp);
                 totalXp += xp;
@@ -655,10 +640,8 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteAction(trainer,
                 "PLAYER_TROOP_ORDER_XP_GRANTED",
                 "target=" + target.StringId +
-                "; requested=" + _orderedCount +
+                "; requested=" + RequestedCount(target) +
                 "; ready=" + CountHealthy(trainer, target) +
-                "; targetUpgradeLocked=" +
-                _isOrderedTroopUpgradeLocked +
                 "; cohorts=" + cohorts.Count +
                 "; trainable=" + trainableSupply +
                 "; xp=" + totalXp +
@@ -667,24 +650,6 @@ namespace GreyWardenPolicePurity
             DowngradeForOrderIfDue(trainer, target, trainableSupply);
         }
 
-        private void LockOrderedTroopIfReady(MobileParty pool,
-            CharacterObject target)
-        {
-            if (_isOrderedTroopUpgradeLocked ||
-                (PlayerTroopOrderStage)_orderStage ==
-                    PlayerTroopOrderStage.None ||
-                (_orderStage != (int)PlayerTroopOrderStage.Delivering &&
-                 CountHealthy(pool, target) < _orderedCount))
-                return;
-
-            _isOrderedTroopUpgradeLocked = true;
-            GwpAiDiagnostics.WriteAction(pool,
-                "PLAYER_TROOP_ORDER_TARGET_LOCKED",
-                "troop=" + target.StringId +
-                "; requested=" + _orderedCount +
-                "; ready=" + CountHealthy(pool, target) +
-                "; stage=" + (PlayerTroopOrderStage)_orderStage);
-        }
 
         /// <summary>
         /// 队里有没有人能升成这个兵种。没有的话（比如订单要的是最低级兵），
@@ -734,8 +699,11 @@ namespace GreyWardenPolicePurity
         private void AdvanceStockCollection(MobileParty trainer,
             CharacterObject target)
         {
-            if (CountOrderedOnHand(trainer, target) >= _orderedCount)
+            if (CountOrderedOnHand(trainer, target) >= RequestedCount(target))
+            {
+                ReleaseStockRendezvous("order_line_stock_ready");
                 return;
+            }
             if (CountHealthy(GetOutgoingBatches(trainer, target)) <= 0)
             {
                 ReleaseStockRendezvous("trainer_has_no_exchange_stock");
@@ -778,7 +746,7 @@ namespace GreyWardenPolicePurity
                     "source=" + source.StringId +
                     "; settlement=" + rendezvous.StringId +
                     "; target=" + target.StringId +
-                    "; requested=" + _orderedCount +
+                    "; requested=" + RequestedCount(target) +
                     "; ready=" + CountHealthy(trainer, target) +
                     "; sourceAvailable=" +
                     CountHealthy(GetIncomingBatches(source, target)));
@@ -864,7 +832,7 @@ namespace GreyWardenPolicePurity
             MobileParty source, Settlement rendezvous,
             CharacterObject target)
         {
-            int missing = Math.Max(0, _orderedCount -
+            int missing = Math.Max(0, RequestedCount(target) -
                 CountOrderedOnHand(trainer, target));
             List<TroopRosterElement> outgoing =
                 GetOutgoingBatches(trainer, target);
@@ -920,9 +888,10 @@ namespace GreyWardenPolicePurity
             return completed;
         }
 
-        private static List<TroopRosterElement> GetOutgoingBatches(
+        private List<TroopRosterElement> GetOutgoingBatches(
             MobileParty trainer, CharacterObject target)
         {
+            MobileParty? cohort = ResolveCohortParty();
             return trainer.MemberRoster.GetTroopRoster()
                 .Where(element => element.Character != null &&
                     !element.Character.IsHero &&
@@ -931,6 +900,12 @@ namespace GreyWardenPolicePurity
                     !CanReachTarget(element.Character, target,
                         new HashSet<string>(
                             StringComparer.OrdinalIgnoreCase)))
+                // 先算人数再构造：原版 TroopRosterElement.Number 赋负数直接抛 MBUnderFlowException（C#反编译 v1.4.8），
+                // 伤兵或预留缺额大于练兵官手里的健康人数时差值为负。（依据：独立审查 2026-11-15）
+                .Select(element => (element.Character, Count: element.Number - element.WoundedNumber -
+                    Math.Max(0, RequestedCount(element.Character) - CountHealthy(cohort, element.Character))))
+                .Where(entry => entry.Count > 0)
+                .Select(entry => new TroopRosterElement(entry.Character) { Number = entry.Count })
                 .OrderBy(element => element.Character.Tier)
                 .ThenBy(element => element.Character.StringId,
                     StringComparer.OrdinalIgnoreCase)
@@ -1027,7 +1002,7 @@ namespace GreyWardenPolicePurity
             GwpTroopTransfer.MoveBatches(source, destination, batches, requested, healthyOnly: true);
 
         private bool HasRoomForTroopDelivery() => MobileParty.MainParty is { IsActive: true } player &&
-            _orderedCount <= GwpPlayerWardenTroops.RemainingSlots(player.MemberRoster, PlayerBehaviorPool.Reputation);
+            _orderedCount <= GwpPlayerWardenTroops.RemainingSlots(player.MemberRoster);
 
         private bool PrepareDeliveryConversation()
         {
@@ -1036,15 +1011,13 @@ namespace GreyWardenPolicePurity
                 !GreyWardenFamilyBehavior.IsTrainingHero(
                     Hero.OneToOneConversationHero))
                 return false;
-            CharacterObject? troop = CharacterObject.Find(_orderedTroopId);
             MobileParty? pool = ResolveOrderPool(ResolveTrainerParty());
-            if (troop == null ||
-                CountHealthy(pool, troop) < _orderedCount)
+            if (_orderLines.Count == 0 || CountReady(pool) < _orderedCount)
                 return false;
 
             MBTextManager.SetTextVariable("GWP_PLAYER_TROOP_DELIVERY_OFFER",
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_offer,
-                    "VAR_1", _orderedCount, "VAR_2", troop.Name,
+                    "VAR_1", _orderedCount, "VAR_2", DescribeComposition(),
                     "VAR_3", DescribeOrderPayment()));
             return true;
         }
@@ -1052,7 +1025,7 @@ namespace GreyWardenPolicePurity
         private bool CanAcceptTroopDelivery(out TextObject reason)
         {
             bool hasRoom = HasRoomForTroopDelivery();
-            reason = hasRoom ? TextObject.GetEmpty() : GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.Reputation);
+            reason = hasRoom ? TextObject.GetEmpty() : GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.ReputationUnits);
             return hasRoom;
         }
 
@@ -1060,23 +1033,20 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? trainer = ResolveTrainerParty();
             MobileParty? pool = ResolveOrderPool(trainer);
-            CharacterObject? troop = CharacterObject.Find(_orderedTroopId);
             if (trainer?.IsActive != true || pool?.IsActive != true ||
-                troop == null ||
-                CountHealthy(pool, troop) < _orderedCount ||
+                _orderLines.Count == 0 || CountReady(pool) < _orderedCount ||
                 !HasRoomForTroopDelivery())
                 return;
 
-            pool.MemberRoster.AddToCounts(troop, -_orderedCount,
-                insertAtFront: false, woundedCount: 0);
-            MobileParty.MainParty.MemberRoster.AddToCounts(troop, _orderedCount,
-                insertAtFront: false, woundedCount: 0);
+            foreach (var line in _orderLines)
+                GwpTroopTransfer.Move(pool.MemberRoster, MobileParty.MainParty.MemberRoster,
+                    line.Troop, line.Count, healthyOnly: true);
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(trainer,
                 "PLAYER_TROOP_ORDER_DELIVERED",
-                "troop=" + troop.StringId +
+                "composition=" + _orderComposition +
                 "; count=" + _orderedCount +
-                "; price=" + _orderPrice +
+                "; price=" + FormattedPrice() +
                 "; paidWithReputation=" + _orderPaidWithReputation);
 #endif
             QueueFinishDeliveryEncounter();
@@ -1188,7 +1158,7 @@ namespace GreyWardenPolicePurity
                     "PLAYER_TROOP_ORDER_CONTACT_STARTED",
                     "troop=" + _orderedTroopId +
                     "; count=" + _orderedCount +
-                    "; price=" + _orderPrice +
+                    "; price=" + FormattedPrice() +
                     "; retryAfterHour=" + _nextContactHour);
                 PlayerEncounter.DoMeeting();
             }
@@ -1227,14 +1197,17 @@ namespace GreyWardenPolicePurity
             ReleaseStockRendezvous("order_cleared");
             _orderedTroopId = string.Empty;
             _orderedCount = 0;
+            _orderLines = Array.Empty<(CharacterObject, int)>();
+            _orderComposition = string.Empty;
             _orderPrice = 0;
+            _orderPriceUnits = 0;
             _orderPaidWithReputation = false;
             _orderStage = (int)PlayerTroopOrderStage.None;
             _filedHour = -1d;
             _lastOrderXpHour = -1d;
             _nextContactHour = -1d;
-            _isOrderedTroopUpgradeLocked = false;
             _lastStockSourcePartyId = string.Empty;
+            _stockTroopId = string.Empty;
             _cohortPartyId = string.Empty;
         }
 
@@ -1242,27 +1215,10 @@ namespace GreyWardenPolicePurity
             CharacterObject? troop)
         {
             if (party?.IsActive != true || troop == null) return 0;
-            TroopRosterElement element = party.MemberRoster.GetTroopRoster()
-                .FirstOrDefault(candidate => candidate.Character == troop);
-            if (element.Character == null) return 0;
+            int index = party.MemberRoster.FindIndexOfTroop(troop);
+            if (index < 0) return 0;
+            TroopRosterElement element = party.MemberRoster.GetElementCopyAtIndex(index);
             return Math.Max(0, element.Number - element.WoundedNumber);
-        }
-
-        private static int GetOrderLimit(int reputation)
-        {
-            if (reputation >= GwpTuning.TroopRequest.EliteOrderReputation)
-                return GwpTuning.TroopRequest.EliteOrderLimit;
-            if (reputation >= GwpTuning.TroopRequest.KnightReputation)
-                return GwpTuning.TroopRequest.KnightOrderLimit;
-            if (reputation >= GwpTuning.TroopRequest.VeteranReputation)
-                return GwpTuning.TroopRequest.VeteranOrderLimit;
-            return GwpTuning.TroopRequest.LowStandingOrderLimit;
-        }
-
-        private static int GetKindOrderLimit(TroopKind kind, int reputation)
-        {
-            int limit = GetOrderLimit(reputation);
-            return kind.TroopId == GwpIds.KnightId ? Math.Max(OrderSizes[0], limit / 3) : limit;
         }
 
     }

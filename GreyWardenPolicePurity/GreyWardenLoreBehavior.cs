@@ -99,7 +99,7 @@ namespace GreyWardenPolicePurity
 
             MBTextManager.SetTextVariable(
                 GwpTextKeys.GreyLordGreeting,
-                BuildMetGreeting(PlayerBehaviorPool.Reputation));
+                BuildMetGreeting(PlayerBehaviorPool.PreciseReputation));
             return true;
         }
 
@@ -129,7 +129,7 @@ namespace GreyWardenPolicePurity
             return _lastGreetingConversationResult;
         }
 
-        private static TextObject BuildMetGreeting(int reputation)
+        private static TextObject BuildMetGreeting(decimal reputation)
         {
             if (reputation >= 40)
             {

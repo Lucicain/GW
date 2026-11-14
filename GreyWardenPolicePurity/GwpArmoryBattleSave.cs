@@ -37,7 +37,8 @@ namespace GreyWardenPolicePurity
                             EquipmentElement item = loan.Value.Equipment[slot];
                             if (item.IsEmpty) continue;
                             bindings.Add(binding); slots.Add(slot);
-                            kinds.Add(System.Array.IndexOf(loan.Value.Slots, slot));
+                            // 旧档用非负类别标记库装。继续保存该标记，实际借用索引由槽位决定。
+                            kinds.Add(loan.Value.Items[slot].IsEmpty ? -1 : KitKind(item.Item));
                             items.Add(item.Item.StringId);
                             modifiers.Add(item.ItemModifier?.StringId ?? string.Empty);
                         }
@@ -74,10 +75,8 @@ namespace GreyWardenPolicePurity
                 ArmoryKit kit = kits[bindings![i]];
                 var item = new EquipmentElement(MBObjectManager.Instance.GetObject<ItemObject>(items[i]),
                     modifiers![i].Length == 0 ? null : MBObjectManager.Instance.GetObject<ItemModifier>(modifiers[i]));
-                kit.Equipment[slots![i]] = item;
-                if (kinds![i] < 0) continue;
-                kit.Items[kinds[i]] = item;
-                kit.Slots[kinds[i]] = slots[i];
+                if (kinds![i] < 0) kit.Equipment[slots![i]] = item;
+                else kit.Equip((EquipmentIndex)slots![i], item);
             }
         }
 

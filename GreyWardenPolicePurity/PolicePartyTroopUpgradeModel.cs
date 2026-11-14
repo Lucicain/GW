@@ -1,7 +1,10 @@
 using System;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 
 namespace GreyWardenPolicePurity
@@ -75,6 +78,18 @@ namespace GreyWardenPolicePurity
             return leader != null &&
                    leader.PreferredUpgradeFormation !=
                        FormationClass.NumberOfAllFormations;
+        }
+    }
+
+    [HarmonyPatch(typeof(PartyUpgraderCampaignBehavior), "GetPossibleUpgradeTargets")]
+    internal static class GwpTroopOrderUpgradeReservePatch
+    {
+        private static void Prefix(PartyBase party, ref TroopRosterElement element)
+        {
+            // The native method uses this copy to cap how many healthy troops it can upgrade.
+            int healthy = element.Number - element.WoundedNumber;
+            int available = GreyWardenTroopRequestBehavior.AvailableForOrderUpgrade(party, element.Character, healthy);
+            element.Number -= healthy - available;
         }
     }
 }

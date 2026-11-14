@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -41,9 +41,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 无领主自定义队在原版 <c>DefaultPartySizeLimitModel</c> 里只有 20 的裸底数
-        /// （领主/管家加成整段被 <c>LeaderHero != null</c> 挡住），而订单最多 80 人。
-        /// 超编速度惩罚是 <c>limit / men - 1</c>，80 人塞进 20 的上限就是 -75%，
-        /// 练兵队根本跟不住练兵官。这里按订单量给它一个够用的上限。
+        /// （领主/管家加成整段被 <c>LeaderHero != null</c> 挡住）。用订单总人数扩大上限，避免超编拖慢练兵队。
         /// </summary>
         internal static int GetCohortSizeLimit(MobileParty? party)
         {
@@ -66,7 +64,7 @@ namespace GreyWardenPolicePurity
 
         /// <summary>
         /// 订单人数点在哪里。练兵队立起来之前（或者刚被打散）落回练兵官，
-        /// 这样清点、锁升级、交付三处永远指着同一个名册。
+        /// 清点和交付都指着这个名册；升级预留另外把练兵官手上补足缺额所需的成品也留住。
         /// </summary>
         private MobileParty? ResolveOrderPool(MobileParty? trainer)
             => ResolveCohortParty() ?? trainer;
@@ -81,20 +79,19 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 练兵官可以被订单占用时才跑：没有练兵队就拉起来，然后照看一次。
         /// </summary>
-        private MobileParty? AdvanceCohort(MobileParty trainer,
-            CharacterObject target)
+        private MobileParty? AdvanceCohort(MobileParty trainer)
         {
             MobileParty? cohort = ResolveCohortParty();
             if (cohort == null)
             {
                 // 队没了但记录还在：这批人在路上折了。重召是对的，但不能不吭声——
-                // 玩家付过钱，得知道进度回到了起点。
+                // 订单已经付过费用，告诉玩家要重新备兵。
                 if (!string.IsNullOrEmpty(_cohortPartyId))
                 {
                     GwpAiDiagnostics.WriteAction(trainer,
                         "PLAYER_TROOP_ORDER_COHORT_LOST",
                         "cohort=" + _cohortPartyId +
-                        "; troop=" + _orderedTroopId +
+                        "; composition=" + DescribeComposition() +
                         "; requested=" + _orderedCount);
                     _cohortPartyId = string.Empty;
                     InformationManager.DisplayMessage(new InformationMessage(
@@ -108,7 +105,7 @@ namespace GreyWardenPolicePurity
                 cohort = CreateCohort(trainer);
                 if (cohort == null) return null;
                 // 已有的练兵队由 TendCohort 在门禁之前照看；新立的这一拍补一次。
-                TendCohort(trainer, cohort, target);
+                TendCohort(trainer, cohort);
             }
             return cohort;
         }
@@ -119,13 +116,12 @@ namespace GreyWardenPolicePurity
         /// 那道门是关的，以前练兵队因此一连几天没人管，跟随和侵略性过期、战后收进来的
         /// 外来兵也退不回去。任一方在战斗中时不动名册，等打完再换。
         /// </summary>
-        private void TendCohort(MobileParty trainer, MobileParty cohort,
-            CharacterObject target)
+        private void TendCohort(MobileParty trainer, MobileParty cohort)
         {
             KeepCohortDisposition(cohort);
             GreyWardenPartyDesireBehavior.RequestEscort(cohort, trainer);
             if (trainer.MapEvent != null || cohort.MapEvent != null) return;
-            TopUpCohort(trainer, cohort, target);
+            TopUpCohort(trainer, cohort);
         }
 
         private MobileParty? CreateCohort(MobileParty trainer)
@@ -178,7 +174,7 @@ namespace GreyWardenPolicePurity
             GwpAiDiagnostics.WriteAction(trainer,
                 "PLAYER_TROOP_ORDER_COHORT_RAISED",
                 "cohort=" + cohortId +
-                "; troop=" + _orderedTroopId +
+                "; composition=" + DescribeComposition() +
                 "; requested=" + _orderedCount +
                 "; sizeLimit=" + Math.Max(20, _orderedCount) +
                 "; speed=" + cohortSpeed.ToString("0.00") +
@@ -187,83 +183,81 @@ namespace GreyWardenPolicePurity
             return cohort;
         }
 
-        /// <summary>
-        /// 从练兵官名册里把订单该用的人挪进练兵队，上限就是订单人数——练兵队
-        /// 只装这张订单，不当第二个军营。取用顺序：已经是成品的先走，其次是能
-        /// 练上去的（低级在前，最便宜），最后才是只能拆编重训的下游老兵。
-        /// 练兵官手上始终留够 <see cref="CohortTrainerFloor"/> 人。
-        ///
-        /// 反方向也要通：练成别的分支的（无领主队升级不分偏好）、战后收进来的
-        /// 外来兵，永远成不了目标兵，却按总人数占着名额——完成只数目标兵，订单
-        /// 就再也凑不齐。这些人退回练兵官；外来兵到了有领主的队伍里由原有纯化处理。
-        /// </summary>
-        private void TopUpCohort(MobileParty trainer, MobileParty cohort,
-            CharacterObject target)
+        private void TopUpCohort(MobileParty trainer, MobileParty cohort)
         {
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            bool Serves(CharacterObject? troop) =>
-                troop != null && !troop.IsHero &&
-                GwpCommon.IsGreyWardenTroop(troop) &&
-                (troop == target ||
-                 CanReachTarget(troop, target, new HashSet<string>(visited)) ||
-                 CanReachTarget(target, troop, new HashSet<string>(visited)));
+            TransferExactOrderTroops(trainer, cohort);
+            CharacterObject? target = TrainingTarget(cohort).Troop;
+            if (target == null)
+            {
+                foreach (TroopRosterElement entry in cohort.MemberRoster.GetTroopRoster().Where(entry =>
+                    !entry.Character.IsHero && entry.Number > RequestedCount(entry.Character)).ToList())
+                    ReturnCohortSurplus(cohort, trainer, entry.Character, entry.Number - RequestedCount(entry.Character));
+                return;
+            }
 
-            List<TroopRosterElement> strays = cohort.MemberRoster.GetTroopRoster()
-                .Where(element => element.Character != null &&
-                    !element.Character.IsHero && element.Number > 0 &&
-                    !Serves(element.Character))
-                .ToList();
-            int strayMen = strays.Sum(element => element.Number);
+            bool CanTrainForTarget(CharacterObject troop) =>
+                CanReachTarget(troop, target, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            bool CanRetrainForTarget(CharacterObject troop) =>
+                CanReachTarget(target, troop, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            bool IsTrainingStock(CharacterObject troop) => GwpCommon.IsGreyWardenTroop(troop) &&
+                (CanTrainForTarget(troop) || CanRetrainForTarget(troop));
 
-            int room = _orderedCount -
-                (cohort.MemberRoster.TotalManCount - strayMen);
+            int needed = RequestedCount(target) - CountHealthy(cohort, target);
+            int retained = 0;
+            var returns = new List<TroopRosterElement>();
+            foreach (TroopRosterElement entry in cohort.MemberRoster.GetTroopRoster()
+                .Where(entry => entry.Number > 0 && !entry.Character.IsHero)
+                .OrderBy(entry => CanTrainForTarget(entry.Character) ? 0 : 1).ThenBy(entry => entry.Character.Tier))
+            {
+                int reserved = Math.Min(entry.Number, RequestedCount(entry.Character));
+                int healthySurplus = Math.Max(0, entry.Number - entry.WoundedNumber - reserved);
+                int keep = entry.Character != target && IsTrainingStock(entry.Character) ? Math.Min(healthySurplus, needed - retained) : 0;
+                retained += keep;
+                int excess = entry.Number - reserved - keep;
+                if (excess > 0) returns.Add(new TroopRosterElement(entry.Character) { Number = excess });
+            }
+
             int spare = trainer.MemberRoster.TotalManCount - CohortTrainerFloor;
-
-            List<TroopRosterElement> pool = trainer.MemberRoster.GetTroopRoster()
-                .Where(element => element.Number - element.WoundedNumber > 0 &&
-                    Serves(element.Character))
-                .OrderBy(element => element.Character == target ? 0
-                    : CanReachTarget(element.Character, target,
-                        new HashSet<string>(visited)) ? 1 : 2)
-                .ThenBy(element => element.Character.Tier)
-                .ThenBy(element => element.Character.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            int moved = 0;
-            foreach (TroopRosterElement element in pool)
+            foreach (TroopRosterElement entry in trainer.MemberRoster.GetTroopRoster()
+                .Where(entry => entry.Character != target && !entry.Character.IsHero && IsTrainingStock(entry.Character))
+                .OrderBy(entry => CanTrainForTarget(entry.Character) ? 0 : 1).ThenBy(entry => entry.Character.Tier).ToList())
             {
-                int budget = Math.Min(room - moved, spare - moved);
+                int budget = Math.Min(needed - retained, spare);
                 if (budget <= 0) break;
-                int take = Math.Min(
-                    Math.Max(0, element.Number - element.WoundedNumber), budget);
-                if (take <= 0) continue;
-                moved += GwpTroopTransfer.Move(trainer.MemberRoster, cohort.MemberRoster,
-                    element.Character, take, healthyOnly: true).Number;
+                // 同一兵种可能是后续订单的成品，只取超出该项预留的部分。
+                int reserved = Math.Max(0, RequestedCount(entry.Character) - CountHealthy(cohort, entry.Character));
+                int take = Math.Min(budget, entry.Number - entry.WoundedNumber - reserved);
+                int moved = GwpTroopTransfer.Move(trainer.MemberRoster, cohort.MemberRoster,
+                    entry.Character, take, healthyOnly: true).Number;
+                retained += moved;
+                spare -= moved;
             }
-
-            // 队里还剩有用的人才退：空队会被原版当无人队清掉，下一拍就误报成
-            // "折在路上"。
-            int returned = 0;
-            if (strayMen > 0 && cohort.MemberRoster.TotalManCount > strayMen)
-            {
-                foreach (TroopRosterElement element in strays)
-                {
-                    returned += GwpTroopTransfer.Move(cohort.MemberRoster, trainer.MemberRoster,
-                        element.Character, element.Number).Number;
-                }
-            }
-            if (moved <= 0 && returned <= 0) return;
-
-            GwpAiDiagnostics.WriteAction(trainer, "PLAYER_TROOP_ORDER_COHORT_FED",
-                "cohort=" + cohort.StringId +
-                "; target=" + target.StringId +
-                "; moved=" + moved +
-                "; returned=" + returned +
-                "; cohortMen=" + cohort.MemberRoster.TotalManCount +
-                "; ready=" + CountHealthy(cohort, target) +
-                "; trainerMen=" + trainer.MemberRoster.TotalManCount);
+            if (cohort.MemberRoster.TotalManCount > returns.Sum(entry => entry.Number))
+                foreach (TroopRosterElement entry in returns)
+                    ReturnCohortSurplus(cohort, trainer, entry.Character, entry.Number);
         }
+
+        private static void ReturnCohortSurplus(MobileParty cohort, MobileParty trainer, CharacterObject troop, int count)
+        {
+            int index = cohort.MemberRoster.FindIndexOfTroop(troop);
+            TroopRosterElement current = cohort.MemberRoster.GetElementCopyAtIndex(index);
+            var selected = new TroopRosterElement(troop) { Number = count, WoundedNumber = Math.Min(count, current.WoundedNumber) };
+            GwpTroopTransfer.MoveSelectedBatch(cohort.Party, cohort.MemberRoster, trainer.MemberRoster, selected);
+        }
+
+        private void TransferExactOrderTroops(MobileParty trainer, MobileParty cohort)
+        {
+            int spare = trainer.MemberRoster.TotalManCount - CohortTrainerFloor;
+            foreach (var line in _orderLines)
+            {
+                if (spare <= 0) break;
+                int missing = line.Count - CountHealthy(cohort, line.Troop);
+                spare -= GwpTroopTransfer.Move(trainer.MemberRoster, cohort.MemberRoster, line.Troop,
+                    Math.Min(spare, missing), healthyOnly: true).Number;
+            }
+        }
+
+
 
         /// <summary>
         /// 解散练兵队：剩下的人原样还给练兵官，队伍销毁。订单交付、取消、

@@ -62,6 +62,7 @@ namespace GreyWardenPolicePurity
         internal string OrderTroopId = string.Empty;
         internal int OrderCount;
         internal int LegacyOrderGold;
+        internal string OrderComposition = string.Empty;
         internal string FiefSettlementId = string.Empty;
         internal double FiefCaptureHours;
 
@@ -72,7 +73,7 @@ namespace GreyWardenPolicePurity
             LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture), CargoState, CaseHeroId,
             OrderTroopId, OrderCount.ToString(), LegacyOrderGold.ToString(), FiefSettlementId,
-            FiefCaptureHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            FiefCaptureHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture), OrderComposition);
 
         internal static GwpDispatchRecord? Deserialize(string? line)
         {
@@ -98,7 +99,8 @@ namespace GreyWardenPolicePurity
                 LegacyOrderGold = ParseInt(parts[14]),
                 // Existing four-purpose records have fifteen fields and carry no fief application.
                 FiefSettlementId = parts.Length > 15 ? parts[15] : string.Empty,
-                FiefCaptureHours = parts.Length > 16 ? double.Parse(parts[16], invariant) : 0d
+                FiefCaptureHours = parts.Length > 16 ? double.Parse(parts[16], invariant) : 0d,
+                OrderComposition = parts.Length > 17 ? parts[17] : string.Empty
             };
         }
 

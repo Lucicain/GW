@@ -1260,7 +1260,7 @@ namespace GreyWardenPolicePurity
         {
             MobileParty playerParty = MobileParty.MainParty;
             if (playerParty == null || !playerParty.IsActive) return;
-            if (PlayerBehaviorPool.Reputation > -11) return;
+            if (!PlayerBehaviorPool.IsWanted) return;
             if (PlayerBehaviorPool.HasAtonementTask) return;
 
             if (!CrimePool.IsPlayerHunted)

@@ -63,12 +63,12 @@ namespace GreyWardenPolicePurity
 
         private static List<TooltipProperty> BuildTooltip()
         {
-            int reputation = PlayerBehaviorPool.Reputation;
+            int reputationUnits = PlayerBehaviorPool.ReputationUnits;
             var properties = new List<TooltipProperty>
             {
                 new TooltipProperty(
                     GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_title),
-                    reputation.ToString(), 0, false, TooltipProperty.TooltipPropertyFlags.Title),
+                    PlayerBehaviorPool.FormatReputationUnits(reputationUnits), 0, false, TooltipProperty.TooltipPropertyFlags.Title),
                 new TooltipProperty(string.Empty,
                     GwpText.Get(GwpTextCatalog.gwp_mapbar_reputation_hint),
                     0, false, TooltipProperty.TooltipPropertyFlags.MultiLine)
@@ -78,7 +78,7 @@ namespace GreyWardenPolicePurity
             {
                 properties.Add(new TooltipProperty(
                     GwpText.Get(GwpTextCatalog.gwp_mapbar_warden_troops),
-                    GwpPlayerWardenTroops.Count(player.MemberRoster) + "/" + GwpPlayerWardenTroops.Capacity(reputation),
+                    GwpPlayerWardenTroops.Count(player.MemberRoster) + "/" + GwpPlayerWardenTroops.Capacity(reputationUnits),
                     0, false));
             }
 
@@ -114,13 +114,13 @@ namespace GreyWardenPolicePurity
             if (vm == null || !Items.TryGetValue(vm, out MapInfoItemVM? item) || item == null)
                 return;
 
-            int reputation = PlayerBehaviorPool.Reputation;
+            string display = PlayerBehaviorPool.FormatReputationUnits(PlayerBehaviorPool.ReputationUnits);
             // 被通缉才标红，与既有的"通缉已解除"口径一致；只是负分还不至于报警。
             item.HasWarning = PlayerBehaviorPool.IsWanted;
-            if (item.IntValue == reputation && !forced) return;
+            if (item.Value == display && !forced) return;
 
-            item.IntValue = reputation;
-            item.Value = reputation.ToString();
+            item.IntValue = PlayerBehaviorPool.Reputation;
+            item.Value = display;
         }
     }
 

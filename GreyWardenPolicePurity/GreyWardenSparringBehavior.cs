@@ -251,11 +251,12 @@ namespace GreyWardenPolicePurity
             _friendlySparringAvailableAt = CampaignTime.DaysFromNow(GwpTuning.Sparring.CooldownDays);
             if (!playerWon) return;
 
-            int previous = PlayerBehaviorPool.Reputation;
+            int previous = PlayerBehaviorPool.ReputationUnits;
             PlayerBehaviorPool.ChangeReputation(GwpTuning.Sparring.VictoryReputation);
-            int gained = PlayerBehaviorPool.Reputation - previous;
+            int gained = PlayerBehaviorPool.ReputationUnits - previous;
             if (gained > 0)
-                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_sparring_reputation, "POINTS", gained));
+                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_sparring_reputation,
+                    "POINTS", PlayerBehaviorPool.FormatReputationUnits(gained)));
         }
 
         /// <summary>

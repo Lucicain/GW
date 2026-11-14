@@ -10,13 +10,21 @@ namespace GreyWardenPolicePurity
 {
     public sealed partial class GwpFireswornBehavior
     {
+        private List<CharacterObject>? _balanceWardens;
+
+        // 调剂只为灰袍配装服务，口径与普通兵领装前相同：前九类里至少一种灰袍兵种能用的装备。
+        // 披风、单性别和灰袍够不着的装备即使进了军械库也不触发运械，否则到村后次日又会被判为多余退回货仓。
+        private bool IsBalanceItem(ItemObject item) =>
+            KitKind(item) is >= 0 and < KitCape &&
+            (_balanceWardens ??= CharacterObject.All.Where(IsGuardTroop).ToList()).Any(troop => CanUseWardenArmoryItem(troop, item));
+
         // 军械账和待售仓都是真实库存；可用的待售装备也能先调剂，不能只认当天新溢出的物品。
         private ItemRoster VillageArmoryStock(string village)
         {
             ItemRoster stock = new ItemRoster();
             foreach (ItemRoster ledger in new[] { ItemsOf(_armories, village), ItemsOf(_goods, village) })
                 foreach (ItemRosterElement entry in ledger)
-                    if (IsArmoryItem(entry.EquipmentElement.Item))
+                    if (IsBalanceItem(entry.EquipmentElement.Item))
                         stock.AddToCounts(entry.EquipmentElement, entry.Amount);
             return stock;
         }
@@ -26,7 +34,7 @@ namespace GreyWardenPolicePurity
                 Math.Max(1, GuardPopulation(home)), Math.Max(1, GuardPopulation(target)),
                 Math.Max(GuardCap(home), Sworn(home)), Math.Max(GuardCap(target), Sworn(target)));
 
-        // 九类分别按人数比较有效强度总量。每步模拟接收方择优保留后的收益，
+        // 各装备类别分别按人数比较有效强度总量。每步模拟接收方择优保留后的收益，
         // 只有缩小人均质量差才运输；缺甲、缺数量和品质差都能触发，不用ARMED代替质量。
         private static ItemRoster BalancedArmoryCargo(ItemRoster home, ItemRoster target,
             int homeMen, int targetMen, int homeCapacity, int targetCapacity)

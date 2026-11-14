@@ -85,9 +85,16 @@ namespace GreyWardenPolicePurity
             }
             ItemRoster available = new ItemRoster();
             available.Add(ItemsOf(_armories, loadout.Holder));
+            // 原版战斗中把阵亡、溃逃的人移出名册（C#反编译 v1.4.8 MapEventParty.OnTroopKilled/OnTroopRouted），
+            // 他们借出的套装仍留到整场结算并计入 lent，所以按人数算额度时要把这些人加回来。（依据：独立审查 2026-11-15）
+            int members = party.Party.MemberRoster.GetTroopRoster().Where(entry => !entry.Character.IsHero).Sum(entry => entry.Number) +
+                loadout.Outcomes.Values.Count(outcome => outcome == 1 || outcome == 3);
+            int capacity = ArmoryCapacityFor(loadout.Holder, party.Party.MobileParty, members);
+            var lent = new List<EquipmentElement>();
             foreach (ArmoryKit kit in loadout.BySeed.Values)
                 foreach (var item in kit.Items.Where(item => !item.IsEmpty))
                 {
+                    lent.Add(item);
                     int index = available.AddToCounts(item, -1);
 #if GWP_DIAGNOSTICS
                     // 实机2026-11-06读档后首场模拟战斗：已借出的配装在库存账里找不到，原版断言但不扣。
@@ -104,8 +111,7 @@ namespace GreyWardenPolicePurity
             TroopRoster unassigned = TroopRoster.CreateDummyTroopRoster();
             foreach (var soldier in party.Troops.Where(soldier => !loadout.BySeed.ContainsKey(soldier.Descriptor.UniqueSeed)))
                 unassigned.AddToCounts(soldier.Troop, 1);
-            bool villagers = IsFaithVillager(party.Party.MobileParty);
-            ArmoryPlan additions = BuildPlan(available, ArmoryTroops(unassigned, villagers), 0, villagers);
+            ArmoryPlan additions = BuildPlan(available, ArmoryTroops(unassigned), 0, capacity, lent);
             foreach (var group in party.Troops.Where(soldier => !loadout.BySeed.ContainsKey(soldier.Descriptor.UniqueSeed))
                 .OrderBy(soldier => soldier.Descriptor.UniqueSeed).GroupBy(soldier => soldier.Troop))
             {
