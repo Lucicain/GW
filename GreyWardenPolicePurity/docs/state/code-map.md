@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-231 个源文件、60,316 行、441 个公开类型、121 条 Harmony 目标声明（含动态入口，共 121 个补丁类）。
+231 个源文件、60,237 行、441 个公开类型、121 条 Harmony 目标声明（含动态入口，共 121 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -690,8 +690,8 @@
 
 ### 执法：玩家悬赏（11 个文件）
 
-- `PlayerBountyBehavior.cs` — 906 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
-- `PlayerBountyBehavior.DialogueAndNotification.cs` — 753 行 · `PlayerBountyBehavior`
+- `PlayerBountyBehavior.cs` — 876 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
+- `PlayerBountyBehavior.DialogueAndNotification.cs` — 702 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.CaseSettlement.cs` — 677 行 · `PlayerBountyBehavior`
 - `GwpCaseArchiveItemVM.cs` — 568 行 · `GwpCaseArchiveItemVM` : ViewModel
 - `PlayerBountyBehavior.Support.cs` — 191 行 · `PlayerBountyBehavior`
@@ -818,10 +818,10 @@
 - `GwpCitySearchMission.StreetState.cs` — 110 行 · `GwpCitySearchMissionController`，另含 1 个类型
 - `GwpFireswornUpgradePayment.cs` — 107 行 · `GwpFireswornUpgradePayment`，另含 4 个类型
 - `GwpCityCaseMovementPatch.cs` — 106 行 · `GwpCityCaseLock`，另含 5 个类型
+- `GwpWardenRecruitment.cs` — 105 行 · `GwpWardenRecruitment` : VolunteerModel，另含 2 个类型
 - `GwpArmoryBalance.cs` — 104 行 · `GwpFireswornBehavior`
 - `CityTeamRules.cs` — 103 行 · `CityTeamView`，另含 2 个类型
 - `GwpDispatchBarterScreen.cs` — 103 行 · `GwpDispatchBarterScreen`
-- `GwpWardenRecruitment.cs` — 103 行 · `GwpWardenRecruitment` : VolunteerModel，另含 2 个类型
 - `GwpArmoryBattleSave.cs` — 99 行 · `GwpFireswornBehavior`
 - `GreyWardenAdoptionLogEntry.cs` — 98 行 · `GreyWardenAdoptionLogEntry` : LogEntry
 - `GwpCitySearchMission.VisualDiagnostics.cs` — 98 行 · `GwpCitySearchMissionController`，另含 1 个类型

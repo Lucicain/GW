@@ -607,11 +607,10 @@ namespace GreyWardenPolicePurity
                 MobileParty player = MobileParty.MainParty;
                 if (player == null || !player.IsActive) continue;
 
-                float contactDistance = patrol.GetPosition2D.Distance(
-                    player.GetPosition2D);
                 GreyWardenPartyDesireBehavior.RequestPursuit(patrol, player, 8f);
-                if (contactDistance <=
-                    GwpTuning.Bounty.RecruitmentContactDistance)
+#if GWP_DIAGNOSTICS
+                float contactDistance = patrol.GetPosition2D.Distance(player.GetPosition2D);
+                if (contactDistance <= GwpTuning.Patrol.MeetingTraceDistance)
                 {
                     GwpAiDiagnostics.WriteAction(
                         patrol,
@@ -619,6 +618,7 @@ namespace GreyWardenPolicePurity
                         "distance=" + contactDistance.ToString("0.00") +
                         "; using native EngageParty contact");
                 }
+#endif
             }
         }
 

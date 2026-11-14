@@ -1,13 +1,13 @@
 # 构建、校验与部署
 
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
-> 最后验收：2026-11-12 用户在 v1.5.7 启动并读档进大地图；正式包基线见下文
+> 最后验收：2026-11-14 的上一份 1.5.16.2 开发构建已正常读档游玩，见 `rgl_log_7904.txt`；本轮修复待实测
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：1.5.16.2 冷启动与读旧档；v1.5.7 的新档、战斗结算、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
+> 待实测：招募使者与祭司招募见所属页；v1.5.7 的新档、战斗结算、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。该版包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱及百科称呼](family.md#成员)。Client/Editor DLL 的 SHA-256 同为 `51A6307CE2187291EB93CC8D236785B280B4535C24881CCB553D1ADBF01BFFF2`，仓库与 live `SubModule.xml` 的 SHA-256 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。live 镜像与安装版兼容预检通过。（依据：用户要求本机切换至 1.5、构建、部署与兼容预检 2026-11-14）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[招募使者主动会面](player-justice.md#入会与退会)和[祭司志愿兵限制](warden-recruitment.md#信众村的两条)。Client/Editor DLL 的 SHA-256 同为 `27D80FDF2448B21AD1A4FC4FA6D8449C22CE0959B3FD047AAF3FD8433F6D415A`，仓库与 live `SubModule.xml` 的 SHA-256 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。live 镜像与安装版兼容预检通过。（依据：构建、部署与兼容预检 2026-11-14）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 

@@ -3,7 +3,7 @@
 > 当前状态：四类主动参战改为可取消准备、确认后走原版选边转场，已部署待实测；既有名牌/接案保持
 > 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBehaviorPool.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
-> 待实测：四类现场选边后返回/不介入不锁进战斗；确认进攻/派兵及劫掠转场，帮攻守两侧；办案目标及挂靠军团名牌的实际渲染，结案后恢复；自选案件接单/目标变化/交差完整流程，界面新验收见事务界面
+> 待实测：招募使者移动中主动接触、接受或拒绝后返城、在途存读档；四类现场选边后返回/不介入不锁进战斗；确认进攻/派兵及劫掠转场，帮攻守两侧；办案目标及挂靠军团名牌结案后恢复；自选案件接单/目标变化/交差，界面见事务界面
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
@@ -87,9 +87,10 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 
 ## 入会与退会
 
-- 声望 ≥ 20 且从未被招募过：从离玩家最近的城镇派一支 20 人的招募使者队来找玩家。
-  使者不吃饭。追了 5 天还没碰上，使者就进离自己最近的城解散；下一次资格检查再从离玩家最近的城重新派一支，
-  所以派出点会跟着玩家走。
+- 声望 ≥ 20 且从未被招募过时，从离玩家最近的城镇派一支 20 人招募队。出发和续派移动意图用送信队出程的 `RequestRush`，持续以主队实体为目标，由[原版会面](../vanilla/party-encounters.md)主动开启对话。保留原版避险和海陆接触条件。追了 5 天还没碰上就去最近城镇解散，再从离玩家最近的城派下一支。答复后立即切换返城命令并结束本次遭遇，返程期间再次会面只说事务已了结。记录当前队伍、返城目标、阶段及出发时间供读档接续。（依据：用户裁定 2026-11-14、实机移动记录与 v1.5.7 原版会面源码）
+
+旧版 `gwp_recruit_1` 在 2026-11-14 的诊断里累计 11 次 `POINT_WINNER_TO_GOTOPOINT`，直到双方接近才切 `EngageParty`。当次海上由原版 `encounter_meeting` 开启招募对话，接受后 0 次重复邀请。新版由 `DUTY_RUSH_ENGAGE_WINNER`、`RECRUIT_DIALOG_OPENED` 的发起方和 `RECRUIT_NATIVE_RETURN_APPLIED` 的玩家目标清除状态核对。保留这些诊断到用户确认主动会面及返程可用。
+
 - 首次接受（使者或先拒绝后经领主申请）：
   - 发放黑袍指挥官全套、黑曜指挥官盾、一副双刀；执勤旗独立发放；
   - 发 5 名 `gwnewrecruit`。
@@ -97,7 +98,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
   装备品质规则见 `warden-gear.md`。拒绝后不再派使者，但可以去找任一灰袍领主申请。
 - 退会：找任一普通灰袍领主，撤职权并收回玩家行囊中的全部执勤旗、玩家战斗/便装旗槽的执勤旗；其他物品和普通旗帜保持，已经代收的罚金、已经押着的犯人仍要交。再次加入只发执勤旗，不再发整套装备；沿已有主动退出次数区分首次/重入，不新增发装记账或读档补发。新兵规则保持。（依据：用户裁定 2026-10-17）
   重新入会的门槛按 20 / 40 / 60 递增；自愿退会满 3 次后永久关闭。
-- 「入会」的判据是 `PlayerBountyBehavior.IsRecruitedByGreyWardens`，地图栏按钮、祭司招兵等都看这个。
+- 「入会」由 `PlayerBountyBehavior.IsRecruitedByGreyWardens` 判定，地图栏和练兵订单沿用这一资格。[要人兵源](warden-recruitment.md#信众村的两条)单独判断买方。
 
 ## 悬赏（接单）
 

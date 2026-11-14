@@ -63,13 +63,14 @@ namespace GreyWardenPolicePurity
         internal bool IsRecruitedByGreyWardens => _recruitmentAccepted;
         private string _escortPolicePartyId = null!; // 当前护送玩家追捕的警察部队 StringId（null=无护送，向族长领赏）
 
-        // ---- 运行时状态（不持久化）----
-        private CampaignTime _lastIntelReportTime = CampaignTime.Zero; // 运行时，不持久化（读档后立即触发一次，好体验）
-        private BountyHunterQuest _activeQuest = null!;
         private string _recruitmentPatrolId = null!;       // 当前在场的招募使者队ID
         private Settlement _recruitmentPatrolOrigin = null!; // 使者出发的定居点（返回目标）
         private bool _recruitmentPatrolReturning = false;  // 是否已进入返回阶段
         private double _recruitmentPatrolDispatchHour = -1d; // 本轮追赶玩家的起始小时
+
+        // ---- 运行时状态（不持久化）----
+        private CampaignTime _lastIntelReportTime = CampaignTime.Zero; // 运行时，不持久化（读档后立即触发一次，好体验）
+        private BountyHunterQuest _activeQuest = null!;
 
         // 追捕中只要记着目标本人就算：住在城里的目标没有部队 ID。接案时清掉等待交差，
         // 进交差时清掉部队 ID，两者不会同时成立，所以先看等待交差与旧判断等价。
@@ -295,6 +296,9 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_recruitment_offered",  ref offeredInt);
             dataStore.SyncData("gwp_recruitment_accepted", ref acceptedInt);
             dataStore.SyncData("gwp_recruitment_voluntary_exit_count", ref _voluntaryExitCount);
+            dataStore.SyncData("gwp_recruitment_patrol_id", ref _recruitmentPatrolId);
+            dataStore.SyncData("gwp_recruitment_patrol_origin", ref _recruitmentPatrolOrigin);
+            dataStore.SyncData("gwp_recruitment_patrol_returning", ref _recruitmentPatrolReturning);
             dataStore.SyncData("gwp_recruitment_patrol_dispatch_hour", ref _recruitmentPatrolDispatchHour);
 
             // ── 悬赏任务持久化状态 ────────────────────────────────────────────────────
@@ -332,11 +336,7 @@ namespace GreyWardenPolicePurity
                 _activeBountyTargetName ??= "";
                 _activeBountyPlayerFactionId ??= "";
 
-                // 运行时状态读档时清零（不持久化）
-                _recruitmentPatrolId        = null!;
-                _recruitmentPatrolOrigin    = null!;
-                _recruitmentPatrolReturning = false;
-                _activeQuest                = null!;
+                _activeQuest = null!;
             }
         }
 
@@ -352,16 +352,17 @@ namespace GreyWardenPolicePurity
             List<MobileParty> patrols = GetActiveRecruitmentPatrols();
             if (patrols.Count == 0)
             {
-                _recruitmentPatrolId = null!;
-                _recruitmentPatrolOrigin = null!;
-                _recruitmentPatrolReturning = false;
-                _recruitmentPatrolDispatchHour = -1d;
+                ResetRecruitmentPatrolState();
                 return;
             }
 
-            MobileParty trackedPatrol = null!;
+            MobileParty? trackedPatrol = null;
             if (!string.IsNullOrEmpty(_recruitmentPatrolId))
-                trackedPatrol = patrols.FirstOrDefault(p => p.StringId == _recruitmentPatrolId);
+            {
+                trackedPatrol = patrols.FirstOrDefault(patrol => patrol.StringId == _recruitmentPatrolId);
+                if (trackedPatrol == null)
+                    ResetRecruitmentPatrolState();
+            }
 
             trackedPatrol ??= patrols[0];
             _recruitmentPatrolId = trackedPatrol.StringId;
@@ -395,12 +396,7 @@ namespace GreyWardenPolicePurity
             }
 
             if (patrol != null && patrol.StringId == _recruitmentPatrolId)
-            {
-                _recruitmentPatrolId = null!;
-                _recruitmentPatrolOrigin = null!;
-                _recruitmentPatrolReturning = false;
-                _recruitmentPatrolDispatchHour = -1d;
-            }
+                ResetRecruitmentPatrolState();
         }
 
         private void SpawnRecruitmentPatrol()
@@ -445,7 +441,7 @@ namespace GreyWardenPolicePurity
             // 招募使者不吃饭；出生口粮只让原版看到一支粮够吃的队伍。
             PoliceResourceManager.OutfitTemporaryDutyParty(patrol);
 
-            GreyWardenPartyDesireBehavior.RequestApproach(patrol, recruitmentPlayer, 8f);
+            GreyWardenPartyDesireBehavior.RequestRush(patrol, recruitmentPlayer, 8f);
 
             _recruitmentPatrolId = patrolId;
             _recruitmentPatrolOrigin = spawnPoint;  // 记录出发点，供返回时使用
@@ -497,20 +493,8 @@ namespace GreyWardenPolicePurity
                     _recruitmentPatrolOrigin = FindNearestTown(patrol.GetPosition2D);
                 }
 
-                bool shouldReturn = _recruitmentPatrolReturning ||
-                                    _recruitmentOffered ||
-                                    _recruitmentAccepted ||
-                                    !isTrackedPatrol;
-
-                if (shouldReturn)
+                if (_recruitmentPatrolReturning || !isTrackedPatrol)
                 {
-                    if (isTrackedPatrol &&
-                        !_recruitmentPatrolReturning &&
-                        (_recruitmentOffered || _recruitmentAccepted))
-                    {
-                        _recruitmentPatrolReturning = true;
-                    }
-
                     Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
                     if (target == null)
                     {
@@ -518,7 +502,11 @@ namespace GreyWardenPolicePurity
                         continue;
                     }
 
-                    GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
+                    // 超时或读档转入返程时也立即清掉原版玩家目标。
+                    if (player != null && (patrol.TargetParty == player || patrol.ShortTermTargetParty == player))
+                        MoveRecruitmentPatrolHome(patrol, target);
+                    else
+                        GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
 
                     float dist = patrol.GetPosition2D.Distance(target.GetPosition2D);
                     if (patrol.CurrentSettlement == target || dist < 3f)
@@ -527,22 +515,8 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (player != null && player.IsActive)
-                {
-                    float contactDistance = patrol.GetPosition2D.Distance(player.GetPosition2D);
-                    if (contactDistance <= GwpTuning.Bounty.RecruitmentContactDistance)
-                    {
-                        // 远距离仍走统一欲望层；接近后恢复原版 EngageParty 接触，
-                        // 由 OnMapEventStarted 把中立遭遇转为招募对话。
-                        GreyWardenPartyDesireBehavior.ClearIntent(patrol);
-                        patrol.Ai.SetDoNotMakeNewDecisions(false);
-                        patrol.SetMoveEngageParty(player, patrol.NavigationCapability);
-                    }
-                    else
-                    {
-                        GreyWardenPartyDesireBehavior.RequestApproach(patrol, player, 8f);
-                    }
-                }
+                if (player?.IsActive == true)
+                    GreyWardenPartyDesireBehavior.RequestRush(patrol, player, 8f);
             }
         }
 
@@ -550,35 +524,26 @@ namespace GreyWardenPolicePurity
         /// 立刻将招募使者部队切换为返回状态，并下达前往定居点的移动命令。
         /// 可在对话 Consequence 中安全调用（不销毁部队，仅改变 AI 命令）。
         /// </summary>
-        private void TriggerPatrolReturn()
+        private void ReturnRecruitmentPatrol(MobileParty patrol)
         {
-            _recruitmentPatrolReturning = true;
-            ReconcileRecruitmentPatrolState();
+            if (!patrol.IsActive) return;
+            if (patrol.StringId == _recruitmentPatrolId)
+                _recruitmentPatrolReturning = true;
 
-            foreach (MobileParty patrol in GetActiveRecruitmentPatrols())
-            {
-                Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
-                if (target == null) continue;
+            Settlement target = GetRecruitmentPatrolReturnTarget(patrol);
+            if (target != null)
+                MoveRecruitmentPatrolHome(patrol, target);
+        }
 
-                GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
-
-                // RequestVisit updates the Grey Warden desire layer, but the
-                // native party can keep its old EngageParty command until the
-                // next AI check. Apply the native return command immediately so
-                // TargetParty/ShortTermTargetParty are cleared before another
-                // encounter can be created while both parties still overlap.
-                // The short do-not-attack window is the same native safeguard
-                // PlayerEncounter uses when separating parties after combat.
-                patrol.Ai.SetDoNotAttackMainParty(2);
-                patrol.Ai.SetDoNotMakeNewDecisions(false);
-                patrol.SetMoveGoToSettlement(
-                    target,
-                    patrol.NavigationCapability,
-                    false);
-                WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
-                    "cleared native EngageParty and ordered immediate travel to " +
-                    target.StringId);
-            }
+        private void MoveRecruitmentPatrolHome(MobileParty patrol, Settlement target)
+        {
+            GreyWardenPartyDesireBehavior.RequestVisit(patrol, target, 8f);
+            // 两队还重叠时就清掉原版 EngageParty，避免对话关闭后重复遭遇。
+            patrol.Ai.SetDoNotAttackMainParty(2);
+            patrol.Ai.SetDoNotMakeNewDecisions(false);
+            patrol.SetMoveGoToSettlement(target, patrol.NavigationCapability, false);
+            WriteRecruitmentTrace(patrol, "RECRUIT_NATIVE_RETURN_APPLIED",
+                "cleared native EngageParty and ordered immediate travel to " + target.StringId);
         }
 
         private void DestroyRecruitmentPatrol()
@@ -586,13 +551,18 @@ namespace GreyWardenPolicePurity
             foreach (MobileParty patrol in GetActiveRecruitmentPatrols())
                 DestroyRecruitmentPatrolParty(patrol);
 
+            ResetRecruitmentPatrolState();
+        }
+
+        private void ResetRecruitmentPatrolState()
+        {
             _recruitmentPatrolId = null!;
             _recruitmentPatrolOrigin = null!;
             _recruitmentPatrolReturning = false;
             _recruitmentPatrolDispatchHour = -1d;
         }
 
-        private bool IsRecruitmentPatrol(MobileParty party) =>
+        private static bool IsRecruitmentPatrol(MobileParty? party) =>
             party?.StringId?.StartsWith(GwpIds.RecruitmentPatrolPrefix, StringComparison.Ordinal) == true;
 
         #endregion

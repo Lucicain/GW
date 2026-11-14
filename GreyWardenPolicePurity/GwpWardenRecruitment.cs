@@ -41,8 +41,10 @@ namespace GreyWardenPolicePurity
         public override int MaximumIndexHeroCanRecruitFromHero(Hero buyerHero, Hero sellerHero,
             int useValueAsRelation = -101)
         {
-            if (GwpFireswornBehavior.IsFireswornPriest(sellerHero) && !GwpWardenRecruitment.IsWardenBuyer(buyerHero))
-                return 0;
+            if (GwpFireswornBehavior.IsFireswornPriest(sellerHero) &&
+                (buyerHero == Hero.MainHero || !GwpWardenRecruitment.IsWardenBuyer(buyerHero)))
+                // HeroHelper 把最高索引本身算作可招，格子从 0 开始。
+                return -1;
             return Inner.MaximumIndexHeroCanRecruitFromHero(buyerHero, sellerHero, useValueAsRelation);
         }
 

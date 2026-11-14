@@ -78,7 +78,7 @@
 | `gwp_enf_delay_`（立即追截） | 追截队 | 来源领主名册 | 回来源领主；来源不能再带队时改交最近的灰袍领主（接收人记入状态，不再换） |
 | `gwp_enf_delay_`（延迟） | 延迟纠察队 | 模板生成 | 进城销毁 |
 | `gwp_patrol_` | 纠察队（含押送被俘玩家） | 模板生成 | 进城销毁 |
-| `gwp_recruit_` | 招募使者 | 模板生成（重步兵），owner 为族长 | 回出发城销毁 |
+| `gwp_recruit_` | 招募使者 | 模板生成（重步兵），无英雄 owner | 答复后回出发城，超时去最近城，随后销毁 |
 | `gwp_dispatch_` | 玩家送信队（玩家家族） | 玩家名册 | 回玩家交割 |
 
 判定入口 `GwpCommon.IsLeaderlessDutyParty`（按前缀，且 `LeaderHero == null`）。灰袍逃兵

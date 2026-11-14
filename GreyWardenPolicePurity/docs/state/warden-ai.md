@@ -55,8 +55,7 @@
   - **追人，已宣战**：换成原版 `GoAroundParty`，逃跑由原版决定；灰袍领主主动攻击另须当前主案授权和新区域优势。
   - **去某个地点**：原版竞价没有 GoToPoint 的落地分支。借巡逻候选去竞价，赢了再翻译成真正的 GoToPoint 移动（`GwpLocationDutyRefreshPatch`）。
     地图上的行为文字改写成实际差事；追罪犯时也不再显示「正在跟随」（`GwpLocationDutyBehaviorTextPatch`）。
-  - **全速赶到某支部队跟前**（玩家通缉、Rush）：下注 `GoAroundParty`，再翻译成原版 `EngageParty`（`GwpPlayerEnforcementEngageActionPatch`）。
-    原版竞价没有 EngageParty 的落地分支，直接下注会赢了也不动。
+  - **全速赶到某支部队跟前**（玩家通缉、送信出程、招募使者、练兵交付）：下注 `GoAroundParty`，再翻译成原版 `EngageParty`（`GwpPlayerEnforcementEngageActionPatch`）。实际接触与会面见[原版手册](../vanilla/party-encounters.md)。
   - **无领主的一次性执法队锁定目标后**：跳过原版整个小时思考，只下一次 `EngageParty`；
     战斗把追击打断时，只补发一次（`GwpPartyThinkDirectAttackLockPatch`）。
 - 灰袍领主短期 AI 只主动打承办的目标和野怪；送信队谁都不主动打，只自卫（`IsAuthorizedAttackTarget`）。（依据：设计 2026-10-09）

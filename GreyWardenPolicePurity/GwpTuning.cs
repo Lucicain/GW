@@ -15,7 +15,6 @@ namespace GreyWardenPolicePurity
             // 新入会的玩家手上一个都没有。
             public const int JoinRecruitCount = 5;
             public const int RecruitmentPatrolSize = 20;
-            public const float RecruitmentContactDistance = 3f;
             public const float RecruitmentPursuitTimeoutDays = 5f;
         }
 
@@ -300,6 +299,7 @@ namespace GreyWardenPolicePurity
             public const int FinePerPoint = 200;
             public const int NegotiationDivisor = 4;
             public const int PatrolSize = 10;
+            public const float MeetingTraceDistance = 3f;
             public const float WarDistance = 15f;
         }
 

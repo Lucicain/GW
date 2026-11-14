@@ -32,7 +32,12 @@ namespace GreyWardenPolicePurity
                 "gwp_recruit_options",
                 "{" + GwpTextKeys.RecruitGreeting + "}",
                 RecruitDialogCondition,
+#if GWP_DIAGNOSTICS
+                () => WriteRecruitmentTrace(MobileParty.ConversationParty, "RECRUIT_DIALOG_OPENED",
+                    "playerIsAttacker=" + (PlayerEncounter.IsActive && PlayerEncounter.PlayerIsAttacker)),
+#else
                 null,
+#endif
                 100);
 
             starter.AddPlayerLine(
@@ -148,9 +153,7 @@ namespace GreyWardenPolicePurity
                 null,
                 100);
 
-            // ── 招募已完成时的兜底对话 ──────────────────────────────────────────────
-            // LeaveEncounter = true 正常情况下已足够；这条对话防止极端情况下
-            // 遭遇系统在 close_window 后再次触发对话，导致"我不能和你说话"→战斗准备。
+            // 碰到正在返程的使者时，结束会面并让使者继续返城。
             starter.AddDialogLine(
                 "gwp_recruit_already_done",
                 "start",
@@ -159,11 +162,9 @@ namespace GreyWardenPolicePurity
                 () =>
                 {
                     MobileParty? conv = MobileParty.ConversationParty;
-                    if (conv == null || !IsRecruitmentPatrol(conv)) return false;
-                    if (!_recruitmentOffered) return false;
-                    return true;
+                    return IsRecruitmentPatrol(conv) && !CanOfferRecruitment(conv);
                 },
-                CloseRecruitmentEncounterAndReturn,
+                () => CloseRecruitmentEncounterAndReturn(MobileParty.ConversationParty),
                 100);
 
             RegisterCaseTurnInDialogues(starter);
@@ -185,19 +186,22 @@ namespace GreyWardenPolicePurity
         {
             MobileParty? conversationParty = MobileParty.ConversationParty;
             if (conversationParty == null) return false;
-            if (!IsRecruitmentPatrol(conversationParty)) return false;
-            if (_recruitmentOffered || _recruitmentAccepted) return false;
+            if (!IsRecruitmentPatrol(conversationParty) || !CanOfferRecruitment(conversationParty))
+                return false;
 
             MBTextManager.SetTextVariable(GwpTextKeys.RecruitGreeting,
                 GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_009));
-            WriteRecruitmentTrace(conversationParty, "RECRUIT_DIALOG_OPENED",
-                "recruitment start line accepted");
             return true;
         }
 
+        private bool CanOfferRecruitment(MobileParty? patrol) =>
+            patrol != null && patrol.StringId == _recruitmentPatrolId &&
+            !_recruitmentOffered && !_recruitmentAccepted && !_recruitmentPatrolReturning;
+
         private void OnRecruitAcceptConsequence()
         {
-            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            MobileParty? herald = MobileParty.ConversationParty;
+            if (!CanOfferRecruitment(herald)) return;
             WriteRecruitmentTrace(herald, "RECRUIT_ACCEPT_SELECTED",
                 "player selected acceptance");
             _recruitmentAccepted = true;
@@ -207,7 +211,7 @@ namespace GreyWardenPolicePurity
             GiveCommanderEquipment();
             GiveDutyBanner();
             GiveStarterRecruits();
-            CloseRecruitmentEncounterAndReturn();
+            CloseRecruitmentEncounterAndReturn(herald);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_014),
@@ -216,13 +220,14 @@ namespace GreyWardenPolicePurity
 
         private void OnRecruitRefuseConsequence()
         {
-            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            MobileParty? herald = MobileParty.ConversationParty;
+            if (!CanOfferRecruitment(herald)) return;
             WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_SELECTED",
                 "player selected refusal");
             _recruitmentOffered = true;
             WriteRecruitmentTrace(herald, "RECRUIT_REFUSE_COMMITTED",
                 "refusal state committed on player choice");
-            CloseRecruitmentEncounterAndReturn();
+            CloseRecruitmentEncounterAndReturn(herald);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_playerbountybehavior_dialogueandnotification_015),
@@ -230,73 +235,45 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// Recruitment can begin either because the player clicked the herald or
-        /// because the herald engaged the player and OnMapEventStarted forced a
-        /// meeting. In the forced path, issuing the return order before the
-        /// conversation has fully closed lets the encounter cleanup overwrite it
-        /// with another EngageParty order. Mark the encounter for departure now,
-        /// then finish it and reissue the return order after conversation cleanup.
+        /// 对话关闭前下达返程，原版清理结束后为同一支使者重发返程命令。
         /// </summary>
-        private void CloseRecruitmentEncounterAndReturn()
+        private void CloseRecruitmentEncounterAndReturn(MobileParty? herald)
         {
-            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
+            if (herald == null) return;
             WriteRecruitmentTrace(herald, "RECRUIT_CLOSE_QUEUED",
                 "mark encounter for departure and queue conversation-end cleanup");
-            _recruitmentPatrolReturning = true;
 
-            if (PlayerEncounter.IsActive)
+            if (PlayerEncounter.EncounteredMobileParty == herald)
                 PlayerEncounter.LeaveEncounter = true;
 
-            TriggerPatrolReturn();
+            ReturnRecruitmentPatrol(herald);
             WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REQUESTED",
                 "initial return order issued");
 
-            if (Campaign.Current?.ConversationManager == null)
-                return;
-
-            Campaign.Current.ConversationManager.ConversationEndOneShot -=
-                FinishRecruitmentEncounterAndReturn;
             Campaign.Current.ConversationManager.ConversationEndOneShot +=
-                FinishRecruitmentEncounterAndReturn;
+                () => FinishRecruitmentEncounterAndReturn(herald);
         }
 
-        private void FinishRecruitmentEncounterAndReturn()
+        private void FinishRecruitmentEncounterAndReturn(MobileParty herald)
         {
-            MobileParty? herald = ResolveCurrentRecruitmentPatrol();
             WriteRecruitmentTrace(herald, "RECRUIT_CONVERSATION_ENDED",
                 "conversation-end callback entered");
-            MobileParty? encountered = PlayerEncounter.IsActive
-                ? PlayerEncounter.EncounteredMobileParty
-                : null;
-            if (encountered != null && IsRecruitmentPatrol(encountered))
+            if (PlayerEncounter.EncounteredMobileParty == herald)
             {
                 PlayerEncounter.LeaveEncounter = true;
                 PlayerEncounter.Finish();
             }
 
-            TriggerPatrolReturn();
+            ReturnRecruitmentPatrol(herald);
             WriteRecruitmentTrace(herald, "RECRUIT_RETURN_REISSUED",
                 "native return order reissued after conversation cleanup");
         }
 
-        private MobileParty? ResolveCurrentRecruitmentPatrol()
-        {
-            MobileParty? party = MobileParty.ConversationParty;
-            if (party != null && IsRecruitmentPatrol(party))
-                return party;
-
-            party = PlayerEncounter.IsActive
-                ? PlayerEncounter.EncounteredMobileParty
-                : null;
-            if (party != null && IsRecruitmentPatrol(party))
-                return party;
-
-            return GetActiveRecruitmentPatrols().FirstOrDefault();
-        }
-
+        [System.Diagnostics.Conditional("GWP_DIAGNOSTICS")]
         private void WriteRecruitmentTrace(MobileParty? herald, string action,
             string details)
         {
+#if GWP_DIAGNOSTICS
             if (herald == null) return;
 
             string encounteredId = PlayerEncounter.IsActive
@@ -312,6 +289,7 @@ namespace GreyWardenPolicePurity
                 "; encounterActive=" + PlayerEncounter.IsActive +
                 "; encountered=" + encounteredId +
                 "; conversation=" + conversationId);
+#endif
         }
 
         private bool CanRejoinThroughLord()
@@ -483,24 +461,17 @@ namespace GreyWardenPolicePurity
 
         #endregion
 
-        #region 强制对话拦截（招募使者遭遇玩家时）
+        #region 玩家与悬赏目标卷入同一场战斗
 
         private void OnMapEventStarted(MapEvent mapEvent, PartyBase attackerParty, PartyBase defenderParty)
         {
             if (mapEvent == null) return;
 
-            bool recruitInvolved = false;
             bool playerInvolved = false;
             bool bountyTargetInvolved = false;
-            MobileParty? herald = null;
 
             foreach (PartyBase p in mapEvent.InvolvedParties)
             {
-                if (p.MobileParty != null && IsRecruitmentPatrol(p.MobileParty))
-                {
-                    recruitInvolved = true;
-                    herald = p.MobileParty;
-                }
                 if (p.MobileParty != null && p.MobileParty.IsMainParty) playerInvolved = true;
                 if (p.MobileParty != null && IsTrackingBountyTarget &&
                     string.Equals(p.MobileParty.StringId, _activeBountyTargetId,
@@ -516,28 +487,6 @@ namespace GreyWardenPolicePurity
                     PoliceEnforcementBehavior.RefreshPlayerBountyCaseContact(
                         _escortPolicePartyId, true);
                 }
-            }
-
-            if (!recruitInvolved || !playerInvolved)
-                return;
-
-            WriteRecruitmentTrace(herald, "RECRUIT_MAP_EVENT_STARTED",
-                "herald and player are involved in the same map event");
-
-            // Once the player has answered, this hook must never reopen the
-            // recruitment meeting while the herald is trying to leave.
-            if (_recruitmentOffered || _recruitmentAccepted)
-            {
-                WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_BLOCKED",
-                    "decision state already committed");
-                return;
-            }
-
-            if (PlayerEncounter.IsActive && PlayerEncounter.EncounteredParty != null)
-            {
-                WriteRecruitmentTrace(herald, "RECRUIT_FORCE_MEETING_REQUESTED",
-                    "calling PlayerEncounter.DoMeeting");
-                PlayerEncounter.DoMeeting();
             }
         }
 
