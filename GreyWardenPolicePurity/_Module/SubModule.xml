@@ -2,8 +2,8 @@
 <Module>
 	<Name value="GreyWarden"/>
 	<Id value="GreyWarden"/>
-	<!-- Module revision for GreyWarden v1.4-r16.2. -->
-	<Version value="v1.4.16.2"/>
+	<!-- Module revision for GreyWarden v1.5-r16.2. -->
+	<Version value="v1.5.16.2"/>
 	<DefaultModule value="false"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>

@@ -3,11 +3,11 @@
 > 当前状态：live为诊断开发版，与仓库一致；各功能验收归所属state
 > 最后验收：2026-11-12 用户在 v1.5.7 启动并读档进大地图；正式包基线见下文
 > 覆盖源码：`GreyWardenPolicePurity.csproj` `tools/*.ps1` `tools/New-PlayerPackage.py`
-> 待实测：v1.5.7 的新档、战斗结算、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
+> 待实测：1.5.16.2 冷启动与读旧档；v1.5.7 的新档、战斗结算、使者交涉与港口/岸边借船；百科称呼见家族；辅助模组的一键新档与地图快进
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版（开发修订号仍为 1.4.16.2），包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱及百科称呼](family.md#成员)。Client/Editor 的 SHA-256 同为 `265E344F79026864C5CA9748489DF8E79C45E3541B09222831B8DEC93A5D2870`，live 镜像与安装版兼容预检通过。（依据：构建、部署、哈希与兼容预检 2026-11-12）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。该版包含[守村补兵兼容修复](firesworn-villages.md#信众户与守村队)、[任命加载修复](city-search-support.md#已接住城案的目标留城)、[日结军械摘要修复](firesworn-armory.md#开发版查看与验证)和[灰袍收养家谱及百科称呼](family.md#成员)。Client/Editor DLL 的 SHA-256 同为 `51A6307CE2187291EB93CC8D236785B280B4535C24881CCB553D1ADBF01BFFF2`，仓库与 live `SubModule.xml` 的 SHA-256 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。live 镜像与安装版兼容预检通过。（依据：用户要求本机切换至 1.5、构建、部署与兼容预检 2026-11-14）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 
@@ -53,8 +53,7 @@ v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点�
 - `DeployToLiveModule=false` 时输出隔离到 `bin\<Configuration>\isolated\`；
   命令行显式 `OutputPath` 优先。
 - `GameFolder` = `D:\steam\steamapps\common\Mount & Blade II Bannerlord`。
-- `<Version>` 是模组修订号（`1.4.16.2` ↔ 正式 `v1.4-r16.2`），**不是 Bannerlord 版本
-  依赖闸门**。
+- `<Version>` 设置程序集的模组修订号，当前默认 `1.5.16.2`，与开发模块清单一致。构建不同修订号的玩家 DLL 时，用 `-p:Version=<模组修订号>` 显式指定。
 
 ### 游戏世代检测
 
@@ -179,4 +178,4 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 两个 Release 各有 ZIP 与校验文件。由公开链接重新下载，字节数、哈希、78 项清单、监控标记双编码与 README 均核验通过；DLL 与 `SubModule.xml` 的修订号按目标游戏构建，其余 76 项逐字节相同。两份都包含最新收养称呼，11 月 11 日公开的 1.4 附件缺少「修会同袍」改动。游戏 Modules 目录只留最新 v1.5-r16.2 包对。各版核验证据在 `build-check/package-<version>/`，旧 1.4 的核验分别见 `package-v1.4-r16.2-original/` 和 `package-v1.4-r16.2/published-20261111/`。（依据：发布与公开下载核验 2026-11-12）
 
-Windows PowerShell 5.1 直接加载 `build-check` 目录中的 DLL 曾报 0x80131515，兼容预检使用本机临时隔离目录的构建产物。
+Windows PowerShell 5.1 从仓库的 `build-check` 或 `bin/Release/isolated` 加载 DLL 曾报 `0x80131515`。兼容预检使用本机临时目录中与待验 DLL 哈希一致的副本。
