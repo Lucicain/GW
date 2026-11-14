@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+#if GWP_DIAGNOSTICS
+using System.Runtime.CompilerServices;
+#endif
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
@@ -9,6 +12,7 @@ using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 
@@ -142,12 +146,57 @@ namespace GreyWardenPolicePurity
     [HarmonyPatch]
     internal static class GwpInterventionSelectionPatch
     {
+        internal readonly struct VillageDefense
+        {
+            internal VillageDefense(MapEvent raid, Settlement village)
+            {
+                Village = village;
+                Raider = raid.AttackerSide.LeaderParty;
+#if GWP_DIAGNOSTICS
+                Raid = raid;
+#endif
+            }
+
+            internal Settlement Village { get; }
+            internal PartyBase Raider { get; }
+#if GWP_DIAGNOSTICS
+            internal MapEvent Raid { get; }
+#endif
+        }
+
         private static IEnumerable<MethodBase> TargetMethods()
         {
             yield return AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_join_encounter_help_attackers_on_consequence");
             yield return AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_join_encounter_help_defenders_on_consequence");
         }
-        private static bool Prefix(MethodBase __originalMethod) =>
-            GwpPlayerIntervention.Select(__originalMethod.Name.Contains("attackers") ? BattleSideEnum.Attacker : BattleSideEnum.Defender);
+        private static bool Prefix(MethodBase __originalMethod, out VillageDefense? __state)
+        {
+            __state = null;
+            BattleSideEnum side = __originalMethod.Name.Contains("attackers") ? BattleSideEnum.Attacker : BattleSideEnum.Defender;
+            if (!GwpPlayerIntervention.Select(side)) return false;
+
+            // Snapshot the original defense before native finalizes the raid and sets up a new encounter.
+            if (side == BattleSideEnum.Defender && PlayerEncounter.EncounteredBattle is { IsFinalized: false } raid &&
+                PlayerBehaviorMonitor.RaidedVillage(raid) is { } village)
+                __state = new VillageDefense(raid, village);
+            return true;
+        }
+
+        private static void Postfix(VillageDefense? __state, bool __runOriginal)
+        {
+            if (!__runOriginal || __state is not { } defense) return;
+            MapEventSide? playerSide = PartyBase.MainParty.MapEventSide;
+            if (playerSide == null || playerSide.OtherSide.LeaderParty != defense.Raider) return;
+
+            Campaign.Current.GetCampaignBehavior<PlayerBehaviorMonitor>().RecordVillageDefense(playerSide, defense.Village);
+#if GWP_DIAGNOSTICS
+            MapEvent battle = playerSide.MapEvent;
+            GwpAiDiagnostics.WritePlayerJusticeState("VILLAGE_DEFENSE_JOINED",
+                "village=" + defense.Village.StringId + "; raidRef=" + RuntimeHelpers.GetHashCode(defense.Raid) +
+                "; battleRef=" + RuntimeHelpers.GetHashCode(battle) + "; battleStartMs=" + (long)battle.BattleStartTime.ToMilliseconds +
+                "; type=" + battle.EventType + "; playerSide=" + playerSide.MissionSide +
+                "; enemy=" + defense.Raider.MapFaction?.StringId);
+#endif
+        }
     }
 }

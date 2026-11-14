@@ -180,6 +180,14 @@ class ChangeImpactTests(unittest.TestCase):
         changed.append("GreyWardenPolicePurity::GwpCommon::IsGreyWardenHero")
         self.assertIn(("灰袍身份", "GwpCommon.IsGreyWarden*"), self.impact.owner_hits(changed, owners))
 
+    def test_owner_can_use_any_type_name(self):
+        owner = "PlayerBehaviorMonitor.RaidedVillage / PlayerBehaviorMonitor.DefendedVillage"
+        owners = [("玩家护村身份", r"x", "PlayerBehaviorMonitor.cs", owner)]
+        changed = ["GreyWardenPolicePurity::PlayerBehaviorMonitor::DefendedVillage",
+                   "GreyWardenPolicePurity::PlayerBehaviorMonitor::RecordVillageDefense"]
+        self.assertEqual({("玩家护村身份", owner): {"DefendedVillage"}},
+                         self.impact.owner_hits(changed, owners))
+
 
 class DiagnosticStubTests(unittest.TestCase):
     def test_player_branch_void_stub_needs_conditional(self):

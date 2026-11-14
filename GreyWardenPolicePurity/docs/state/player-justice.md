@@ -1,9 +1,9 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：四类主动参战改为可取消准备、确认后走原版选边转场，已部署待实测；既有名牌/接案保持
+> 当前状态：可取消的参战准备，以及护村转场后的声望和调停均已部署待实测
 > 最后验收：2026-10-17 用户确认当前执勤旗构建可用（`f00ca9b`，FC098662开发DLL，后续仅退休诊断）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBehaviorPool.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
-> 待实测：招募使者移动中主动接触、接受或拒绝后返城、在途存读档；四类现场选边后返回/不介入不锁进战斗；确认进攻/派兵及劫掠转场，帮攻守两侧；办案目标及挂靠军团名牌结案后恢复；自选案件接单/目标变化/交差，界面见事务界面
+> 待实测：护村转场后个人击倒累计、调停登记和战斗轮次间存读档；招募使者移动中主动接触、接受或拒绝后返城、在途存读档；四类现场选边后返回/不介入，确认进攻/派兵及两侧结算；办案名牌恢复与自选案件交差
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
@@ -51,7 +51,11 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 | 村庄劫掠且防守首队为聚落 | 救援村庄，或协助劫掠 |
 | 灰袍执法队与其实际承办目标正在交战 | 协助灰袍，或帮助罪犯；文案按灰袍实际在攻/守哪侧变化 |
 
-沿既有TryBuildForceJoinTexts识别上述四类场面，扩展原版选边选项的外交显示资格，保留原版健康、海陆及荣誉禁用条件。选边仅记录意向并显示双方/人数准备菜单；进攻、派兵进攻、返回重选、不介入四项可用性按当前事件/健康/士气/军团规则检查。准备时未加入实际MapEvent，不转移兵物或记战果；返回重选原版选边菜单，不介入按原版Finish并停止移动。准备不加载Encounter覆盖层，因这时玩家尚无MapEvent。明确确认出战时重新验证同一有效事件和原版条件，先记录原有声望结算基线，再调用原版帮助攻/守方consequence，劫掠转野战及兵员迁移由原版处理；若仍进入普通encounter，再调用原版Attack/OrderAttack。原版转入劫掠/军团等待等其他菜单时沿原流程，不强制打开错误战斗场景。进入真实战斗后撤退资格与代价仍由原版决定。（依据：用户批准方案、原版C#反编译、实现与离线回归2026-10-21）
+沿既有 `TryBuildForceJoinTexts` 识别上述四类场面，扩展原版选边选项的外交显示资格，保留原版健康、海陆及荣誉禁用条件。选边仅显示双方和人数，确认进攻或派兵才调用原版帮助攻/守方及 `Attack` / `OrderAttack`。返回重选回到原版选边，不介入按原版 `Finish` 并停止移动。原版转入其他菜单时沿原流程，参战后的撤退资格与代价由原版决定。（依据：用户批准方案、原版 C# 反编译与离线回归 2026-10-21）
+
+护村按[原版帮助守方的转场](../vanilla/village-raids.md#玩家援救村庄的转场)记录原村庄和实际参战侧，在开打宣战前由 `PlayerBehaviorMonitor.DefendedVillage` 供[调停](warden-mediation.md#调停申请替灰袍打出来的战争)读取。胜利结算用同一份记录，优先于普通旧案击倒结算，释放或俘虏原劫掠领主仍按原选边计。参战侧引用和击倒统计起点随本场存档，战斗结束清掉该场记录。旧档没有护村记录时，从下一次选择护村开始记录。（依据：两场实机日志、v1.5.7 战斗及轮次间存读链复核 2026-11-14）
+
+旧构建 `rgl_log_36972.txt` 两次在厄毗诺萨确认护村（22:02、22:04），战斗均报告 `DefenderVictory`。第一场记下开战扣关系，调停登记与灰袍声望变化均未出现；第二场原 `Raid` 在 22:04:37 确认时已结束并先结算民兵伤亡。旧日志未记录个人击倒数和声望余数，无法还原两场具体应得点数。新版用同一场战斗的 `VILLAGE_DEFENSE_JOINED` 与 `VILLAGE_DEFENSE_REPUTATION_SETTLED` 核对原事件、转场、新战斗结果与实际累计，用户确认后退休这两条诊断。
 
 ### 原版参战与离开的依据
 
@@ -62,8 +66,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 - 原版join_encounter的“不介入”选项在选边前可用（军团非领队另走离军团选项）；离开调用Finish并停止主队移动。
 - 普通原版帮助攻/守方也会直接JoinBattle；JoinBattleInternal写入实际MapEventSide、记录IsJoinedBattle并收集附近援军。它不是只记录玩家意向。
 - MapEventHelper.CanMainPartyLeaveBattleCommonCondition在玩家为防守方时通常返回false；例外是围城守方且玩家已不在聚落。encounter普通离开选项还叠加军团、出击及海袭判断；陆地村庄劫掠在LeaveOptionVisibilityCheckForNavalRaid中同样不显示普通离开。不能只把模组调用换成原版帮助守方就承诺反悔问题消失。
-- 原版帮助防守村庄时，保存双方原名单及劫掠阶段，结束原劫掠事件并重启野战遭遇；是否等待中被打断/是否已进掠夺阶段决定新遭遇攻守。帮助劫掠方且曾进掠夺阶段也有专门转场；原版不是对所有场面一律JoinBattle。新实现调用这些原版分支。
-- 原版进攻和派兵进攻均在实际出战链调用BeHostileAction.ApplyEncounterHostileAction。预览、取消与出战应分清时刻，既有调停与关系恢复仍归所属业务。
+- 护村转场与出战宣战见[烧村手册](../vanilla/village-raids.md#玩家援救村庄的转场)。
 - Finish会经FinalizeBattle/LeaveBattle收尾；原事件已出结果、外交结束或特定劫掠状态会FinalizeEvent，LeaveBattle在玩家已成首队时也可能结束事件。直接全局放行“离开”或手动清MapEventSide，不能保证原NPC战斗不被打断。
 
 以上为本机v1.4.8托管链结论，不是用户现场已完整重放。原版对应源码（EncounterGameMenuBehavior、PlayerEncounter、MenuHelper、MapEventHelper）在原版源码库，过程与行号写journal。（依据：C#反编译2026-10-21）

@@ -39,7 +39,7 @@ SYMBOL_KINDS = ("method", "property", "field", "constant", "function",
 TYPE_KINDS = ("class", "struct", "enum", "interface")
 DEPENDENCY_EDGES =("calls", "references", "instantiates", "extends", "implements")
 RULE_WIDTH = 160
-OWNER_RE = re.compile(r"\b(Gwp\w+|Police\w+|GreyWarden\w+)(?:\.(\w+\*?))?")
+OWNER_RE = re.compile(r"\b([A-Z]\w*)(?:\.(\w+\*?))?")
 
 
 def load(name: str):

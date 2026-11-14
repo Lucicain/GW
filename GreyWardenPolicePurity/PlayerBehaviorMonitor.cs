@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if GWP_DIAGNOSTICS
+using System.Runtime.CompilerServices;
+#endif
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
@@ -22,10 +25,14 @@ namespace GreyWardenPolicePurity
     public class PlayerBehaviorMonitor : CampaignBehaviorBase
     {
 
-        // 运行时（无需持久化）：记录战斗开始时敌方部队总人数，用于声望缩放计算
+        // 记录战斗开始时敌方部队总人数，用于声望缩放计算。
         private int _pendingEnemyCount = 0;
         private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
         private int _pendingPlayerKillBaseline = -1;
+        // 原版允许在野战的两轮之间存档；记录实际参战侧和本场击倒统计起点。
+        private MapEventSide? _villageDefenseSide;
+        private Settlement? _defendedVillage;
+        private int _villageDefenseKillBaseline = -1;
 
         public override void RegisterEvents()
         {
@@ -44,7 +51,16 @@ namespace GreyWardenPolicePurity
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
         }
 
-        public override void SyncData(IDataStore dataStore) => PlayerBehaviorPool.SyncData(dataStore);
+        public override void SyncData(IDataStore dataStore)
+        {
+            PlayerBehaviorPool.SyncData(dataStore);
+            dataStore.SyncData("gwp_village_defense_side", ref _villageDefenseSide);
+            if (_villageDefenseSide == null) return;
+            dataStore.SyncData("gwp_village_defense_village", ref _defendedVillage);
+            dataStore.SyncData("gwp_village_defense_kill_baseline", ref _villageDefenseKillBaseline);
+            dataStore.SyncData("gwp_village_defense_enemy_count", ref _pendingEnemyCount);
+            dataStore.SyncData("gwp_village_defense_police_support", ref _pendingPoliceCrimeSupport);
+        }
 
         #region 犯罪监听
 
@@ -182,11 +198,26 @@ namespace GreyWardenPolicePurity
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            if (mapEvent == null || !mapEvent.HasWinner) return;
+            if (mapEvent == null) return;
+            MapEventSide? winner = mapEvent.Winner;
+            Settlement? defendedVillage = winner != null ? DefendedVillage(winner) : null;
+            bool recordedDefense = _villageDefenseSide?.MapEvent == mapEvent;
+            int playerKillBaseline = recordedDefense ? _villageDefenseKillBaseline : _pendingPlayerKillBaseline;
+            if (recordedDefense)
+            {
+                _villageDefenseSide = null;
+                _defendedVillage = null;
+                _villageDefenseKillBaseline = -1;
+            }
+            if (winner == null)
+            {
+                if (recordedDefense) ResetPendingBattle();
+                return;
+            }
 
             bool playerWon = false;
             bool playerInvolved = false;
-            foreach (var p in mapEvent.Winner.Parties)
+            foreach (var p in winner.Parties)
             {
                 if (p.Party?.IsMobile == true && p.Party.MobileParty.IsMainParty)
                 { playerWon = true; break; }
@@ -205,41 +236,30 @@ namespace GreyWardenPolicePurity
 
             if (!playerWon)
             {
-                if (playerInvolved)
-                {
-                    _pendingEnemyCount = 0;
-                    _pendingPoliceCrimeSupport = 0;
-                    _pendingPlayerKillBaseline = -1;
-                }
+                if (recordedDefense || playerInvolved) ResetPendingBattle();
                 return;
             }
 
-            int playerKillCount = GetPlayerKillCountSinceBattleStart();
+            int playerKillCount = GetPlayerKillCountSinceBattleStart(playerKillBaseline);
 
             if (TryResolvePendingPoliceCriminalReputation(mapEvent, playerKillCount))
             {
-                _pendingEnemyCount = 0;
-                _pendingPoliceCrimeSupport = 0;
-                _pendingPlayerKillBaseline = -1;
+                ResetPendingBattle();
                 return;
             }
 
             if (TryApplyPoliceBattlePenalty(mapEvent))
             {
-                _pendingEnemyCount = 0;
-                _pendingPoliceCrimeSupport = 0;
-                _pendingPlayerKillBaseline = -1;
+                ResetPendingBattle();
                 return;
             }
 
             // ★ R10：玩家亲手击败仍在案的罪犯部队也会获得声望。
             // 与剿匪/救援共用同一把"亲手击倒十人得一点"的累计器，并与上面的
             // 协助灰袍抓捕路径互斥，避免同一场战斗被重复结算。
-            if (TryResolveCaseCriminalReputation(mapEvent, playerKillCount))
+            if (defendedVillage == null && TryResolveCaseCriminalReputation(mapEvent, playerKillCount))
             {
-                _pendingEnemyCount = 0;
-                _pendingPoliceCrimeSupport = 0;
-                _pendingPlayerKillBaseline = -1;
+                ResetPendingBattle();
                 return;
             }
 
@@ -265,23 +285,26 @@ namespace GreyWardenPolicePurity
                 if (mp.PartyComponent is CaravanPartyComponent) defenderIsCaravan = true;
             }
 
-            // ── 声望缩放：按敌方战前人数向上取整（1~10人=+1，11~20人=+2……）────────
-            // 额外场景：玩家以防守方身份击退非法劫掠村庄的部队（非盗贼势力的lord也算）
-            // 此时防守方=定居点（非移动部队），enemyIsBandit/defenderIsVillager/defenderIsCaravan 均为 false，
-            // 需单独检查：IsRaid && 胜者为防守方
-            bool defenderIsVillageRaid = mapEvent.IsRaid && mapEvent.Winner == mapEvent.DefenderSide;
-
-            bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defenderIsVillageRaid;
+            bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defendedVillage != null;
             if (anyGoodDeed)
             {
                 // 正义战斗中的个人击杀跨战斗累计；每满十人结算一点声望，余数随存档保留。
                 int repGain = PlayerBehaviorPool.AccumulateGoodDeedKills(playerKillCount);
+#if GWP_DIAGNOSTICS
+                if (defendedVillage != null)
+                {
+                    GwpAiDiagnostics.WritePlayerJusticeState("VILLAGE_DEFENSE_REPUTATION_SETTLED",
+                        "village=" + defendedVillage.StringId + "; battleRef=" + RuntimeHelpers.GetHashCode(mapEvent) +
+                        "; battleStartMs=" + (long)mapEvent.BattleStartTime.ToMilliseconds + "; playerKnockouts=" + playerKillCount +
+                        "; reputationGain=" + repGain + "; remainder=" + PlayerBehaviorPool.GoodDeedKillProgress);
+                }
+#endif
 
                 if (repGain > 0)
                 {
                     PlayerBehaviorPool.ChangeReputation(repGain);
 
-                    string deedType = defenderIsVillageRaid ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
+                    string deedType = defendedVillage != null ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
                                     : defenderIsCaravan     ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_015)
                                     : defenderIsVillager    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_016)
                                     : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_017);
@@ -353,9 +376,7 @@ namespace GreyWardenPolicePurity
                 }
             }
 
-            _pendingEnemyCount = 0;
-            _pendingPoliceCrimeSupport = 0;
-            _pendingPlayerKillBaseline = -1;
+            ResetPendingBattle();
         }
 
         #endregion
@@ -363,6 +384,26 @@ namespace GreyWardenPolicePurity
         #region 强制介入 GameMenu 选项
 
         private void OnSessionLaunched(CampaignGameStarter starter) => GwpPlayerIntervention.Register(starter);
+
+        internal static Settlement? RaidedVillage(MapEvent battle) =>
+            battle.IsRaid && battle.MapEventSettlement is { IsVillage: true } village ? village : null;
+
+        internal Settlement? DefendedVillage(MapEventSide side)
+        {
+            MapEvent battle = side.MapEvent;
+            if (_villageDefenseSide?.MapEvent == battle)
+                return _villageDefenseSide == side ? _defendedVillage : null;
+
+            return side == battle.DefenderSide ? RaidedVillage(battle) : null;
+        }
+
+        internal void RecordVillageDefense(MapEventSide side, Settlement village)
+        {
+            if (_villageDefenseSide == side) return;
+            _villageDefenseSide = side;
+            _defendedVillage = village;
+            _villageDefenseKillBaseline = GetCurrentPlayerKillTotal();
+        }
 
         internal void PrepareIntervention(MapEvent battle, BattleSideEnum side)
         {
@@ -395,8 +436,7 @@ namespace GreyWardenPolicePurity
                 .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsCaravan);
             bool defenderIsVillager = battle.DefenderSide.Parties
                 .Any(p => p.Party?.IsMobile == true && p.Party.MobileParty.IsVillager);
-            bool isVillageRaid = battle.IsRaid
-                && battle.GetLeaderParty(BattleSideEnum.Defender)?.IsSettlement == true;
+            bool isVillageRaid = RaidedVillage(battle) != null;
 
             if (!defenderIsCaravan && !defenderIsVillager && !isVillageRaid)
                 return false;
@@ -633,13 +673,20 @@ namespace GreyWardenPolicePurity
             _pendingPlayerKillBaseline = GetCurrentPlayerKillTotal();
         }
 
-        private int GetPlayerKillCountSinceBattleStart()
+        private void ResetPendingBattle()
+        {
+            _pendingEnemyCount = 0;
+            _pendingPoliceCrimeSupport = 0;
+            _pendingPlayerKillBaseline = -1;
+        }
+
+        private static int GetPlayerKillCountSinceBattleStart(int baseline)
         {
             int current = GetCurrentPlayerKillTotal();
-            if (_pendingPlayerKillBaseline < 0 || current < _pendingPlayerKillBaseline)
+            if (baseline < 0 || current < baseline)
                 return 0;
 
-            return current - _pendingPlayerKillBaseline;
+            return current - baseline;
         }
 
         private static int GetCurrentPlayerKillTotal()

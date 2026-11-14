@@ -221,6 +221,8 @@ OWNERS = [
      "GwpFaithVillagers.cs", "GwpFireswornBehavior.IsFaithVillager / GwpFaithVillagers.cs"),
     ("玩家案件委派", r"\bPlayerBountyBehavior\.(?:IsBountyCaseHeldByPlayer|IsBountyReservedTarget)\s*\(|\??\.(?:HasCommissionAuthority|IsActiveBountyTarget|HoldsAtonementCase|IsActiveAtonementTarget|ReservesAtonementTarget)\s*\(",
      "GwpPlayerCaseAssignment.cs", "GwpPlayerCaseAssignment"),
+    ("玩家护村身份", r"\.IsRaid\s*&&\s*\w+\.MapEventSettlement",
+     "PlayerBehaviorMonitor.cs", "PlayerBehaviorMonitor.RaidedVillage / PlayerBehaviorMonitor.DefendedVillage"),
     ("讲和", r"\b(?:FactionManager\.SetNeutral|MakePeaceAction\.Apply)\s*\(", "GwpPeace.cs", "GwpPeace.Make / EndPoliceWar"),
     ("临时队唯一编号", r"\bFindNextUniqueStringId\s*<\s*MobileParty\s*>\s*\(", "GwpPartyIdentity.cs", "GwpPartyIdentity.Next"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),

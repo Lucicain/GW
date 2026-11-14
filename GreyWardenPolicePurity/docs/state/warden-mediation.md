@@ -1,9 +1,9 @@
 # 灰袍出面调停与战后讲和
 
-> 当前状态：所有讲和收归 `GwpPeace`、战后结算提前中立的空引用已修复，开战扣的关系当场还回；均经用户实测与日志确认（2026-10-14）
+> 当前状态：护村转场纳入调停登记，已部署待实测。讲和时序及开战关系恢复经用户与日志确认（2026-10-14）
 > 最后验收：`c576fd7`（推迟讲和与开战关系恢复，用户实测与日志确认 2026-10-14）
 > 覆盖源码：`PoliceAntiWarDeclaration.cs` `GwpPeace.cs`
-> 待实测：无
+> 待实测：原本中立的劫掠势力因玩家护村开战时登记调停、还回开战扣的关系，战后找灰袍领主办理；已交战的势力继续沿原外交
 
 待讲和势力的只读列表接入[我的事务](affairs-interface.md)独立“战后讲和”，与办案支援分开；仍从现有LiveMediationFactions核对，不新增资格或远程讲和操作。（依据：用户反馈、源码与实机日志2026-10-18）
 
@@ -16,16 +16,14 @@
 玩家战斗没收尾时（战后界面里找灰袍，或送信队此时送到）回话照常说"已了结"，讲和按下文「讲和的唯一入口与时序」推迟。
 
 **只登记“替灰袍打的”战争**，满足其一：
-1. 制止正在发生的案件：本场是村庄劫掠，或玩家这一侧有村民队/商队；
+1. 制止正在发生的案件：玩家在[护村一侧](player-justice.md#现场介入正在发生的犯罪与执法)，或同侧有村民队/商队；
 2. 玩家这一侧有灰袍部队（加入灰袍的仗）；
 3. 对面是玩家自己承办的普通悬赏或赎罪目标（`GwpPlayerCaseAssignment.IsReservedTarget`统一口径；赎罪交差的主动讲和见[赎罪](atonement.md)）。
 
 登记入口：
 
-- **原版“玩家敌对”宣战**（`DeclareWarDetail.CausedByPlayerHostility`）。原版只在玩家本人是
-  进攻方时宣这种战（`BeHostileAction.ApplyEncounterHostileAction`，加入一场已在进行的仗后
-  点“进攻”也走这里）。
-  - 宣战当刻玩家已在战场一侧（`MobileParty.MainParty.MapEvent`）→ **当场判定并登记**。
+- **原版“玩家敌对”宣战**（`DeclareWarDetail.CausedByPlayerHostility`）。加入已有战斗后点“进攻”或“派兵进攻”也可能触发，见[出战宣战](../vanilla/village-raids.md#玩家援救村庄的转场)。
+  - 宣战当刻玩家已在战场一侧（`MobileParty.MainParty.MapEvent`）→ **当场判定并登记**。护村转场由 `PlayerBehaviorMonitor.DefendedVillage` 提供原选边，沿现有登记和开战关系恢复处理。
   - 玩家在地图上主动开打（宣战在前、战斗在后）→ 记为待定，玩家这场战斗
     `MapEventStarted` 时双方到齐再判。
   - 战斗结束时仍未判定的，作最后一次兜底判定，并清除待定标记。

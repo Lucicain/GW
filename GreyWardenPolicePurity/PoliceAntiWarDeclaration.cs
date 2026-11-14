@@ -137,7 +137,7 @@ namespace GreyWardenPolicePurity
             MapEventSide? playerSide = FindPlayerSide(mapEvent);
             if (playerSide == null) return false;
 
-            bool stoppedCrimeInProgress = StoppedCrimeInProgress(mapEvent, playerSide);
+            bool stoppedCrimeInProgress = StoppedCrimeInProgress(playerSide);
             bool wardenOnPlayerSide = playerSide.Parties.Any(entry =>
                 entry.Party?.IsMobile == true && GwpCommon.IsGreyWardenEnforcementParty(entry.Party.MobileParty));
             bool playerHeldTheCase = playerSide.OtherSide.Parties.Any(entry =>
@@ -275,12 +275,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 这一仗本身就是三类案件正在发生：要么是一场对村庄的劫掠，要么玩家这一侧
-        /// 站着正在挨打的村民或商队。只看本场，不翻旧账——旧案另有承办流程。
+        /// 玩家在本场救援村庄，或与正在挨打的村民、商队同侧。旧案另有承办流程。
         /// </summary>
-        private static bool StoppedCrimeInProgress(MapEvent mapEvent, MapEventSide playerSide)
+        private static bool StoppedCrimeInProgress(MapEventSide playerSide)
         {
-            if (mapEvent.IsRaid && mapEvent.MapEventSettlement?.IsVillage == true) return true;
+            if (Campaign.Current.GetCampaignBehavior<PlayerBehaviorMonitor>().DefendedVillage(playerSide) != null) return true;
             return playerSide.Parties.Any(entry =>
                 entry.Party?.IsMobile == true &&
                 (entry.Party.MobileParty.IsVillager || entry.Party.MobileParty.IsCaravan));

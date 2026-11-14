@@ -1,10 +1,11 @@
 # 烧村：AI 选不选这个村、烧村怎么进行
 
-> 游戏版本：v1.4.8
+> 游戏版本：烧村评分与过程 v1.4.8，玩家介入与转场 v1.5.7
 > 源码：`TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultTargetScoreCalculatingModel.cs`（`GetTargetScoreForFaction`）、
 > `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/RaidEventComponent.cs`、
 > `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CharacterRelationCampaignBehavior.cs`
-> 模组接入：[火誓者村庄](../state/firesworn-villages.md)「信众户与守村队」、[火誓者队伍](../state/firesworn-parties.md)、[立案](../state/crime-intake.md#信众村烧村评分)
+> 玩家介入源码：`TaleWorlds.CampaignSystem.CampaignBehaviors/EncounterGameMenuBehavior.cs` 的 `game_menu_join_encounter_help_defenders_on_consequence` 与 `game_menu_encounter_on_init`，`PlayerEncounter.RestartPlayerEncounter`、`StartBattleInternal`，`FieldBattleEventComponent.UpdateMapEventSettlement`，`Helpers/MenuHelper.cs` 的 `EncounterAttackConsequence`、`EncounterOrderAttack`，`BeHostileAction.ApplyEncounterHostileAction`。
+> 模组接入：[火誓者村庄](../state/firesworn-villages.md)「信众户与守村队」、[火誓者队伍](../state/firesworn-parties.md)、[立案](../state/crime-intake.md#信众村烧村评分)、[玩家现场介入](../state/player-justice.md#现场介入正在发生的犯罪与执法)
 
 ## 怎么运作
 
@@ -27,6 +28,15 @@
 **5. 烧村过程。** `RaidEventComponent` 建立烧村事件时，村子的原版民兵队加入守方，先打一场；守方还有人时不开始烧。
 守方没人以后每小时扣村子耐久（具体公式未查），每扣一笔，户数减 `扣的耐久 × 0.5 × 当前户数`。
 耐久归零村子变成「已烧毁」；守方打赢则恢复正常。烧完后 `CharacterRelationCampaignBehavior` 按 `RaidDamage` 扣进攻方与村里要人的关系。
+
+## 玩家援救村庄的转场
+
+1. 玩家在 `join_encounter` 选择帮助守方时，原版先记下劫掠者首队、双方要转移的移动部队及原劫掠是否进入掠夺阶段，再 `FinalizeEvent` 结束原 `Raid`。原事件的 `MapEventEnded` 在新遭遇创建前派发，报告的是原事件的结算。
+2. `RestartPlayerEncounter` 先接收防守方，再接收进攻方。若玩家等待被打断或劫掠尚未进入掠夺阶段，新遭遇将玩家列为防守方。已经进入掠夺阶段且玩家来援时，新遭遇将玩家列为进攻方。`encounter` 初始化启动新战斗，普通两支移动队走 `FieldBattleEventComponent`。随后原版恢复两侧移动部队，并转交 `WasEverInLootingPhase`。
+3. 新野战可以根据位置选一座附近的村庄作为 `MapEventSettlement`，由此进入 `land_raid` 场景。战斗类型仍由 `FieldBattleEventComponent.GetBattleType` 决定。靠近村庄的普通野战与救援劫掠后的野战都可使用该场景。
+4. 点击进攻或派兵进攻时，`MenuHelper` 可调用 `BeHostileAction.ApplyEncounterHostileAction`。对未与玩家势力交战且符合原版条件的一方，原版在同一调用里先扣关系，再以 `CausedByPlayerHostility` 宣战。战前已经交战时没有这次新宣战。
+5. 战后玩家可以在 `MapEventEnded` 前选择俘虏或释放败方领主。释放可走 `MakeHeroFugitiveAction`，领主与原部队的关联会改变。战后回查领主目前带的队伍，无法恢复出战时选择援救哪个村。
+6. 战斗若还有下一轮，`FieldBattleEventComponent.OnPlayerEncounterContinueBattle` 在同一 `MapEvent` 上结算本轮并重置胜方。回到地图菜单后，`MapScreen` 的 `IMapStateHandler.AfterTick` 可以发出快速存档；`MapState` 在判断菜单状态前处理存档队列。`SandBoxGameManager` 恢复遭遇菜单并调用 `PlayerEncounter.OnLoad`，同版野战继续使用存档里的 `MapEvent` 和两侧。
 
 ## 容易想错的地方
 
