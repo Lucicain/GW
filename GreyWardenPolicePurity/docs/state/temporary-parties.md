@@ -17,7 +17,7 @@
 
 | 临时队 | 出借方 | 在海上借不到时 |
 |---|---|---|
-| 随行练兵队 `gwp_cohort_` | 练兵官 | 不建练兵队，订单暂用练兵官名册 |
+| 随行练兵队 `gwp_cohort_` | 练兵官 | 不建练兵队，练兵官照样练，订单等上岸再交 |
 | 立即追截队（`TrySpawnImmediateCaseInterceptor`） | 来源领主 `sourceParty` | 不派 |
 | 延迟纠察队 `gwp_enf_delay_` | 任务领主 `sourcePoliceParty`，没有则最近灰袍领主 | 在城镇出生，不涉及 |
 | 纠察队 `gwp_patrol_`、招募使者队 `gwp_recruit_` | 最近的、在陆上、有空闲船的灰袍领主 | 在城镇出生，不涉及 |

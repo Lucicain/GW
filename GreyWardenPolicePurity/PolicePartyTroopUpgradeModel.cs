@@ -1,10 +1,7 @@
 using System;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 
 namespace GreyWardenPolicePurity
@@ -24,7 +21,10 @@ namespace GreyWardenPolicePurity
     {
         public override ExplainedNumber GetGoldCostForUpgrade(PartyBase party,
             CharacterObject characterObject, CharacterObject upgradeTarget) =>
-            GwpPlayerWardenTroops.IsPlayerWardenTroop(party, characterObject)
+            GwpPlayerWardenTroops.IsPlayerWardenTroop(party, characterObject) ||
+            // 练兵官替玩家订单练兵不自掏升级费：订单已由玩家付过声望。
+            // （依据：订单原设计练兵队无主、升级免费；2026-11-15 改在练兵官手上练后沿用）
+            GreyWardenTroopRequestBehavior.TrainerBranchServesOrder(party, characterObject, upgradeTarget) == true
                 ? new ExplainedNumber(0f)
                 : base.GetGoldCostForUpgrade(party, characterObject, upgradeTarget);
 
@@ -46,10 +46,10 @@ namespace GreyWardenPolicePurity
             CharacterObject troop,
             int upgradeTargetIndex)
         {
-            // 随行练兵队只替玩家订单练兵：通往订单兵种的分支独占。
+            // 练兵官替玩家订单练兵时，能练成在练兵种的兵只走通往它的分支。
             if (upgradeTargetIndex >= 0 &&
                 upgradeTargetIndex < troop.UpgradeTargets.Length &&
-                GreyWardenTroopRequestBehavior.CohortBranchServesOrder(party,
+                GreyWardenTroopRequestBehavior.TrainerBranchServesOrder(party,
                     troop, troop.UpgradeTargets[upgradeTargetIndex]) is bool serves)
                 return serves ? 1f : 0f;
 
@@ -78,18 +78,6 @@ namespace GreyWardenPolicePurity
             return leader != null &&
                    leader.PreferredUpgradeFormation !=
                        FormationClass.NumberOfAllFormations;
-        }
-    }
-
-    [HarmonyPatch(typeof(PartyUpgraderCampaignBehavior), "GetPossibleUpgradeTargets")]
-    internal static class GwpTroopOrderUpgradeReservePatch
-    {
-        private static void Prefix(PartyBase party, ref TroopRosterElement element)
-        {
-            // The native method uses this copy to cap how many healthy troops it can upgrade.
-            int healthy = element.Number - element.WoundedNumber;
-            int available = GreyWardenTroopRequestBehavior.AvailableForOrderUpgrade(party, element.Character, healthy);
-            element.Number -= healthy - available;
         }
     }
 }

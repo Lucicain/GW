@@ -27,7 +27,6 @@ namespace GreyWardenPolicePurity
         internal static class TroopRequest
         {
             public const float PlayerOrderXpIntervalHours = 6f;
-            public const int PlayerOrderXpPerTroop = 1000;
             /// <summary>
             /// 每个训练间隔里最多把多少名老兵降回订单要的低级兵。升级树是单向的，
             /// 最低级兵没有任何上游，光靠喂经验永远凑不出来；只能从下游降回去。
@@ -58,7 +57,6 @@ namespace GreyWardenPolicePurity
 
         internal static class Training
         {
-            public const float ExchangeStayHours = 2f;
             public const float MovementIntentHours = 8f;
 
             /// <summary>

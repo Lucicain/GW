@@ -4,7 +4,6 @@ using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 
@@ -99,27 +98,6 @@ namespace GreyWardenPolicePurity
                 "; cavalry=" + cavalry + "; infantry=" + infantry + "; archers=" + archers +
                 "; shares=" + GwpTuning.Training.CavalryShare + ":" +
                 GwpTuning.Training.InfantryShare + ":" + GwpTuning.Training.ArcherShare);
-        }
-
-        internal static Settlement? FindRendezvousSettlement(MobileParty trainer,
-            MobileParty target)
-        {
-            Vec2 left = trainer.GetPosition2D;
-            Vec2 right = target.GetPosition2D;
-            var midpoint = new Vec2((left.x + right.x) * 0.5f,
-                (left.y + right.y) * 0.5f);
-            Clan? policeClan = PoliceStats.GetPoliceClan();
-
-            return Settlement.All
-                .Where(static settlement => settlement.IsTown || settlement.IsCastle)
-                .Where(static settlement => !settlement.IsUnderSiege)
-                .Where(settlement => policeClan == null || settlement.MapFaction == null ||
-                    !FactionManager.IsAtWarAgainstFaction(policeClan,
-                        settlement.MapFaction))
-                .OrderBy(settlement => settlement.GetPosition2D.Distance(midpoint))
-                .ThenBy(settlement => settlement.StringId,
-                    StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
         }
 
     }

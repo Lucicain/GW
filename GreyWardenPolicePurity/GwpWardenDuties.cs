@@ -34,8 +34,6 @@ namespace GreyWardenPolicePurity
         IssueReserve,
         /// <summary>承办普通案件。</summary>
         OrdinaryCase,
-        /// <summary>玩家练兵订单挑选临时换兵来源；不是自动运兵占用。</summary>
-        StockExchange,
     }
 
     /// <summary>
@@ -119,13 +117,6 @@ namespace GreyWardenPolicePurity
                     WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
                     WardenDuty.Assistance, WardenDuty.Reconstruction, WardenDuty.Issue,
                     WardenDuty.Duel, WardenDuty.PlayerEscort, WardenDuty.PlayerCase,
-                },
-                [WardenDuty.StockExchange] = new[]
-                {
-                    WardenDuty.PlayerRequest, WardenDuty.PlayerTroopOrder, WardenDuty.VillageRelief,
-                    WardenDuty.PlayerEscort, WardenDuty.PlayerCase, WardenDuty.Assistance,
-                    WardenDuty.Reconstruction, WardenDuty.Issue, WardenDuty.OrdinaryCase,
-                    WardenDuty.Duel,
                 },
                 [WardenDuty.OrdinaryCase] = new[]
                 {
