@@ -14,7 +14,7 @@ namespace GreyWardenPolicePurity
         Report = 0,
         /// <summary>把求援的话带到灰袍手里。到达之后支援才成立。</summary>
         Support = 1,
-        /// <summary>把练兵订单和预付的订金带到灰袍手里。到达之后订单才成立，
+        /// <summary>把练兵订单带到灰袍手里。到达之后订单才成立，
         /// 练好的兵仍由灰袍领主亲自送来——使者不运兵。</summary>
         TroopOrder = 2,
         /// <summary>请灰袍出面，把玩家替他们打出来的那些战争一并了结。空手去空手回。</summary>
@@ -58,10 +58,10 @@ namespace GreyWardenPolicePurity
         internal string SupplyTownId = string.Empty;
         internal bool HandoverPending = false;
 
-        /// <summary>练兵订单随队带走的单据：兵种、数量、玩家已预付的订金。</summary>
+        /// <summary>练兵订单随队带走的单据。金币字段只用于完成旧档中已预付的使者订单。</summary>
         internal string OrderTroopId = string.Empty;
         internal int OrderCount;
-        internal int OrderPrice;
+        internal int LegacyOrderGold;
         internal string FiefSettlementId = string.Empty;
         internal double FiefCaptureHours;
 
@@ -71,7 +71,7 @@ namespace GreyWardenPolicePurity
             DispatchedHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             LastProgressHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             NextTownBusinessHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture), CargoState, CaseHeroId,
-            OrderTroopId, OrderCount.ToString(), OrderPrice.ToString(), FiefSettlementId,
+            OrderTroopId, OrderCount.ToString(), LegacyOrderGold.ToString(), FiefSettlementId,
             FiefCaptureHours.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 
         internal static GwpDispatchRecord? Deserialize(string? line)
@@ -95,7 +95,7 @@ namespace GreyWardenPolicePurity
                 CaseHeroId = parts[11],
                 OrderTroopId = parts[12],
                 OrderCount = ParseInt(parts[13]),
-                OrderPrice = ParseInt(parts[14]),
+                LegacyOrderGold = ParseInt(parts[14]),
                 // Existing four-purpose records have fifteen fields and carry no fief application.
                 FiefSettlementId = parts.Length > 15 ? parts[15] : string.Empty,
                 FiefCaptureHours = parts.Length > 16 ? double.Parse(parts[16], invariant) : 0d

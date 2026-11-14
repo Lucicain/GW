@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-236 个源文件、61,002 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
+236 个源文件、60,911 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -724,8 +724,8 @@
 
 ### 使者与交兵（7 个文件）
 
-- `GreyWardenTroopRequestBehavior.cs` — 1369 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GwpWardenDispatchBehavior.cs` — 930 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
+- `GreyWardenTroopRequestBehavior.cs` — 1270 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GwpWardenDispatchBehavior.cs` — 925 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
 - `GwpWardenDispatchDialogue.cs` — 575 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 304 行 · `GreyWardenTroopRequestBehavior`
 - `GwpWardenDispatch.cs` — 109 行 · `GwpDispatchPurpose`，另含 2 个类型
@@ -763,7 +763,7 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1014 行 · `CrimeRecord`，另含 4 个类型
-- `GwpTuning.cs` — 467 行 · `GwpTuning`，另含 17 个类型
+- `GwpTuning.cs` — 462 行 · `GwpTuning`，另含 17 个类型
 - `GwpCommon.cs` — 403 行 · `GwpCommon`
 - `GwpIds.cs` — 98 行 · `GwpIds`
 
@@ -773,7 +773,7 @@
 
 ### 其他（141 个文件）
 
-- `GwpTextCatalog.g.cs` — 1454 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1458 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1357 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 901 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
@@ -793,15 +793,15 @@
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
 - `GwpCitySearchMission.HallDuel.cs` — 254 行 · `GwpCitySearchMissionController` : AgentBehavior，另含 2 个类型
-- `GwpFireswornPlayerTrade.cs` — 254 行 · `GwpFireswornBehavior`
+- `GwpFireswornPlayerTrade.cs` — 253 行 · `GwpFireswornBehavior`
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpAffairsData.cs` — 241 行 · `GwpAffairsEntry`，另含 2 个类型
 - `GwpCitySearchBehavior.cs` — 241 行 · `GwpCitySearchBehavior` : CampaignBehaviorBase
 - `GwpStrength.Native.cs` — 240 行 · `GwpStrength`，另含 3 个类型
 - `GwpCitySearchMission.Reinforcements.cs` — 231 行 · `GwpCitySearchMissionController` : IGwpBattleSceneSource
 - `GwpArmoryAllocation.cs` — 224 行 · `GwpFireswornBehavior`
+- `PlayerBehaviorPool.cs` — 218 行 · `PlayerBehaviorPool`
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
-- `PlayerBehaviorPool.cs` — 211 行 · `PlayerBehaviorPool`
 - `GwpArmoryBattle.cs` — 205 行 · `GwpFireswornBehavior`，另含 1 个类型
 - `GwpFireswornMenus.cs` — 202 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFireswornDungeon.cs` — 199 行 · `GwpFireswornBehavior`
@@ -883,7 +883,7 @@
 - `GwpCitySearchSupportSelection.cs` — 48 行 · `GwpCitySearchSupportSelection`，另含 1 个类型
 - `GwpWardenAutoEquipmentPatch.cs` — 48 行 · `GwpWardenAutoEquipmentPatch`
 - `GwpFieldCollectionBarterable.cs` — 47 行 · `GwpFieldCollectionBarterable` : Barterable
-- `FireswornTradeRules.cs` — 46 行 · `FireswornTradeKind`，另含 1 个类型
+- `WardenReputationRules.cs` — 45 行 · `WardenReputationRules`
 - `GwpCaseTargetNameplatePatch.cs` — 44 行 · `GwpCaseTargetNameplatePatch`，另含 1 个类型
 - `GwpFieldFineBarterable.cs` — 44 行 · `GwpFieldFineBarterable` : Barterable
 - `GwpPartySizeLimitModel.cs` — 44 行 · `GwpPartySizeLimitModel` : DefaultPartySizeLimitModel
@@ -894,6 +894,7 @@
 - `GwpAssetAutoOfferPatch.cs` — 36 行 · `GwpAssetAutoOfferPatch`
 - `GwpDamnationSmokePatch.cs` — 36 行 · `GwpDamnationSmokePatch`
 - `GwpDuelOpponentMarkerPatch.cs` — 36 行 · `GwpDuelOpponentMarkerPatch`
+- `FireswornTradeRules.cs` — 35 行 · `FireswornTradeKind`，另含 1 个类型
 - `GwpCrimeDesireAuction.cs` — 35 行 · `GwpCrimeDesireAuction`
 - `GreyWardenDutyScheduler.cs` — 33 行 · `GreyWardenDutyScheduler`
 - `GwpAdultCommanderLoadoutPatch.cs` — 32 行 · `GwpAdultCommanderLoadoutPatch`
@@ -903,7 +904,6 @@
 - `GwpDispatchPrisonerCustody.cs` — 30 行 · `GwpDispatchHeroEscapePatch`，另含 1 个类型
 - `GwpCharacterPreviewActions.cs` — 29 行 · `GwpCharacterPreviewActions`
 - `GwpFlowStates.cs` — 27 行 · `AtonementFlowState`，另含 2 个类型
-- `WardenReputationRules.cs` — 26 行 · `WardenReputationRules`
 - `GwpFireswornAffairs.cs` — 26 行 · `GwpFireswornBehavior`
 - `GwpFounderVoiceRegisterPatch.cs` — 26 行 · `GwpFounderVoiceRegisterPatch`
 - `GwpNegotiationChancePatch.cs` — 26 行 · `GwpNegotiationChancePatch`

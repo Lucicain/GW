@@ -18,31 +18,19 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         }
 
         [Fact]
-        public void FivePrisonersEarnOnePointAcrossDeliveries()
+        public void MixedTierPrisonersEarnStandingAcrossDeliveries()
         {
-            var first = FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, 0, 3, 100);
+            int firstPrisoners = WardenReputationRules.TroopUnits(1) + WardenReputationRules.TroopUnits(2);
+            var first = FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, 0, firstPrisoners, 100);
             Assert.Equal((0, 3), first);
-            Assert.Equal((1, 0), FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, first.Remainder, 2, 100));
-        }
-
-        [Theory]
-        [InlineData(0, 1)]
-        [InlineData(1, 1)]
-        [InlineData(2, 2)]
-        [InlineData(3, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 6)]
-        [InlineData(6, 8)]
-        [InlineData(7, 8)]
-        public void SoldierValueUsesTier(int tier, int units)
-        {
-            Assert.Equal(units, FireswornTradeRules.TroopUnits(tier));
+            Assert.Equal((1, 1), FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, first.Remainder,
+                WardenReputationRules.TroopUnits(3), 100));
         }
 
         [Fact]
         public void HigherTierSoldiersAndRemainderCombineInOneDelivery()
         {
-            int units = FireswornTradeRules.TroopUnits(1) + FireswornTradeRules.TroopUnits(6);
+            int units = WardenReputationRules.TroopUnits(1) + WardenReputationRules.TroopUnits(6);
             Assert.Equal((2, 1), FireswornTradeRules.Quote(FireswornTradeKind.Troops, 2, units, 70));
         }
 

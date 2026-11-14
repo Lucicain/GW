@@ -18,20 +18,9 @@ namespace GreyWardenPolicePurity.Core.Troops
 
         public static int UnitsPerPoint(FireswornTradeKind kind) => kind switch
         {
-            FireswornTradeKind.Prisoners => 5,
-            FireswornTradeKind.Troops => 5,
+            FireswornTradeKind.Prisoners or FireswornTradeKind.Troops => WardenReputationRules.TroopUnitsPerPoint,
             FireswornTradeKind.Armory => 2000,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
-        };
-
-        public static int TroopUnits(int tier) => tier switch
-        {
-            <= 1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 6,
-            _ => 8
         };
 
         public static (int Points, int Remainder) Quote(FireswornTradeKind kind, int previousProgress,

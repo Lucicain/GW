@@ -345,9 +345,10 @@
   <string id="gwp_playerbountybehavior_dialogueandnotification_016" text="出色的工作。任务已完成，这是约定的赏金：{VAR_1} 第纳尔。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_017" text="出色的工作。按照约定，这是你应得的赏金：{VAR_1} 第纳尔。希望我们还有合作的机会。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_018" text="已从警察领主处领取悬赏赏金：{VAR_1} 第纳尔" />
-  <string id="gwp_dispatch_troop_order" text="把我的调兵订单和款项一起送到灰袍手里。" />
-  <string id="gwp_player_troop_order_unaffordable" text="你付不起这笔订购款，订单未成立。" />
-  <string id="gwp_player_troop_order_short" text="所付钱物不足订价，订单未成立。" />
+  <string id="gwp_dispatch_troop_order" text="把我的调兵订单送到灰袍手里。" />
+  <string id="gwp_player_troop_order_unaffordable" text="灰袍声望不足，无法支付这笔订单。" />
+  <string id="gwp_player_troop_order_unavailable" text="这笔调兵订单已无法登记。" />
+  <string id="gwp_player_troop_order_capacity" text="付款后剩 {BUDGET} 点灰袍声望，主队可接纳 {CAPACITY} 名灰袍兵。这笔订单会超过名额。" />
   <string id="gwp_fa_charge_cooled" text="这桩案子，我们再谈一次。" />
   <string id="gwp_warden_mediation_owed" text="此战因替灰袍出手而起，可请灰袍出面调停。" />
   <string id="gwp_warden_marry_ask" text="做我的妻子吧。" />
@@ -364,8 +365,8 @@
   <string id="gwp_fa_rebuff_soft" text="行行好，这事已经翻过一遍了，让它歇歇吧。" />
   <string id="gwp_fa_rebuff_tight" text="你已经从我这儿讨过话了。话也是要本钱的，你花完了。" />
   <string id="gwp_fa_rebuff_plain" text="这事我们谈过了。我的答复不变。" />
-  <string id="gwp_dispatch_order_moot" text="灰袍眼下无法接单，款项将随使者带回。" />
-  <string id="gwp_player_troop_order_filed_prepaid" text="订单与款项已交给灰袍，练兵领主训练完成后会亲自送来。" />
+  <string id="gwp_dispatch_order_moot" text="灰袍无法登记这笔订单，使者正在返回。" />
+  <string id="gwp_dispatch_order_legacy_moot" text="灰袍眼下无法接单，款项将随使者带回。" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_020" text="目标势力：{VAR_1}&#10;" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_021" text="犯罪类型：{VAR_1}" />
   <string id="gwp_playerbountybehavior_dialogueandnotification_022" text="最后目击：{VAR_1} 附近" />
@@ -859,17 +860,20 @@
   <string id="gwp_fief_vote_reopened" text="灰袍已就{VAR_1}提出请愿，王国将重新商议封地归属，你在候选之列。" />
   <string id="gwp_fief_appeal_refunded" text="封地请愿未能提交，费用已全额退还。" />
   <string id="gwp_player_troop_order_file" text="我想让练兵官为我准备一批士兵。" />
-  <string id="gwp_player_troop_order_recorded" text="价钱当场结清，我这就把单子送出去。练兵长会把兵训好，亲自给你送来。" />
-  <string id="gwp_player_troop_delivery_offer" text="你要的兵已经齐了：{VAR_1} 名{VAR_2}。{VAR_3} 第纳尔在你下单那天就结清了，不欠什么。" />
+  <string id="gwp_player_troop_order_recorded" text="练兵官会把兵训好，亲自给你送来。" />
+  <string id="gwp_player_troop_order_return" text="还有什么事要谈？" />
+  <string id="gwp_player_troop_delivery_offer" text="你要的 {VAR_1} 名{VAR_2}已经齐了。下单时付的{VAR_3}也已记在账上。" />
   <string id="gwp_player_troop_delivery_accept" text="那就把他们交到我手上吧。" />
   <string id="gwp_player_troop_delivery_accepted" text="人归你了。从今往后他们听你的。" />
   <string id="gwp_player_troop_delivery_cancel" text="取消订单，士兵留给你。我知道预付款不会退还。" />
   <string id="gwp_player_troop_delivery_cancelled" text="好吧。订单已取消，士兵会留在我们这里。" />
-  <string id="gwp_player_troop_choice" text="{VAR_1}名{VAR_2} — {VAR_3}第纳尔" />
+  <string id="gwp_player_troop_choice" text="{VAR_1} 名{VAR_2}（{VAR_3} 点灰袍声望）" />
   <string id="gwp_player_troop_order_title" text="提交调兵订单" />
-  <string id="gwp_player_troop_order_description" text="你在灰袍中的声望决定订单上限和可选兵种。" />
+  <string id="gwp_player_troop_order_description" text="订单登记时扣除灰袍声望。付款后剩余的声望决定主队还能接纳多少灰袍兵。" />
   <string id="gwp_player_troop_order_confirm" text="发送订单" />
-  <string id="gwp_player_troop_order_filed" text="练兵领主已收到订单，训练完成后会送到你身边。" />
+  <string id="gwp_player_troop_order_filed" text="练兵官已登记订单，收到{PAYMENT}。训练完成后会把兵送来。" />
+  <string id="gwp_player_troop_cost_reputation" text="{AMOUNT} 点灰袍声望" />
+  <string id="gwp_player_troop_cost_denars" text="{AMOUNT} 第纳尔" />
   <string id="gwp_player_request_unknown_liaison" text="未知的贵族事务协调官" />
   <string id="gwp_player_request_ledger_header" text="玩家封地申诉 — {VAR_1}" />
   <string id="gwp_player_request_ledger_assignment" text="协调官：{VAR_1} | 当前阶段：{VAR_2}" />
@@ -885,7 +889,7 @@
   <string id="gwp_fief_defer_complete" text="贵族事务官将回来继续处理你的封地请愿。" />
   <string id="gwp_player_troop_ledger_header" text="调兵：{VAR_1}名{VAR_2}" />
   <string id="gwp_player_troop_ledger_assignment" text="练兵官：{VAR_1} | {VAR_2}" />
-  <string id="gwp_player_troop_ledger_detail" text="已备：{VAR_1}/{VAR_2} | 已付：{VAR_3} 第纳尔" />
+  <string id="gwp_player_troop_ledger_detail" text="已备：{VAR_1}/{VAR_2} | 已付：{VAR_3}" />
   <string id="gwp_player_troop_stage_training" text="训练中" />
   <string id="gwp_player_troop_stage_delivery" text="正在送兵" />
   <string id="gwp_item_dual_offhand" text="灰袍双持剑（副手）" />

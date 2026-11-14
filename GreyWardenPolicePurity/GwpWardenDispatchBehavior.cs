@@ -188,7 +188,7 @@ namespace GreyWardenPolicePurity
             int carriedCaseGold,
             bool reportLie,
             string prisonerHeroId, List<ItemRosterElement>? cargo = null,
-            string orderTroopId = "", int orderCount = 0, int orderPrice = 0,
+            string orderTroopId = "", int orderCount = 0,
             string fiefSettlementId = "", double fiefCaptureHours = 0d)
         {
             MobileParty player = MobileParty.MainParty;
@@ -275,7 +275,6 @@ namespace GreyWardenPolicePurity
                 CaseGoldFloor = Math.Max(0, carriedCaseGold),
                 OrderTroopId = orderTroopId ?? string.Empty,
                 OrderCount = Math.Max(0, orderCount),
-                OrderPrice = Math.Max(0, orderPrice),
                 FiefSettlementId = fiefSettlementId ?? string.Empty,
                 FiefCaptureHours = fiefCaptureHours,
                 CaseHeroId = purpose == GwpDispatchPurpose.Report
@@ -665,28 +664,24 @@ namespace GreyWardenPolicePurity
 
             if (record.Purpose == GwpDispatchPurpose.TroopOrder)
             {
-                // 订金在出发时已从玩家手里扣走并随队带着，这里直接入库，不再向玩家收。
-                // 买兵的钱可多不可少：路上折损到不够订价，这一单就不立，钱原样带回。
-                int paid = Math.Min(record.OrderPrice, party.PartyTradeGold);
-                bool filed = paid >= record.OrderPrice &&
-                    GreyWardenTroopRequestBehavior.FileCourierOrder(
-                        record.OrderTroopId, record.OrderCount, record.OrderPrice);
-                if (filed)
+                int legacyGold = record.LegacyOrderGold;
+                bool filed = (legacyGold <= 0 || party.PartyTradeGold >= legacyGold) &&
+                    GreyWardenTroopRequestBehavior.FileCourierOrder(record.OrderTroopId, record.OrderCount, legacyGold);
+                if (filed && legacyGold > 0)
                 {
-                    party.PartyTradeGold -= paid;
-                    record.CaseGoldFloor = Math.Max(0, record.CaseGoldFloor - paid);
-                    PoliceResourceManager.CreditJudicialTreasuryFromCourier(paid);
+                    party.PartyTradeGold -= legacyGold;
+                    record.CaseGoldFloor = Math.Max(0, record.CaseGoldFloor - legacyGold);
+                    PoliceResourceManager.CreditJudicialTreasuryFromCourier(legacyGold);
+                }
+#if GWP_DIAGNOSTICS
+                if (filed)
                     GwpAiDiagnostics.WriteAction(receiver, "DISPATCH_TROOP_ORDER_FILED",
                         "courier=" + party.StringId + "; troop=" + record.OrderTroopId +
-                        "; count=" + record.OrderCount + "; paid=" + paid);
-                }
-                else
-                {
-                    // 练兵长没了，或者玩家在这中间又下了一单。钱原样带回来。
-                    InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(
-                        GwpTextCatalog.gwp_dispatch_order_moot),
-                        Colors.Yellow));
-                }
+                        "; count=" + record.OrderCount + "; legacyGold=" + legacyGold);
+#endif
+                if (!filed)
+                    InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(legacyGold > 0
+                        ? GwpTextCatalog.gwp_dispatch_order_legacy_moot : GwpTextCatalog.gwp_dispatch_order_moot), Colors.Yellow));
                 BeginReturn(record, party);
                 return;
             }

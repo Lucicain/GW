@@ -29,12 +29,7 @@ namespace GreyWardenPolicePurity
             public const int MinimumReputation = 20;
             public const int VeteranReputation = 40;
             public const int KnightReputation = 60;
-            public const int EliteDiscountReputation = 80;
-
-            public const int RecruitBasePrice = 80;
-            public const int HeavyInfantryBasePrice = 180;
-            public const int ArcherBasePrice = 190;
-            public const int KnightBasePrice = 450;
+            public const int EliteOrderReputation = 80;
             public const int LowStandingOrderLimit = 20;
             public const int VeteranOrderLimit = 40;
             public const int KnightOrderLimit = 60;

@@ -15,6 +15,33 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         }
 
         [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 1)]
+        [InlineData(2, 2)]
+        [InlineData(3, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 6)]
+        [InlineData(6, 8)]
+        [InlineData(7, 8)]
+        public void TroopValueUsesTier(int tier, int units)
+        {
+            Assert.Equal(units, WardenReputationRules.TroopUnits(tier));
+        }
+
+        [Theory]
+        [InlineData(1, 20, 20, 0, 4, 16, true)]
+        [InlineData(3, 10, 20, 18, 6, 14, true)]
+        [InlineData(3, 10, 20, 19, 6, 14, false)]
+        [InlineData(6, 10, 60, 0, 16, 44, true)]
+        [InlineData(6, 40, 40, 0, 64, -24, false)]
+        [InlineData(6, 40, 64, 0, 64, 0, false)]
+        public void OrderQuotesUseRemainingStandingForCapacity(int tier, int count, int reputation, int troops,
+            int cost, int balance, bool hasRoom)
+        {
+            Assert.Equal((cost, balance, hasRoom), WardenReputationRules.QuoteOrder(tier, count, reputation, troops));
+        }
+
+        [Theory]
         [InlineData(12, 5, 0)]
         [InlineData(10, 5, 0)]
         [InlineData(7, 5, 3)]

@@ -313,7 +313,7 @@ namespace GreyWardenPolicePurity
             DetailsText = GwpText.Get(
                 GwpTextCatalog.gwp_player_troop_ledger_detail,
                 "VAR_1", Math.Min(order.ReadyCount, order.Count), "VAR_2", order.Count,
-                "VAR_3", order.Price);
+                "VAR_3", order.PaymentText);
         }
 
         [DataSourceProperty]

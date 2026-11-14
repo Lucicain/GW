@@ -130,7 +130,7 @@ namespace GreyWardenPolicePurity
                 },
                 partyPresentationDoneButtonConditionDelegate: (members, captives, _, _, _, _) =>
                 {
-                    var quote = PlayerBehaviorPool.QuoteFireswornTrade(kind, PersonnelTradeUnits(prisoners ? captives : members, kind));
+                    var quote = PlayerBehaviorPool.QuoteFireswornTrade(kind, PersonnelTradeUnits(prisoners ? captives : members));
                     return Tuple.Create(true, GwpText.Create(GwpTextCatalog.gwp_fs_trade_preview,
                         "POINTS", quote.Points, "REMAINDER", quote.Remainder, "RATE", FireswornTradeRules.UnitsPerPoint(kind)));
                 },
@@ -147,10 +147,9 @@ namespace GreyWardenPolicePurity
             Game.Current.GameStateManager.PushState(state);
         }
 
-        private static long PersonnelTradeUnits(TroopRoster selection, FireswornTradeKind kind) =>
-            kind == FireswornTradeKind.Prisoners
-                ? selection.TotalManCount
-                : selection.GetTroopRoster().Sum(batch => (long)batch.Number * FireswornTradeRules.TroopUnits(batch.Character.Tier));
+        private static long PersonnelTradeUnits(TroopRoster selection) => selection.GetTroopRoster()
+            .Where(batch => batch.Number > 0)
+            .Sum(batch => (long)batch.Number * WardenReputationRules.TroopUnits(batch.Character.Tier));
 
         private bool CompletePersonnelTrade(MobileParty party, Settlement village, Hero priest,
             FireswornTradeKind kind, TroopRoster selection)
@@ -168,7 +167,7 @@ namespace GreyWardenPolicePurity
             foreach (TroopRosterElement batch in batches)
                 GwpTroopTransfer.MoveSelectedBatch(party.Party, source, destination, batch);
 
-            NotifyPriestTradeCompleted(village, kind, selection.TotalManCount, PersonnelTradeUnits(selection, kind));
+            NotifyPriestTradeCompleted(village, kind, selection.TotalManCount, PersonnelTradeUnits(selection));
             return true;
         }
 

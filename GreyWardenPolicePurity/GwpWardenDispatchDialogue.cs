@@ -278,10 +278,8 @@ namespace GreyWardenPolicePurity
 
         private static bool TroopOrderAvailable()
         {
-            var bounty = Campaign.Current?.GetCampaignBehavior<PlayerBountyBehavior>();
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            return bounty?.IsRecruitedByGreyWardens == true &&
-                   GreyWardenTroopRequestBehavior.CanFileCourierOrder() &&
+            return GreyWardenTroopRequestBehavior.CanChooseNewOrder() &&
                    dispatch?.HasActiveDispatch(GwpDispatchPurpose.TroopOrder) != true;
         }
 
@@ -369,7 +367,8 @@ namespace GreyWardenPolicePurity
                 ReturnSelection(members, prisoners);
                 _reportSelection = escort;
                 _afterPayment = () => GreyWardenTroopRequestBehavior.ShowCourierOrderInquiry(
-                    (troopId, count, price) => SendTroopOrder(escort, troopId, count, price));
+                    GwpPlayerWardenTroops.Count(escort), (troopId, count) => SendTroopOrder(escort, troopId, count),
+                    () => { if (ReferenceEquals(_reportSelection, escort)) _reportSelection = null; });
                 return;
             }
 
@@ -481,18 +480,19 @@ namespace GreyWardenPolicePurity
                 true);
         }
 
-        /// <summary>
-        /// 订金按"案件款"的口径随队带走——那笔钱被 CaseGoldFloor 保护，路上不许拿去
-        /// 发饷。玩家金币不够时，Dispatch 的出发判断会照常拦下。
-        /// </summary>
-        private static void SendTroopOrder(TroopRoster escort, string troopId, int count, int price)
+        private static void SendTroopOrder(TroopRoster escort, string troopId, int count)
         {
             var dispatch = Campaign.Current?.GetCampaignBehavior<GwpWardenDispatchBehavior>();
-            if (dispatch == null || !TryTakeSelectedEscort(escort)) return;
+            if (dispatch == null || dispatch.HasActiveDispatch(GwpDispatchPurpose.TroopOrder) ||
+                !GreyWardenTroopRequestBehavior.CanSendCourierOrder(troopId, count, GwpPlayerWardenTroops.Count(escort)))
+            {
+                if (ReferenceEquals(_reportSelection, escort)) _reportSelection = null;
+                return;
+            }
+            if (!TryTakeSelectedEscort(escort)) return;
 
             MobileParty? party = dispatch.Dispatch(escort, TroopRoster.CreateDummyTroopRoster(),
-                GwpDispatchPurpose.TroopOrder, price, false, string.Empty, null,
-                troopId, count, price);
+                GwpDispatchPurpose.TroopOrder, 0, false, string.Empty, orderTroopId: troopId, orderCount: count);
             if (party == null) ReturnSelection(escort, null);
         }
 

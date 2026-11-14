@@ -87,6 +87,13 @@ namespace GreyWardenPolicePurity
                 "before=" + before + "; delta=" + delta + "; after=" + Reputation);
         }
 
+        internal static bool TrySpendReputation(int cost)
+        {
+            if (cost <= 0 || cost > Reputation) return false;
+            ChangeReputation(-cost);
+            return true;
+        }
+
         internal static int WardenUpgradeCost(int count) =>
             WardenReputationRules.UpgradeCost(_wardenUpgradeProgress, count);
 

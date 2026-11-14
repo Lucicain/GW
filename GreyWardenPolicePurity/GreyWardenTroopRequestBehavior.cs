@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GreyWardenPolicePurity.Core.Troops;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.BarterSystem;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -16,34 +15,24 @@ using TaleWorlds.Localization;
 namespace GreyWardenPolicePurity
 {
     /// <summary>
-    /// Any Grey Warden lord may record a player troop order.  No money and no
-    /// soldiers move at filing time.  The Training Warden grants experience to
-    /// real Grey Warden troops, leaves branch selection to Bannerlord's native
-    /// upgrader, then personally seeks the player and completes an all-or-nothing
-    /// paid handover into the public treasury.
+    /// 订单正式登记时结清声望，练兵官训好后亲自交付真实兵员。
     /// </summary>
     public sealed partial class GreyWardenTroopRequestBehavior : CampaignBehaviorBase
     {
         private static readonly TroopKind[] TroopKinds =
         {
-            new TroopKind(GwpIds.NewRecruitId,
-                GwpTuning.TroopRequest.MinimumReputation,
-                GwpTuning.TroopRequest.RecruitBasePrice),
-            new TroopKind(GwpIds.HeavyInfantryId,
-                GwpTuning.TroopRequest.VeteranReputation,
-                GwpTuning.TroopRequest.HeavyInfantryBasePrice),
-            new TroopKind(GwpIds.ArcherId,
-                GwpTuning.TroopRequest.VeteranReputation,
-                GwpTuning.TroopRequest.ArcherBasePrice),
-            new TroopKind(GwpIds.KnightId,
-                GwpTuning.TroopRequest.KnightReputation,
-                GwpTuning.TroopRequest.KnightBasePrice)
+            new TroopKind(GwpIds.NewRecruitId, GwpTuning.TroopRequest.MinimumReputation),
+            new TroopKind(GwpIds.HeavyInfantryId, GwpTuning.TroopRequest.VeteranReputation),
+            new TroopKind(GwpIds.ArcherId, GwpTuning.TroopRequest.VeteranReputation),
+            new TroopKind(GwpIds.KnightId, GwpTuning.TroopRequest.KnightReputation)
         };
+        private static readonly int[] OrderSizes = { 10, 20, 40, 60, 80 };
 
         private static GreyWardenTroopRequestBehavior? _instance;
         private string _orderedTroopId = string.Empty;
         private int _orderedCount;
         private int _orderPrice;
+        private bool _orderPaidWithReputation;
         private int _orderStage;
         private double _filedHour = -1d;
         private double _lastOrderXpHour = -1d;
@@ -68,7 +57,7 @@ namespace GreyWardenPolicePurity
             public string TroopName { get; set; } = string.Empty;
             public int Count { get; set; }
             public int ReadyCount { get; set; }
-            public int Price { get; set; }
+            public string PaymentText { get; set; } = string.Empty;
             public CampaignTime FiledTime { get; set; }
             public PlayerTroopOrderStage Stage { get; set; }
             public WardenDuty? PausedBy { get; set; }
@@ -77,24 +66,20 @@ namespace GreyWardenPolicePurity
 
         private sealed class TroopKind
         {
-            public TroopKind(string troopId, int minimumReputation,
-                int pricePerTroop)
+            public TroopKind(string troopId, int minimumReputation)
             {
                 TroopId = troopId;
                 MinimumReputation = minimumReputation;
-                PricePerTroop = pricePerTroop;
             }
 
             public string TroopId { get; }
             public int MinimumReputation { get; }
-            public int PricePerTroop { get; }
         }
 
         private sealed class TroopOrderChoice
         {
-            public TroopKind Kind { get; set; } = null!;
+            public CharacterObject Troop { get; set; } = null!;
             public int Count { get; set; }
-            public int Price { get; set; }
         }
 
         public GreyWardenTroopRequestBehavior() => _instance = this;
@@ -119,6 +104,7 @@ namespace GreyWardenPolicePurity
                 ref _orderedCount);
             dataStore.SyncData("GWPP_PlayerTroopOrderPrice",
                 ref _orderPrice);
+            dataStore.SyncData("GWPP_PlayerTroopOrderPaidWithReputation", ref _orderPaidWithReputation);
             dataStore.SyncData("GWPP_PlayerTroopOrderStage",
                 ref _orderStage);
             dataStore.SyncData("GWPP_PlayerTroopOrderFiledHour",
@@ -227,7 +213,7 @@ namespace GreyWardenPolicePurity
                             _instance._orderedTroopId,
                 Count = _instance._orderedCount,
                 ReadyCount = CountHealthy(_instance.ResolveOrderPool(trainer), troop),
-                Price = _instance._orderPrice,
+                PaymentText = _instance.DescribeOrderPayment(),
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
                 Stage = (PlayerTroopOrderStage)_instance._orderStage,
@@ -277,16 +263,16 @@ namespace GreyWardenPolicePurity
                 "lord_talk_speak_diplomacy_2",
                 "gwp_player_troop_order_file_response",
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_order_file),
-                CanFileTroopOrder,
-                ShowTroopOrderInquiry,
-                215);
+                CanFileTroopOrder, null, 215);
 
             starter.AddDialogLine(
                 "gwp_player_troop_order_file_response",
                 "gwp_player_troop_order_file_response",
-                "lord_pretalk",
+                "gwp_player_troop_order_return",
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_order_recorded),
-                null, null, 215);
+                null, ShowTroopOrderInquiry, 215);
+            starter.AddDialogLine("gwp_player_troop_order_return", "gwp_player_troop_order_return", "hero_main_options",
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_return), null, null);
 
             starter.AddDialogLine(
                 "gwp_player_troop_delivery_offer_start",
@@ -353,232 +339,147 @@ namespace GreyWardenPolicePurity
                 : GwpText.Create(GwpTextCatalog.gwp_warden_mediation_moot));
         }
 
-        private bool CanFileTroopOrder()
+        private bool CanFileTroopOrder() =>
+            GwpCommon.IsOrdinaryGreyWardenLordConversation() && CanChooseNewOrder();
+
+        private void ShowTroopOrderInquiry()
         {
-            return GwpCommon.IsOrdinaryGreyWardenLordConversation() &&
-                   GwpCommon.IsPlayerGreyWardenMember() &&
-                   PlayerBehaviorPool.Reputation >=
-                       GwpTuning.TroopRequest.MinimumReputation &&
-                   (PlayerTroopOrderStage)_orderStage ==
-                       PlayerTroopOrderStage.None &&
-                   ResolveTrainerParty()?.IsActive == true;
+            Hero? lord = Hero.OneToOneConversationHero;
+            ShowTroopOrderInquiry(choice =>
+            {
+                if (lord == Hero.OneToOneConversationHero && GwpCommon.IsOrdinaryGreyWardenLordConversation())
+                    FileReputationOrder(choice.Troop.StringId, choice.Count);
+            });
         }
 
-        /// <summary>
-        /// 下单选项界面。<paramref name="onChosen"/> 为空时沿用当面下单；使者送单时
-        /// 由它把选择带走，等使者抵达灰袍手里再真正立案。
-        /// </summary>
-        /// <summary>对话里当面下单的入口。保持无参签名，供原版对话委托直接绑定。</summary>
-        private void ShowTroopOrderInquiry() => ShowTroopOrderInquiry(null);
-
-        private void ShowTroopOrderInquiry(Action<TroopOrderChoice>? onChosen)
+        private void ShowTroopOrderInquiry(Action<TroopOrderChoice> onChosen, int escortCount = 0, Action? onCancelled = null)
         {
             int reputation = PlayerBehaviorPool.Reputation;
-            int orderLimit = GetOrderLimit(reputation);
-            int slots = GwpPlayerWardenTroops.RemainingSlots(MobileParty.MainParty.MemberRoster, reputation);
-            var choices = new List<TroopOrderChoice>();
-            foreach (TroopKind kind in TroopKinds.Where(kind =>
-                         reputation >= kind.MinimumReputation))
+            int troops = GwpPlayerWardenTroops.Count(MobileParty.MainParty.MemberRoster) - escortCount;
+            var elements = new List<InquiryElement>();
+            foreach (TroopKind kind in TroopKinds.Where(kind => reputation >= kind.MinimumReputation))
             {
                 CharacterObject? troop = CharacterObject.Find(kind.TroopId);
-                if (troop == null) continue;
-                int kindLimit = string.Equals(kind.TroopId, GwpIds.KnightId,
-                    StringComparison.OrdinalIgnoreCase)
-                    ? Math.Max(10, orderLimit / 3)
-                    : orderLimit;
-                foreach (int count in new[] { 10, 20, 40, 60, 80 }
-                             .Where(count => count <= kindLimit))
+                if (troop == null || troop.IsHero || !GwpCommon.IsGreyWardenTroop(troop)) continue;
+                foreach (int count in OrderSizes.Where(count => count <= GetKindOrderLimit(kind, reputation)))
                 {
-                    choices.Add(new TroopOrderChoice
-                    {
-                        Kind = kind,
-                        Count = count,
-                        Price = GetPrice(kind, count, reputation)
-                    });
+                    var quote = WardenReputationRules.QuoteOrder(troop.Tier, count, reputation, troops);
+                    var choice = new TroopOrderChoice { Troop = troop, Count = count };
+                    TextObject? restriction = GetOrderRestriction(quote);
+                    string label = GwpText.Get(GwpTextCatalog.gwp_player_troop_choice,
+                        "VAR_1", count, "VAR_2", troop.Name, "VAR_3", quote.Cost);
+                    elements.Add(new InquiryElement(choice, label, null, restriction == null,
+                        restriction?.ToString() ?? string.Empty));
                 }
             }
-
-            if (slots == 0)
+            if (elements.Count == 0)
             {
-                MBInformationManager.AddQuickInformation(GwpPlayerWardenTroops.CapacityMessage(reputation));
+                onCancelled?.Invoke();
                 return;
             }
 
-            var elements = choices.Select(choice =>
-            {
-                CharacterObject? troop = CharacterObject.Find(
-                    choice.Kind.TroopId);
-                string label = GwpText.Get(
-                    GwpTextCatalog.gwp_player_troop_choice,
-                    "VAR_1", choice.Count,
-                    "VAR_2", troop?.Name?.ToString() ?? choice.Kind.TroopId,
-                    "VAR_3", choice.Price);
-                return new InquiryElement(choice, label, null, choice.Count <= slots,
-                    choice.Count <= slots ? string.Empty : GwpPlayerWardenTroops.CapacityMessage(reputation).ToString());
-            }).ToList();
-            if (elements.Count == 0) return;
-
-            MBInformationManager.ShowMultiSelectionInquiry(
-                new MultiSelectionInquiryData(
-                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_title),
-                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_description),
-                    elements, true, 1, 1,
-                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_confirm),
-                    GwpText.Get(GwpTextCatalog.gwp_cancel),
-                    selected =>
-                    {
-                        TroopOrderChoice? choice = selected.FirstOrDefault()
-                            ?.Identifier as TroopOrderChoice;
-                        if (choice == null) return;
-                        if (onChosen != null) { onChosen(choice); return; }
-                        OpenOrderPayment(choice);
-                    },
-                    _ => { }),
-                true);
+            MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_title),
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_description),
+                elements, true, 1, 1,
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_confirm),
+                GwpText.Get(GwpTextCatalog.gwp_cancel),
+                selected =>
+                {
+                    if (selected.FirstOrDefault()?.Identifier is TroopOrderChoice choice) onChosen(choice);
+                },
+                _ => onCancelled?.Invoke()), true);
         }
 
-        /// <summary>使者能不能替玩家送这一单：手上没有在办订单，且练兵长还在。</summary>
-        internal static bool CanFileCourierOrder() =>
-            _instance != null &&
-            (PlayerTroopOrderStage)_instance._orderStage == PlayerTroopOrderStage.None &&
-            _instance.ResolveTrainerParty() != null;
+        internal static bool CanChooseNewOrder() =>
+            _instance != null && _instance.CanStartOrder() && GwpCommon.IsPlayerGreyWardenMember() &&
+            PlayerBehaviorPool.Reputation >= GwpTuning.TroopRequest.MinimumReputation;
 
-        /// <summary>让玩家先挑好兵种数量，选择交给使者带走，此刻还没立案。</summary>
-        internal static void ShowCourierOrderInquiry(Action<string, int, int> onChosen)
+        private bool CanStartOrder() =>
+            (PlayerTroopOrderStage)_orderStage == PlayerTroopOrderStage.None && ResolveTrainerParty()?.IsActive == true;
+
+        internal static void ShowCourierOrderInquiry(int escortCount, Action<string, int> onChosen, Action onCancelled)
         {
-            if (_instance == null) return;
-            _instance.ShowTroopOrderInquiry(choice =>
-                onChosen(choice.Kind.TroopId, choice.Count, choice.Price));
+            if (!CanChooseNewOrder())
+            {
+                onCancelled();
+                return;
+            }
+            _instance!.ShowTroopOrderInquiry(choice => onChosen(choice.Troop.StringId, choice.Count), escortCount, onCancelled);
         }
 
-        /// <summary>
-        /// 使者把单据送到了。这里才真正立案，并且记下订金已经在出发时预付过——
-        /// 交付时不能再向玩家收第二次。
-        /// </summary>
-        internal static bool FileCourierOrder(string troopId, int count, int price)
-        {
-            if (_instance == null ||
-                (PlayerTroopOrderStage)_instance._orderStage != PlayerTroopOrderStage.None)
-                return false;
-            TroopKind? kind = TroopKinds.FirstOrDefault(candidate =>
-                string.Equals(candidate.TroopId, troopId, StringComparison.OrdinalIgnoreCase));
-            if (kind == null || count <= 0 || CharacterObject.Find(troopId) == null) return false;
+        internal static bool CanSendCourierOrder(string troopId, int count, int escortCount) =>
+            _instance != null && _instance.TryQuoteReputationOrder(troopId, count, escortCount, out _, out _);
 
-            _instance.FileTroopOrder(new TroopOrderChoice
-            {
-                Kind = kind,
-                Count = count,
-                Price = Math.Max(0, price)
-            }, alreadyCollected: true);
-            if ((PlayerTroopOrderStage)_instance._orderStage == PlayerTroopOrderStage.None)
+        internal static bool FileCourierOrder(string troopId, int count, int legacyGold) =>
+            _instance != null && (legacyGold > 0
+                ? _instance.FileLegacyCourierOrder(troopId, count, legacyGold)
+                : _instance.FileReputationOrder(troopId, count));
+
+        private bool FileLegacyCourierOrder(string troopId, int count, int legacyGold)
+        {
+            if ((PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.None || count <= 0 ||
+                !TryFindOrderedTroop(troopId, out _, out CharacterObject troop))
                 return false;
+            FileTroopOrder(troop, count, legacyGold, paidWithReputation: false);
             return true;
         }
 
-        /// <summary>当面下单：订金到交付时才收。保持无参委托签名。</summary>
-        /// <summary>
-        /// 当面下单的付款：开原版交易界面，跟野外罚金走同一套。玩家可以用金币也可以
-        /// 用货物折价，界面里的一键平衡照常可用。谈成了才立案；关掉或谈不拢就当没下单。
-        /// 使者送单那一路不走这里——订金在出发时随队扣走。
-        /// </summary>
-        private void OpenOrderPayment(TroopOrderChoice choice)
+        private bool TryQuoteReputationOrder(string troopId, int count, int escortCount,
+            out CharacterObject troop, out int cost)
         {
-            Hero? lord = Hero.OneToOneConversationHero;
-            MobileParty? lordParty = lord?.PartyBelongedTo;
-            if (lord == null || lordParty?.IsActive != true ||
-                (PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.None)
-                return;
-            if (choice.Count > GwpPlayerWardenTroops.RemainingSlots(MobileParty.MainParty.MemberRoster, PlayerBehaviorPool.Reputation))
+            cost = 0;
+            int reputation = PlayerBehaviorPool.Reputation;
+            if (!TryFindOrderedTroop(troopId, out TroopKind kind, out troop) || !CanStartOrder() ||
+                !GwpCommon.IsPlayerGreyWardenMember() || reputation < kind.MinimumReputation ||
+                !OrderSizes.Contains(count) || count > GetKindOrderLimit(kind, reputation) ||
+                MobileParty.MainParty is not { IsActive: true } player)
             {
-                MBInformationManager.AddQuickInformation(GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.Reputation));
-                return;
+                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unavailable));
+                return false;
             }
 
-            // selectionOnly：界面只让玩家挑用什么付，不做即时转移。挑完由本类实扣，
-            // 折价总额记进公共金库——买兵的钱归公库，不进经手领主的口袋。
-            var payment = new GwpAssetPayment(Hero.MainHero, lord,
-                MobileParty.MainParty.Party, lordParty.Party,
-                choice.Price, choice.Price, selectionOnly: true);
-            BarterManager manager = Campaign.Current.BarterManager;
-            BarterManager.BarterBeginEventDelegate original = manager.BarterBegin;
-            BarterManager.BarterCloseEventDelegate? closed = null;
-            closed = () =>
+            int troops = GwpPlayerWardenTroops.Count(player.MemberRoster) - escortCount;
+            var quote = WardenReputationRules.QuoteOrder(troop.Tier, count, reputation, troops);
+            TextObject? restriction = GetOrderRestriction(quote);
+            if (restriction != null)
             {
-                manager.Closed -= closed;
-                SettleOrderPayment(payment, choice);
-            };
-            manager.Closed += closed;
-            try
-            {
-                manager.BarterBegin = data =>
-                {
-                    payment.PrepareCatalogue(data);
-                    original?.Invoke(data);
-                };
-                manager.StartBarterOffer(Hero.MainHero, lord,
-                    MobileParty.MainParty.Party, lordParty.Party, null,
-                    (item, data, obj) => false, 0, false, payment.Entries);
+                MBInformationManager.AddQuickInformation(restriction);
+                return false;
             }
-            finally { manager.BarterBegin = original; }
+            cost = quote.Cost;
+            return true;
         }
 
-        /// <summary>
-        /// 买兵的钱可多不可少：凑不齐订价就不立案。凑齐了才实扣金币与货物，
-        /// 折价总额计入公共金库，然后立案。
-        /// </summary>
-        private void SettleOrderPayment(GwpAssetPayment payment, TroopOrderChoice choice)
+        private static TextObject? GetOrderRestriction((int Cost, int Balance, bool HasRoom) quote)
         {
-            if (!payment.Applied || !payment.Valid) return;
-            if (payment.Paid < choice.Price)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_short),
-                    Colors.Yellow));
-                return;
-            }
-            if ((PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.None) return;
-
-            MobileParty? player = MobileParty.MainParty;
-            if (player?.IsActive != true) return;
-
-            int gold = Math.Max(0, payment.SelectedGold);
-            List<ItemRosterElement> goods = payment.SelectedGoods;
-            // 先核对库存再动手，避免扣到一半停在中间。
-            foreach (ItemRosterElement element in goods)
-                if (player.ItemRoster.Where(x => x.EquipmentElement.Equals(element.EquipmentElement))
-                        .Sum(x => x.Amount) < element.Amount)
-                    return;
-            if (Hero.MainHero.Gold < gold) return;
-
-            if (gold > 0)
-                GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, gold, true);
-            foreach (ItemRosterElement element in goods)
-                player.ItemRoster.AddToCounts(element.EquipmentElement, -element.Amount);
-            PoliceResourceManager.CreditJudicialTreasuryFromCourier(payment.Paid);
-
-            FileTroopOrder(choice, alreadyCollected: true);
+            if (quote.Balance < 0) return GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unaffordable);
+            return quote.HasRoom ? null : GwpText.Create(GwpTextCatalog.gwp_player_troop_order_capacity,
+                "BUDGET", quote.Balance, "CAPACITY", GwpPlayerWardenTroops.Capacity(quote.Balance));
         }
 
-        /// <summary>
-        /// 订金一律在下单这一刻结清：当面下单当场收，使者送单则出发时已随队扣走。
-        /// 交付环节因此不再收钱，也就不再需要"付不起就取消"和"先欠着"两条旧路径。
-        /// </summary>
-        private void FileTroopOrder(TroopOrderChoice choice, bool alreadyCollected)
+        private static bool TryFindOrderedTroop(string troopId, out TroopKind kind, out CharacterObject troop)
         {
-            if ((PlayerTroopOrderStage)_orderStage !=
-                PlayerTroopOrderStage.None)
-                return;
-            if (!alreadyCollected &&
-                !PoliceResourceManager.TryCollectPlayerRequestPayment(choice.Price))
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_player_troop_order_unaffordable),
-                    Colors.Yellow));
-                return;
-            }
-            _orderedTroopId = choice.Kind.TroopId;
-            _orderedCount = choice.Count;
-            _orderPrice = choice.Price;
+            kind = TroopKinds.FirstOrDefault(candidate =>
+                string.Equals(candidate.TroopId, troopId, StringComparison.OrdinalIgnoreCase))!;
+            troop = kind == null ? null! : CharacterObject.Find(kind.TroopId);
+            return troop != null && !troop.IsHero && GwpCommon.IsGreyWardenTroop(troop);
+        }
+
+        private bool FileReputationOrder(string troopId, int count)
+        {
+            if (!TryQuoteReputationOrder(troopId, count, 0, out CharacterObject troop, out int cost) ||
+                !PlayerBehaviorPool.TrySpendReputation(cost)) return false;
+            FileTroopOrder(troop, count, cost, paidWithReputation: true);
+            return true;
+        }
+
+        private void FileTroopOrder(CharacterObject troop, int count, int price, bool paidWithReputation)
+        {
+            _orderedTroopId = troop.StringId;
+            _orderedCount = count;
+            _orderPrice = price;
+            _orderPaidWithReputation = paidWithReputation;
             _orderStage = (int)PlayerTroopOrderStage.Training;
             _filedHour = CampaignTime.Now.ToHours;
             _lastOrderXpHour = -1d;
@@ -588,22 +489,23 @@ namespace GreyWardenPolicePurity
             _stockRendezvousSettlementId = string.Empty;
             _stockStayStartHour = -1d;
             _lastStockSourcePartyId = string.Empty;
+#if GWP_DIAGNOSTICS
             MobileParty? trainer = ResolveTrainerParty();
-            CharacterObject? target = CharacterObject.Find(_orderedTroopId);
             if (trainer?.IsActive == true)
-            {
-                GwpAiDiagnostics.WriteAction(trainer,
-                    "PLAYER_TROOP_ORDER_FILED",
-                    "target=" + _orderedTroopId +
-                    "; requested=" + _orderedCount +
-                    "; ready=" + CountHealthy(trainer, target) +
-                    "; price=" + _orderPrice);
-            }
-            InformationManager.DisplayMessage(new InformationMessage(alreadyCollected
-                ? GwpText.Get(GwpTextCatalog.gwp_player_troop_order_filed_prepaid)
-                : GwpText.Get(GwpTextCatalog.gwp_player_troop_order_filed),
-                Colors.Cyan));
+                GwpAiDiagnostics.WriteAction(trainer, "PLAYER_TROOP_ORDER_FILED",
+                    "target=" + _orderedTroopId + "; requested=" + _orderedCount +
+                    "; ready=" + CountHealthy(trainer, troop) + "; price=" + _orderPrice +
+                    "; paidWithReputation=" + _orderPaidWithReputation);
+#endif
+            InformationManager.DisplayMessage(new InformationMessage(
+                GwpText.Get(GwpTextCatalog.gwp_player_troop_order_filed, "PAYMENT", DescribeOrderPayment()), Colors.Cyan));
         }
+
+        private string DescribeOrderPayment() => GwpText.Get(_orderPaidWithReputation
+            ? GwpTextCatalog.gwp_player_troop_cost_reputation : GwpTextCatalog.gwp_player_troop_cost_denars,
+            "AMOUNT", _orderPrice);
+
+
 
         private void OnHourlyTick()
         {
@@ -1143,7 +1045,7 @@ namespace GreyWardenPolicePurity
             MBTextManager.SetTextVariable("GWP_PLAYER_TROOP_DELIVERY_OFFER",
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_offer,
                     "VAR_1", _orderedCount, "VAR_2", troop.Name,
-                    "VAR_3", _orderPrice));
+                    "VAR_3", DescribeOrderPayment()));
             return true;
         }
 
@@ -1169,13 +1071,14 @@ namespace GreyWardenPolicePurity
                 insertAtFront: false, woundedCount: 0);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, _orderedCount,
                 insertAtFront: false, woundedCount: 0);
+#if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteAction(trainer,
                 "PLAYER_TROOP_ORDER_DELIVERED",
                 "troop=" + troop.StringId +
                 "; count=" + _orderedCount +
                 "; price=" + _orderPrice +
-                "; treasury=" +
-                PoliceResourceManager.GetJudicialTreasuryBalance());
+                "; paidWithReputation=" + _orderPaidWithReputation);
+#endif
             QueueFinishDeliveryEncounter();
             StopPlayerContact(trainer);
             ReleaseTrainer(trainer);
@@ -1325,6 +1228,7 @@ namespace GreyWardenPolicePurity
             _orderedTroopId = string.Empty;
             _orderedCount = 0;
             _orderPrice = 0;
+            _orderPaidWithReputation = false;
             _orderStage = (int)PlayerTroopOrderStage.None;
             _filedHour = -1d;
             _lastOrderXpHour = -1d;
@@ -1346,7 +1250,7 @@ namespace GreyWardenPolicePurity
 
         private static int GetOrderLimit(int reputation)
         {
-            if (reputation >= GwpTuning.TroopRequest.EliteDiscountReputation)
+            if (reputation >= GwpTuning.TroopRequest.EliteOrderReputation)
                 return GwpTuning.TroopRequest.EliteOrderLimit;
             if (reputation >= GwpTuning.TroopRequest.KnightReputation)
                 return GwpTuning.TroopRequest.KnightOrderLimit;
@@ -1355,13 +1259,10 @@ namespace GreyWardenPolicePurity
             return GwpTuning.TroopRequest.LowStandingOrderLimit;
         }
 
-        private static int GetPrice(TroopKind kind, int count, int reputation)
+        private static int GetKindOrderLimit(TroopKind kind, int reputation)
         {
-            int discount = reputation >= 80 ? 30 :
-                reputation >= 60 ? 20 :
-                reputation >= 40 ? 10 : 0;
-            return Math.Max(1,
-                kind.PricePerTroop * count * (100 - discount) / 100);
+            int limit = GetOrderLimit(reputation);
+            return kind.TroopId == GwpIds.KnightId ? Math.Max(OrderSizes[0], limit / 3) : limit;
         }
 
     }

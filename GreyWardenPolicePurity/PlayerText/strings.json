@@ -1403,16 +1403,20 @@
       "context": "当前模块的C#/XML/XSLT中未检出该键的调用；保留条目，不重新接入。"
     },
     "gwp_dispatch_troop_order": {
-      "en": "Carry my troop order and payment to the Wardens.",
-      "zh": "把我的调兵订单和款项一起送到灰袍手里。"
+      "en": "Carry my troop order to the Wardens.",
+      "zh": "把我的调兵订单送到灰袍手里。"
     },
     "gwp_player_troop_order_unaffordable": {
-      "en": "You cannot afford this order. It was not placed.",
-      "zh": "你付不起这笔订购款，订单未成立。"
+      "en": "You do not have enough Grey Warden reputation for this order.",
+      "zh": "灰袍声望不足，无法支付这笔订单。"
     },
-    "gwp_player_troop_order_short": {
-      "en": "What you offered falls short of the price. The order was not placed.",
-      "zh": "所付钱物不足订价，订单未成立。"
+    "gwp_player_troop_order_unavailable": {
+      "en": "This troop order can no longer be placed.",
+      "zh": "这笔调兵订单已无法登记。"
+    },
+    "gwp_player_troop_order_capacity": {
+      "en": "After payment, {BUDGET} reputation allows {CAPACITY} Grey Warden troops in your party. This order would exceed that limit.",
+      "zh": "付款后剩 {BUDGET} 点灰袍声望，主队可接纳 {CAPACITY} 名灰袍兵。这笔订单会超过名额。"
     },
     "gwp_fa_charge_cooled": {
       "en": "Let us take up that charge again.",
@@ -1479,12 +1483,12 @@
       "zh": "这事我们谈过了。我的答复不变。"
     },
     "gwp_dispatch_order_moot": {
+      "en": "The Wardens could not register your order. The courier is returning.",
+      "zh": "灰袍无法登记这笔订单，使者正在返回。"
+    },
+    "gwp_dispatch_order_legacy_moot": {
       "en": "The Wardens cannot take this order. Your payment is being brought back.",
       "zh": "灰袍眼下无法接单，款项将随使者带回。"
-    },
-    "gwp_player_troop_order_filed_prepaid": {
-      "en": "The Wardens have received your order and payment. The training lord will deliver the soldiers when they are ready.",
-      "zh": "订单与款项已交给灰袍，练兵领主训练完成后会亲自送来。"
     },
     "gwp_playerbountybehavior_dialogueandnotification_020": {
       "en": null,
@@ -3477,12 +3481,16 @@
       "zh": "我想让练兵官为我准备一批士兵。"
     },
     "gwp_player_troop_order_recorded": {
-      "en": "Settle the price with me now, and I will send the order. The Training Warden will train real troops and bring them to you when they are ready.",
-      "zh": "价钱当场结清，我这就把单子送出去。练兵长会把兵训好，亲自给你送来。"
+      "en": "The Training Warden will bring the soldiers to you when they are ready.",
+      "zh": "练兵官会把兵训好，亲自给你送来。"
+    },
+    "gwp_player_troop_order_return": {
+      "en": "What else did you want to discuss?",
+      "zh": "还有什么事要谈？"
     },
     "gwp_player_troop_delivery_offer": {
-      "en": "Your order is ready: {VAR_1} {VAR_2}. The {VAR_3} denars were settled when you placed it; nothing further is owed.",
-      "zh": "你要的兵已经齐了：{VAR_1} 名{VAR_2}。{VAR_3} 第纳尔在你下单那天就结清了，不欠什么。"
+      "en": "The {VAR_1} {VAR_2} you asked for are ready. We received your payment of {VAR_3} when the order was placed.",
+      "zh": "你要的 {VAR_1} 名{VAR_2}已经齐了。下单时付的{VAR_3}也已记在账上。"
     },
     "gwp_player_troop_delivery_accept": {
       "en": "Then place them under my command.",
@@ -3501,24 +3509,32 @@
       "zh": "好吧。订单已取消，士兵会留在我们这里。"
     },
     "gwp_player_troop_choice": {
-      "en": "{VAR_1} × {VAR_2} — {VAR_3} denars",
-      "zh": "{VAR_1}名{VAR_2} — {VAR_3}第纳尔"
+      "en": "{VAR_1} × {VAR_2} ({VAR_3} Grey Warden reputation)",
+      "zh": "{VAR_1} 名{VAR_2}（{VAR_3} 点灰袍声望）"
     },
     "gwp_player_troop_order_title": {
       "en": "Place a troop order",
       "zh": "提交调兵订单"
     },
     "gwp_player_troop_order_description": {
-      "en": "Your Grey Warden standing sets the maximum order and available branches.",
-      "zh": "你在灰袍中的声望决定订单上限和可选兵种。"
+      "en": "Each order costs Grey Warden reputation when it is registered. Your remaining reputation determines how many Grey Warden troops you can take in.",
+      "zh": "订单登记时扣除灰袍声望。付款后剩余的声望决定主队还能接纳多少灰袍兵。"
     },
     "gwp_player_troop_order_confirm": {
       "en": "Send order",
       "zh": "发送订单"
     },
     "gwp_player_troop_order_filed": {
-      "en": "The Training Warden has your order and will bring the soldiers to you once they are ready.",
-      "zh": "练兵领主已收到订单，训练完成后会送到你身边。"
+      "en": "The Training Warden has your order. Payment received: {PAYMENT}. You will receive the troops once they are ready.",
+      "zh": "练兵官已登记订单，收到{PAYMENT}。训练完成后会把兵送来。"
+    },
+    "gwp_player_troop_cost_reputation": {
+      "en": "{AMOUNT} Grey Warden reputation",
+      "zh": "{AMOUNT} 点灰袍声望"
+    },
+    "gwp_player_troop_cost_denars": {
+      "en": "{AMOUNT} denars",
+      "zh": "{AMOUNT} 第纳尔"
     },
     "gwp_player_request_unknown_liaison": {
       "en": "Unknown Noble Affairs Liaison",
@@ -3581,8 +3597,8 @@
       "zh": "练兵官：{VAR_1} | {VAR_2}"
     },
     "gwp_player_troop_ledger_detail": {
-      "en": "Ready: {VAR_1}/{VAR_2} | Paid: {VAR_3} denars",
-      "zh": "已备：{VAR_1}/{VAR_2} | 已付：{VAR_3} 第纳尔"
+      "en": "Ready: {VAR_1}/{VAR_2} | Paid: {VAR_3}",
+      "zh": "已备：{VAR_1}/{VAR_2} | 已付：{VAR_3}"
     },
     "gwp_player_troop_stage_training": {
       "en": "Training",
