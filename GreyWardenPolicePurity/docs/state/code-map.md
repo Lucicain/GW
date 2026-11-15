@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-238 个源文件、60,382 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
+238 个源文件、60,389 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -886,12 +886,12 @@
 - `GwpCaseTargetNameplatePatch.cs` — 44 行 · `GwpCaseTargetNameplatePatch`，另含 1 个类型
 - `GwpFieldFineBarterable.cs` — 44 行 · `GwpFieldFineBarterable` : Barterable
 - `GwpPartySizeLimitModel.cs` — 44 行 · `GwpPartySizeLimitModel` : DefaultPartySizeLimitModel
+- `GwpAssetAutoOfferPatch.cs` — 43 行 · `GwpAssetAutoOfferPatch`
 - `GwpLeaderlessFoodModel.cs` — 41 行 · `GwpLeaderlessFoodModel` : MobilePartyFoodConsumptionModel
 - `GwpWardenTroopGenderPatch.cs` — 41 行 · `GwpWardenTroopGenderPatch`
 - `GwpVoluntarySurrender.cs` — 40 行 · `GwpVoluntarySurrender`
 - `GwpGauntletWidgetUtility.cs` — 39 行 · `GwpGauntletWidgetUtility`
 - `FireswornTradeRules.cs` — 36 行 · `FireswornTradeKind`，另含 1 个类型
-- `GwpAssetAutoOfferPatch.cs` — 36 行 · `GwpAssetAutoOfferPatch`
 - `GwpDamnationSmokePatch.cs` — 36 行 · `GwpDamnationSmokePatch`
 - `GwpDuelOpponentMarkerPatch.cs` — 36 行 · `GwpDuelOpponentMarkerPatch`
 - `GwpCrimeDesireAuction.cs` — 35 行 · `GwpCrimeDesireAuction`

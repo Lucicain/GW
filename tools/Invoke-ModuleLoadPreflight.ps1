@@ -191,7 +191,38 @@ foreach ($initializationFailure in [GwpPreflightInitializationWatch]::Failures) 
 Write-Host ('STATIC_INIT_FAIL_COUNT=' + [GwpPreflightInitializationWatch]::Failures.Count)
 Write-Host ('PATCH_OK=' + $ok + '; PATCH_FAIL=' + $fail)
 
-if ($typeLoadFailures -gt 0 -or $memberFail -gt 0 -or $fail -gt 0 -or $earlyUiFieldFaults -gt 0 -or [GwpPreflightInitializationWatch]::Failures.Count -gt 0) {
+# AccessTools.Method/Field/Property return null when a game update removes or renames
+# the member; nothing throws until the handle is first used. 2026-11-16: v1.5.7 dropped
+# BarterVM.RefreshOfferLabel and the dispatch barter auto-balance button threw. Read
+# every static readonly reflection handle (MemberInfo or delegate, incl. FieldRef) once.
+$reflectionNull = 0
+$staticFlags = [System.Reflection.BindingFlags]::Public -bor
+               [System.Reflection.BindingFlags]::NonPublic -bor
+               [System.Reflection.BindingFlags]::Static -bor
+               [System.Reflection.BindingFlags]::DeclaredOnly
+foreach ($t in $types) {
+    if ($t.ContainsGenericParameters) { continue }
+    $handles = @()
+    try {
+        $handles = @($t.GetFields($staticFlags) | Where-Object {
+            $_.IsInitOnly -and ([System.Reflection.MemberInfo].IsAssignableFrom($_.FieldType) -or
+                [System.Delegate].IsAssignableFrom($_.FieldType)) })
+    } catch { continue }
+    foreach ($f in $handles) {
+        try {
+            if ($null -eq $f.GetValue($null)) {
+                $reflectionNull++
+                Write-Host ('  REFLECTION_NULL ' + $t.FullName + '.' + $f.Name)
+            }
+        } catch {
+            $reflectionNull++
+            Write-Host ('  REFLECTION_INIT_FAIL ' + $t.FullName + '.' + $f.Name + ': ' + $_.Exception.GetBaseException().Message)
+        }
+    }
+}
+Write-Host ('REFLECTION_NULL_COUNT=' + $reflectionNull)
+
+if ($typeLoadFailures -gt 0 -or $memberFail -gt 0 -or $fail -gt 0 -or $earlyUiFieldFaults -gt 0 -or $reflectionNull -gt 0 -or [GwpPreflightInitializationWatch]::Failures.Count -gt 0) {
     Write-Host 'PREFLIGHT=FAIL'
     exit 1
 }

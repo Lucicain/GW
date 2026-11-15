@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[交付与升阶的底部声望预期](firesworn-economy.md#玩家向祭司交付)、[原版部队界面挑兵下单](troop-orders.md#订单阶段)和[村民打赏退休](village-relief.md#村民打赏已退休)。Client/Editor DLL 的 SHA-256 同为 `35FC21FCF90A8A7C3927CA36F0BA796EC09D214A49DECC1DFC69561E7F8EDBDE`。仓库与 live 中文语言 XML 同为 `1427F572962604EBC8AE941F849AF68E6674BFA384B30B1F9F544EC25FBF7928`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。安装版兼容预检通过，部署后的 DLL 与受检文件等哈希，live 镜像核对无差异。（依据：构建、部署与兼容预检 2026-11-16）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[交付与升阶的底部声望预期](firesworn-economy.md#玩家向祭司交付)、[原版部队界面挑兵下单](troop-orders.md#订单阶段)和[村民打赏退休](village-relief.md#村民打赏已退休)。Client/Editor DLL 的 SHA-256 同为 `7B2E37C4068DB661938FC9E193341140EFB6039F3AE354E367C5FE4DEAC2AF60`（复命配平修复后重新部署）。仓库与 live 中文语言 XML 同为 `1427F572962604EBC8AE941F849AF68E6674BFA384B30B1F9F544EC25FBF7928`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。安装版兼容预检通过，部署后的 DLL 与受检文件等哈希，live 镜像核对无差异。（依据：构建、部署与兼容预检 2026-11-16，复命配平修复后复核）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 
@@ -65,7 +65,7 @@ v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点�
 
 | 脚本 | 作用 | 通过标准 |
 |---|---|---|
-| `Invoke-ModuleLoadPreflight.ps1` | 加载安装版依赖并检查类型/补丁绑定、启动名牌补丁的界面静态字段依赖与实际初始化异常 | 类型/成员无缺失，补丁全部成功；EARLY_UI_FIELD_FAIL_COUNT与STATIC_INIT_FAIL_COUNT均0；数量变化有解释 |
+| `Invoke-ModuleLoadPreflight.ps1` | 加载安装版依赖并检查类型/补丁绑定、启动名牌补丁的界面静态字段依赖与实际初始化异常；逐个读取模组里 `static readonly` 的反射句柄（方法、字段、属性、委托），按名字找不到的原版成员会是 null（依据：实机故障 2026-11-16，v1.5.7 删了 `BarterVM.RefreshOfferLabel`，旧预检全部通过） | 类型/成员无缺失，补丁全部成功；EARLY_UI_FIELD_FAIL_COUNT、STATIC_INIT_FAIL_COUNT与REFLECTION_NULL_COUNT均0；数量变化有解释。方法体里临时按名字反射的查找不在此列 |
 | `Verify-GameCompat.ps1` | 检查 DLL 与当前安装的 Bannerlord 是否兼容，防止换游戏版本后静默产出游戏拒绝加载的模组。默认查 live 目录里已部署的 DLL，须部署后再跑，或用 `-ModuleDll` 指向新构建；部署前跑查的是旧版（依据：实机核对 2026-10-22，补丁类数未随改动变化） | `GAME COMPAT: PASS`、`MEMBER_FAIL_COUNT=0`、`PATCH_FAIL=0` |
 | `Verify-LiveModule.ps1` | **双向**比对开发 runtime，检查开发布局和双端监控 DLL | 无缺失/差异/散落；三类可编辑目录非空；无客户端/服务器打包目录；Client/Editor DLL 哈希一致且五组监控串存在；两份玩家 README 一致 |
 | `Verify-ContentKeys.ps1` | XML / 字面量 / 生成的本地化键，只读 | `MISSING=0`。未被引用的字符串**不是死内容的证据，永不删除** |
