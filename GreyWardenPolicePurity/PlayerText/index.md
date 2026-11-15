@@ -114,14 +114,6 @@
 | gwp_greywardentrooprequestbehavior_014 | — | ，按当前名声减免 {VAR_1}% | 未检出直接引用；保留 |
 | gwp_greywardentrooprequestbehavior_015 | — | 我要 {VAR_1} 名{VAR_2}（{VAR_3} 金{VAR_4}） | 未检出直接引用；保留 |
 | gwp_greywardenvillageadoptionbehavior_001 | nameless village | 无名村庄 | GreyWardenVillageAdoptionBehavior.cs:356 |
-| gwp_greywardenvillagerewardbehavior_001 | Receive rewards from villagers (you can receive {VAR_1} dinars) | 领取村民酬谢（可领 {VAR_1} 第纳尔） | GreyWardenVillageRewardBehavior.cs:108 |
-| gwp_greywardenvillagerewardbehavior_002 | The villagers have gathered no reward yet. | 村民尚未筹出酬谢。 | GreyWardenVillageRewardBehavior.cs:119 |
-| gwp_greywardenvillagerewardbehavior_003 | You collect the villagers' reward of {VAR_1} denars. | 你领取了村民的酬谢 {VAR_1} 第纳尔。 | GreyWardenVillageRewardBehavior.cs:151 |
-| gwp_greywardenvillagerewardsliderscreen_001 | Set the amount to be received | 设置领取金额 | GreyWardenVillageRewardSliderScreen.cs:242 |
-| gwp_greywardenvillagerewardsliderscreen_002 | Drag the slider to select the villager reward to be received this time. You can currently claim up to {VAR_1} dinars. | 拖动滑块，选择本次要领取的村民酬谢。当前最多可领 {VAR_1} 第纳尔。 | GreyWardenVillageRewardSliderScreen.cs:243 |
-| gwp_greywardenvillagerewardsliderscreen_003 | Confirm | 确认 | GreyWardenVillageRewardSliderScreen.cs:244 |
-| gwp_greywardenvillagerewardsliderscreen_004 | Cancel | 取消 | GreyWardenVillageRewardSliderScreen.cs:245 |
-| gwp_greywardenvillagerewardsliderscreen_005 | {VAR_1} Dinar | {VAR_1} 第纳尔 | GreyWardenVillageRewardSliderScreen.cs:251 |
 | gwp_gwpaideterrencestate_001 | Unknown status | 状态不明 | GwpAiDeterrenceState.cs:343 |
 | gwp_gwpaideterrencestate_002 | Unknown location | 未知位置 | GwpAiDeterrenceState.cs:344 |
 | gwp_gwpaideterrencestate_003 | This person | 此人 | GwpAiDeterrenceState.cs:378 |

@@ -471,38 +471,6 @@
       "en": "nameless village",
       "zh": "无名村庄"
     },
-    "gwp_greywardenvillagerewardbehavior_001": {
-      "en": "Receive rewards from villagers (you can receive {VAR_1} dinars)",
-      "zh": "领取村民酬谢（可领 {VAR_1} 第纳尔）"
-    },
-    "gwp_greywardenvillagerewardbehavior_002": {
-      "en": "The villagers have gathered no reward yet.",
-      "zh": "村民尚未筹出酬谢。"
-    },
-    "gwp_greywardenvillagerewardbehavior_003": {
-      "en": "You collect the villagers' reward of {VAR_1} denars.",
-      "zh": "你领取了村民的酬谢 {VAR_1} 第纳尔。"
-    },
-    "gwp_greywardenvillagerewardsliderscreen_001": {
-      "en": "Set the amount to be received",
-      "zh": "设置领取金额"
-    },
-    "gwp_greywardenvillagerewardsliderscreen_002": {
-      "en": "Drag the slider to select the villager reward to be received this time. You can currently claim up to {VAR_1} dinars.",
-      "zh": "拖动滑块，选择本次要领取的村民酬谢。当前最多可领 {VAR_1} 第纳尔。"
-    },
-    "gwp_greywardenvillagerewardsliderscreen_003": {
-      "en": "Confirm",
-      "zh": "确认"
-    },
-    "gwp_greywardenvillagerewardsliderscreen_004": {
-      "en": "Cancel",
-      "zh": "取消"
-    },
-    "gwp_greywardenvillagerewardsliderscreen_005": {
-      "en": "{VAR_1} Dinar",
-      "zh": "{VAR_1} 第纳尔"
-    },
     "gwp_gwpaideterrencestate_001": {
       "en": "Unknown status",
       "zh": "状态不明"

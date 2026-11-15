@@ -29,6 +29,10 @@
 `UpdateGovernorsOfClan`。因此总督分配会在新档事件期间发生，并非必须等到第一个日结。
 仅在较晚的行为监听器中清除旧状态，无法保证较早的初始化和候选检查不读到它。
 
+## 已删除行为的存档数据
+
+行为不传名字时，存档键就是类型名（`CampaignBehaviorBase()` 设 `StringId = GetType().Name`）。读档时 `CampaignBehaviorDataStore.LoadBehaviorData` 只为当前注册的行为取数：先按存档键精确匹配；找不到自己的键时，取第一个「键里包含本类型名」的记录改名占用。`CampaignBehaviorManager` 读完就清空这张表，存档时也是清空后按现存行为重写，所以已删除行为的数据不会被读取，下次存档即消失。隐患在那条回退：以后新加的行为若类型名恰是旧档某个键的子串，读旧档时会把那份数据当成自己的。（依据：v1.5.7 C#反编译 `CampaignBehaviorBase`、`CampaignBehaviorDataStore`、`CampaignBehaviorManager`，2026-11-15）
+
 ## 开局孩子与家谱
 
 主新档事件完成后，`CampaignEvents` 依序分发补充事件索引 0 到 99，然后分发 `OnNewGameCreatedPartialFollowUpEndEvent`。原版 `InitialChildGenerationCampaignBehavior` 在索引 0 为符合条件的非玩家家族补孩子，目标数为成年领主数的一半向上取整。它用 `HeroCreator.CreateChild` 借用人物模板生成 2 至 17 岁的英雄，指定家族和出生地。

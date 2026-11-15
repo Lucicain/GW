@@ -114,14 +114,6 @@
   <string id="gwp_greywardentrooprequestbehavior_014" text="，按当前名声减免 {VAR_1}%" />
   <string id="gwp_greywardentrooprequestbehavior_015" text="我要 {VAR_1} 名{VAR_2}（{VAR_3} 金{VAR_4}）" />
   <string id="gwp_greywardenvillageadoptionbehavior_001" text="无名村庄" />
-  <string id="gwp_greywardenvillagerewardbehavior_001" text="领取村民酬谢（可领 {VAR_1} 第纳尔）" />
-  <string id="gwp_greywardenvillagerewardbehavior_002" text="村民尚未筹出酬谢。" />
-  <string id="gwp_greywardenvillagerewardbehavior_003" text="你领取了村民的酬谢 {VAR_1} 第纳尔。" />
-  <string id="gwp_greywardenvillagerewardsliderscreen_001" text="设置领取金额" />
-  <string id="gwp_greywardenvillagerewardsliderscreen_002" text="拖动滑块，选择本次要领取的村民酬谢。当前最多可领 {VAR_1} 第纳尔。" />
-  <string id="gwp_greywardenvillagerewardsliderscreen_003" text="确认" />
-  <string id="gwp_greywardenvillagerewardsliderscreen_004" text="取消" />
-  <string id="gwp_greywardenvillagerewardsliderscreen_005" text="{VAR_1} 第纳尔" />
   <string id="gwp_gwpaideterrencestate_001" text="状态不明" />
   <string id="gwp_gwpaideterrencestate_002" text="未知位置" />
   <string id="gwp_gwpaideterrencestate_003" text="此人" />

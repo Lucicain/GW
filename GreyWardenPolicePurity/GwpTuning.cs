@@ -305,11 +305,6 @@ namespace GreyWardenPolicePurity
             public const int AdoptedGirlMaxAge = 6;
         }
 
-        internal static class VillageReward
-        {
-            public const int DenarsPerReputationPerDay = 10;
-        }
-
         internal static class Reconstruction
         {
             public const float WorkHours = 24f;

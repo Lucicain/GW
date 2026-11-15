@@ -79,7 +79,7 @@ GwpPlayerIntervention扩展原版join_encounter已有的帮助攻方/帮助守�
 
 ### 对世界的后续影响
 
-- 玩家现场救援或协助执法可积累声望，继而关联入会、委托、[打赏](village-relief.md#村民打赏greywardenvillagerewardbehavior)、[订兵](troop-orders.md)、[封地重议支持](player-requests.md#民意支持)和[战场援军](battle-support.md)；各自门槛只在所属业务维护。
+- 玩家现场救援或协助执法可积累声望，继而关联入会、委托、[订兵](troop-orders.md)、[封地重议支持](player-requests.md#民意支持)和[战场援军](battle-support.md)；各自门槛只在所属业务维护。
 - 执法处置会影响罪犯本人与同族、目击者的[震慑](crime-intake.md#震慑gwpaideterrencestate)，进而影响之后袭击村民/商队及烧村的AI意愿；不是每次路过救援都自动登记一次惩戒。
 - 犯罪与妨碍执法进入声望/追责通道；[纠察](patrol.md)、[正式追捕及本队NPC旧案](case-enforcement.md#主队中的-npc-旧案)、[赎罪](atonement.md)分别办理，不把玩家与同伴案底混成一笔。
 - 玩家可在英雄百科查看犯罪账目与震慑、在事务中看开放案/成员工作及教务动态；已承办普通或赎罪目标另有地图名牌标识。查看不授予现场执法权，权限归GwpPlayerCaseAssignment。（依据：源码复核2026-10-21）

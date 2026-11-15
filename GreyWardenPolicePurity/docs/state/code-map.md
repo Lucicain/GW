@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-240 个源文件、60,845 行、459 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
+238 个源文件、60,382 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -169,7 +169,6 @@
 - `GwpFieldReportLedger`
 - `GwpWardenDispatchBehavior`
 - `GreyWardenVillageAdoptionBehavior`
-- `GreyWardenVillageRewardBehavior`
 - `GreyWardenLoreBehavior`
 - `GreyWardenFamilyBehavior`
 - `GwpWardenMarriageBehavior`
@@ -274,9 +273,6 @@
 - `GreyWardenTroopRequestBehavior` → GreyWardenTroopRequestBehavior.Cohort.cs , GreyWardenTroopRequestBehavior.cs , GreyWardenTroopRequestBehavior.OrderScreen.cs
 - `GreyWardenVillageAdoptionBehavior` → GreyWardenVillageAdoptionBehavior.cs
 - `GreyWardenVillageReconstructionBehavior` → GreyWardenVillageReconstructionBehavior.cs
-- `GreyWardenVillageRewardBehavior` → GreyWardenVillageRewardBehavior.cs
-- `GreyWardenVillageRewardSliderScreen` → GreyWardenVillageRewardSliderScreen.cs
-- `GreyWardenVillageRewardSliderVM` → GreyWardenVillageRewardSliderScreen.cs ←
 - `GwpAchievementActivityPatch` → GwpAchievementCompatibilityPatch.cs ←
 - `GwpAchievementCompatibility` → GwpAchievementCompatibilityPatch.cs
 - `GwpActionCacheDiagnostics` → GwpCharacterPreviewDiagnostics.cs ←
@@ -624,13 +620,12 @@
 - `TroopRequest` → GwpTuning.cs ←
 - `TroopTransferRules` → TroopTransferRules.cs
 - `VillageReliefTaskSnapshot` → GreyWardenVillageAdoptionBehavior.cs ←
-- `VillageReward` → GwpTuning.cs ←
 - `Voice` → GwpMusicScore.cs ←
 - `WardenDuty` → GwpWardenDuties.cs ←
 - `WardenReputationRules` → WardenReputationRules.cs
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 234 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 232 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -742,13 +737,11 @@
 - `GreyWardenSparringBehavior.cs` — 909 行 · `GreyWardenSparringBehavior` : CampaignBehaviorBase
 - `GreyWardenTrainingBehavior.cs` — 105 行 · `GreyWardenTrainingBehavior` : CampaignBehaviorBase，另含 2 个类型
 
-### 家族与村庄（5 个文件）
+### 家族与村庄（3 个文件）
 
 - `GreyWardenVillageAdoptionBehavior.cs` — 789 行 · `GreyWardenVillageAdoptionBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GreyWardenFamilyBehavior.cs` — 681 行 · `GreyWardenFamilyBehavior` : CampaignBehaviorBase，另含 1 个类型
 - `GreyWardenVillageReconstructionBehavior.cs` — 550 行 · `GreyWardenVillageReconstructionBehavior` : CampaignBehaviorBase，另含 2 个类型
-- `GreyWardenVillageRewardSliderScreen.cs` — 255 行 · `GreyWardenVillageRewardSliderScreen` : ViewModel，另含 1 个类型
-- `GreyWardenVillageRewardBehavior.cs` — 194 行 · `GreyWardenVillageRewardBehavior` : CampaignBehaviorBase
 
 ### 战斗数值模型（1 个文件）
 
@@ -767,17 +760,17 @@
 ### 数据与共用（4 个文件）
 
 - `GwpData.cs` — 1014 行 · `CrimeRecord`，另含 4 个类型
-- `GwpTuning.cs` — 452 行 · `GwpTuning`，另含 17 个类型
+- `GwpTuning.cs` — 447 行 · `GwpTuning`，另含 16 个类型
 - `GwpCommon.cs` — 403 行 · `GwpCommon`
 - `GwpIds.cs` — 98 行 · `GwpIds`
 
 ### 入口（1 个文件）
 
-- `SubModule.cs` — 190 行 · `SubModule` : MBSubModuleBase
+- `SubModule.cs` — 189 行 · `SubModule` : MBSubModuleBase
 
 ### 其他（144 个文件）
 
-- `GwpTextCatalog.g.cs` — 1452 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1444 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1357 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 900 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型

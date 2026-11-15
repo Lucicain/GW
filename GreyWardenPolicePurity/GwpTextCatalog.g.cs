@@ -910,14 +910,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_greywardenfamilybehavior_053 = "{=gwp_greywardenfamilybehavior_053}Village Reconstruction Warden";
         internal const string gwp_greywardenfamilybehavior_054 = "{=gwp_greywardenfamilybehavior_054}Grey Warden Lawkeeper";
         internal const string gwp_greywardenvillageadoptionbehavior_001 = "{=gwp_greywardenvillageadoptionbehavior_001}nameless village";
-        internal const string gwp_greywardenvillagerewardbehavior_001 = "{=gwp_greywardenvillagerewardbehavior_001}Receive rewards from villagers (you can receive {VAR_1} dinars)";
-        internal const string gwp_greywardenvillagerewardbehavior_002 = "{=gwp_greywardenvillagerewardbehavior_002}The villagers have gathered no reward yet.";
-        internal const string gwp_greywardenvillagerewardbehavior_003 = "{=gwp_greywardenvillagerewardbehavior_003}You collect the villagers' reward of {VAR_1} denars.";
-        internal const string gwp_greywardenvillagerewardsliderscreen_001 = "{=gwp_greywardenvillagerewardsliderscreen_001}Set the amount to be received";
-        internal const string gwp_greywardenvillagerewardsliderscreen_002 = "{=gwp_greywardenvillagerewardsliderscreen_002}Drag the slider to select the villager reward to be received this time. You can currently claim up to {VAR_1} dinars.";
-        internal const string gwp_greywardenvillagerewardsliderscreen_003 = "{=gwp_greywardenvillagerewardsliderscreen_003}Confirm";
-        internal const string gwp_greywardenvillagerewardsliderscreen_004 = "{=gwp_greywardenvillagerewardsliderscreen_004}Cancel";
-        internal const string gwp_greywardenvillagerewardsliderscreen_005 = "{=gwp_greywardenvillagerewardsliderscreen_005}{VAR_1} Dinar";
         internal const string gwp_gwpaideterrencestate_001 = "{=gwp_gwpaideterrencestate_001}Unknown status";
         internal const string gwp_gwpaideterrencestate_002 = "{=gwp_gwpaideterrencestate_002}Unknown location";
         internal const string gwp_gwpaideterrencestate_003 = "{=gwp_gwpaideterrencestate_003}This person";

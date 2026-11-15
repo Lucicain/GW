@@ -1,8 +1,8 @@
-# 村庄善后、收养、重建、请愿与村民打赏
+# 村庄善后、收养、重建与请愿
 
-> 当前状态：村庄收养接入原版家谱，待实测；事务页酬谢入口已撤除
+> 当前状态：村庄收养接入原版家谱，待实测；村民打赏已退休
 > 最后验收：未建立检查点
-> 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs` `GreyWardenVillageRewardBehavior.cs` `GreyWardenVillageRewardSliderScreen.cs`
+> 覆盖源码：`GreyWardenVillageAdoptionBehavior.cs` `GreyWardenAdoptionLogEntry.cs` `GreyWardenVillageReconstructionBehavior.cs` `GreyWardenIssueResolutionBehavior.cs`
 > 待实测：完成收养后查看养亲及读档接续；约斗不被收养抢人；先领收养后新约斗能暂停返回；离村不计时、返回续办；暂停与待派状态存读接续，agent读取诊断核对
 
 灰袍在聚落里做的非执法差事。范围都是全大陆，不看村子归谁。谁来做、谁让谁，见 [`warden-ai.md`](warden-ai.md)。
@@ -57,10 +57,7 @@
   - 公库加 3,000；
   - 计入玩家请求的顺延。
 
-## 村民打赏（`GreyWardenVillageRewardBehavior`）
+## 村民打赏（已退休）
 
-事务页不显示酬谢分类或余额，不提供领取入口；原村庄菜单、累计余额、滑条与保存键保持。（依据：用户裁定2026-10-21）
-
-- 玩家灰袍声望为正时，每天按「声望 × 10」第纳尔累积一笔打赏，在任何村子的菜单里都能领。
-- 领取时可以用滑条（`GreyWardenVillageRewardSliderScreen`）选领多少。
-- 声望为 0 不再累积；声望转负时清空未领的部分。
+按声望每天累积、在村庄菜单领取第纳尔的村民打赏退休，村庄菜单入口、领取滑条、累计余额与调参一并删除。（依据：用户裁定 2026-11-15「村民酬谢不再需要，机制太老、没啥用」）
+- 不另做替代，旧档里未领的余额不再发放；旧档残留的行为数据如何处理见[行为存读](../vanilla/campaign-lifecycle.md#已删除行为的存档数据)。（依据：退休实施 2026-11-15）
