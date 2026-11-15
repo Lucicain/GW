@@ -63,7 +63,8 @@ namespace GreyWardenPolicePurity
         private static void Prefix()
         {
             // Refusing to apply changes from the navigation bar pops the state
-            // without calling PartyScreenLogic.Reset or DoneLogic.
+            // without calling PartyScreenLogic.Reset or DoneLogic. Non-normal party screens
+            // (the selection copies) lock navigation, so they never get here.
             if (!MapNavigationHelper.IsMapTopScreen() &&
                 GameStateManager.Current.ActiveState is PartyState { PartyScreenLogic: { } screen })
                 GwpPlayerWardenTroops.DiscardUnconfirmedChanges(screen, InitialData(screen).RightMemberRoster);
@@ -79,7 +80,8 @@ namespace GreyWardenPolicePurity
         private static void Postfix(PartyScreenLogic __instance, PartyScreenData ____initialData,
             ref bool __result)
         {
-            if (!__result || __instance.RightOwnerParty?.MobileParty?.IsMainParty != true) return;
+            if (!__result || __instance.RightOwnerParty?.MobileParty?.IsMainParty != true ||
+                GwpPartyScreenPreview.IsSelection(__instance)) return;
 
             TextObject? reason = GwpPlayerWardenTroops.GetConfirmRestriction(__instance, ____initialData.RightMemberRoster,
                 GwpPlayerWardenTroops.PendingUpgrades(__instance));
@@ -115,7 +117,8 @@ namespace GreyWardenPolicePurity
             ref int __state, ref bool __result)
         {
             __state = 0;
-            if (__instance.RightOwnerParty?.MobileParty?.IsMainParty != true) return true;
+            if (__instance.RightOwnerParty?.MobileParty?.IsMainParty != true ||
+                GwpPartyScreenPreview.IsSelection(__instance)) return true;
 
             int upgrades = GwpPlayerWardenTroops.PendingUpgrades(__instance);
             TextObject? reason = GwpPlayerWardenTroops.GetConfirmRestriction(__instance, ____initialData.RightMemberRoster, upgrades);
@@ -185,11 +188,9 @@ namespace GreyWardenPolicePurity
             if (Game.Current.GameStateManager.ActiveState is not PartyState state || state.PartyScreenLogic.IsTroopUpgradesDisabled ||
                 !GwpPlayerWardenTroops.IsPlayerWardenTroop(state.PartyScreenLogic.RightOwnerParty, ____originalCharacter)) return;
 
-            int pending = GwpPlayerWardenTroops.PendingUpgrades(state.PartyScreenLogic);
-            string charge = PlayerBehaviorPool.AffordableWardenUpgrades <= pending
-                ? GwpText.Get(GwpTextCatalog.gwp_warden_upgrade_insufficient)
-                : GwpText.Get(GwpTextCatalog.gwp_warden_upgrade_hint,
-                    "COUNT", WardenReputationRules.UpgradesPerPoint, "COST", PlayerBehaviorPool.WardenUpgradeCost(pending));
+            // 扣多少声望显示在界面底部居中（GwpPartyScreenPreview），这里只在扣不起时提醒，不讲换算规则。
+            if (PlayerBehaviorPool.AffordableWardenUpgrades > GwpPlayerWardenTroops.PendingUpgrades(state.PartyScreenLogic)) return;
+            string charge = GwpText.Get(GwpTextCatalog.gwp_warden_upgrade_insufficient);
             __result = string.IsNullOrEmpty(__result) ? charge : __result + Environment.NewLine + charge;
         }
     }

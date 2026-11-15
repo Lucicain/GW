@@ -324,17 +324,6 @@ namespace GreyWardenPolicePurity
         private bool CanStartOrder() =>
             _orderStage == (int)PlayerTroopOrderStage.None && ResolveTrainerParty()?.IsActive == true;
 
-        private static void ShowTroopOrderScreen(int escortCount, Action<string> confirm, Action? cancel)
-        {
-            if (!CanChooseNewOrder())
-            {
-                cancel?.Invoke();
-                return;
-            }
-            var troops = OrderTroopIds.Select(CharacterObject.Find).Where(GwpCommon.IsGreyWardenTroop).ToList();
-            GwpTroopOrderState.Open(troops, escortCount, confirm, cancel);
-        }
-
         internal static void ShowCourierOrderInquiry(int escortCount, Action<string> onChosen, Action onCancelled) =>
             ShowTroopOrderScreen(escortCount, onChosen, onCancelled);
 
@@ -386,8 +375,7 @@ namespace GreyWardenPolicePurity
         internal static TextObject? GetOrderRestriction((int Balance, bool HasRoom) quote)
         {
             if (quote.Balance < 0) return GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unaffordable);
-            return quote.HasRoom ? null : GwpText.Create(GwpTextCatalog.gwp_player_troop_order_capacity,
-                "BUDGET", PlayerBehaviorPool.FormatReputationUnits(quote.Balance), "CAPACITY", GwpPlayerWardenTroops.Capacity(quote.Balance));
+            return quote.HasRoom ? null : GwpText.Create(GwpTextCatalog.gwp_player_troop_order_capacity);
         }
 
         private static IReadOnlyList<(CharacterObject Troop, int Count)> ResolveOrderLines(

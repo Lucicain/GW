@@ -828,11 +828,9 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_trade_armory_prepare_reply = "{=gwp_fs_trade_armory_prepare_reply}Go ahead. Set aside the gear you can spare, then come and see me again.";
         internal const string gwp_fs_trade_armory_reply = "{=gwp_fs_trade_armory_reply}Show me what you can spare. We'll put it to use here.";
         internal const string gwp_fs_trade_armory_title = "{=gwp_fs_trade_armory_title}Supply the Village Armoury";
-        internal const string gwp_fs_trade_preview = "{=gwp_fs_trade_preview}On confirmation, Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.";
         internal const string gwp_fs_trade_prisoners_ask = "{=gwp_fs_trade_prisoners_ask}I have prisoners to hand over.";
         internal const string gwp_fs_trade_prisoners_reply = "{=gwp_fs_trade_prisoners_reply}Let me see whom you've brought. The Wardens will remember this.";
         internal const string gwp_fs_trade_prisoners_title = "{=gwp_fs_trade_prisoners_title}Hand Over Prisoners";
-        internal const string gwp_fs_trade_receipt = "{=gwp_fs_trade_receipt}Delivery accepted. Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.";
         internal const string gwp_fs_trade_return = "{=gwp_fs_trade_return}Was there anything else?";
         internal const string gwp_fs_trade_troops_ask = "{=gwp_fs_trade_troops_ask}Some of my soldiers could serve here.";
         internal const string gwp_fs_trade_troops_reply = "{=gwp_fs_trade_troops_reply}Show me whom you can spare. We could use some veterans on the watch.";
@@ -1062,6 +1060,8 @@ namespace GreyWardenPolicePurity
         internal const string gwp_notice_rebuilt = "{=gwp_notice_rebuilt}Rebuilt this village";
         internal const string gwp_notice_training = "{=gwp_notice_training}{COUNT} veterans joined the village guard.";
         internal const string gwp_offer_changed = "{=gwp_offer_changed}What you hand over does not match the agreement. Adjust it and try again.";
+        internal const string gwp_party_reputation_cost = "{=gwp_party_reputation_cost}You will spend {AMOUNT} Grey Warden reputation";
+        internal const string gwp_party_reputation_gain = "{=gwp_party_reputation_gain}You will gain {AMOUNT} Grey Warden reputation";
         internal const string gwp_patrol_barter_name_cn = "{=gwp_patrol_barter_name_cn}penalty clause";
         internal const string gwp_patrol_returning_dialogue = "{=gwp_patrol_returning_dialogue}This patrol has rendered its account and is returning to quarters. No further hearing will be held.";
         internal const string gwp_player_armory = "{=gwp_player_armory}My armory";
@@ -1096,19 +1096,16 @@ namespace GreyWardenPolicePurity
         internal const string gwp_player_troop_ledger_assignment = "{=gwp_player_troop_ledger_assignment}Trainer: {VAR_1} | {VAR_2}";
         internal const string gwp_player_troop_ledger_detail = "{=gwp_player_troop_ledger_detail}Ready: {VAR_1}/{VAR_2} | Paid: {VAR_3}";
         internal const string gwp_player_troop_ledger_header = "{=gwp_player_troop_ledger_header}Troop order: {VAR_1} soldiers ({VAR_2})";
-        internal const string gwp_player_troop_order_capacity = "{=gwp_player_troop_order_capacity}After payment, {BUDGET} reputation allows {CAPACITY} Grey Warden troops in your party. This order would exceed that limit.";
+        internal const string gwp_player_troop_order_capacity = "{=gwp_player_troop_order_capacity}After this payment, your Grey Warden reputation would not be enough to take this many Grey Warden troops.";
         internal const string gwp_player_troop_order_choose = "{=gwp_player_troop_order_choose}Tell me which soldiers you need. The Training Warden will bring them when they are ready.";
-        internal const string gwp_player_troop_order_confirm = "{=gwp_player_troop_order_confirm}Send order";
-        internal const string gwp_player_troop_order_description = "{=gwp_player_troop_order_description}Choose how many soldiers to order for each troop type. Pay the total reputation when the order is registered.";
+        internal const string gwp_player_troop_order_empty = "{=gwp_player_troop_order_empty}Choose the troops you want to order.";
         internal const string gwp_player_troop_order_file = "{=gwp_player_troop_order_file}I want the Training Warden to prepare soldiers for my command.";
         internal const string gwp_player_troop_order_filed = "{=gwp_player_troop_order_filed}The Training Warden has your order. Payment received: {PAYMENT}. You will receive the troops once they are ready.";
         internal const string gwp_player_troop_order_line = "{=gwp_player_troop_order_line}{COUNT} × {NAME}";
         internal const string gwp_player_troop_order_return = "{=gwp_player_troop_order_return}What else did you want to discuss?";
-        internal const string gwp_player_troop_order_summary = "{=gwp_player_troop_order_summary}{COUNT} soldiers  |  Cost {COST} reputation  |  Balance {REPUTATION}";
         internal const string gwp_player_troop_order_title = "{=gwp_player_troop_order_title}Place a troop order";
         internal const string gwp_player_troop_order_unaffordable = "{=gwp_player_troop_order_unaffordable}You do not have enough Grey Warden reputation for this order.";
         internal const string gwp_player_troop_order_unavailable = "{=gwp_player_troop_order_unavailable}This troop order can no longer be placed.";
-        internal const string gwp_player_troop_order_unit_price = "{=gwp_player_troop_order_unit_price}{COST} standing each";
         internal const string gwp_player_troop_stage_delivery = "{=gwp_player_troop_stage_delivery}Delivering troops";
         internal const string gwp_player_troop_stage_training = "{=gwp_player_troop_stage_training}Training";
         internal const string gwp_player_troop_stage_waiting_for_capacity = "{=gwp_player_troop_stage_waiting_for_capacity}Awaiting room for delivery";
@@ -1282,6 +1279,7 @@ namespace GreyWardenPolicePurity
         internal const string gwp_reconstruction_002 = "{=gwp_reconstruction_002}{VAR_1} completed the reconstruction of {VAR_2}.";
         internal const string gwp_report_audit_found = "{=gwp_report_audit_found}The Wardens find {VAR_1} denars missing from your accounts.";
         internal const string gwp_report_excess_found = "{=gwp_report_excess_found}{VAR_1} had already answered for his crimes, yet you struck him down. The Wardens have taken note.";
+        internal const string gwp_reputation_gained_log = "{=gwp_reputation_gained_log}You gained {AMOUNT} Grey Warden reputation.";
         internal const string gwp_request_case_support = "{=gwp_request_case_support}I need your help taking the offender. Take the field with me.";
         internal const string gwp_request_case_support_reply = "{=gwp_request_case_support_reply}Then let us ride. We stay at your shoulder, and we will not be behind you when it starts.";
         internal const string gwp_sparring_accept = "{=gwp_sparring_accept}Of course. Just a friendly match.";
@@ -1448,7 +1446,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_warden_mediation_done = "{=gwp_warden_mediation_done}Consider it carried. Word goes out today, and the quarrels you took up for us are closed.";
         internal const string gwp_warden_mediation_moot = "{=gwp_warden_mediation_moot}There is nothing left for us to carry. Whatever you took up on our account is already settled.";
         internal const string gwp_warden_mediation_owed = "{=gwp_warden_mediation_owed}This war began when you fought for the Wardens. You may ask them to mediate.";
-        internal const string gwp_warden_upgrade_hint = "{=gwp_warden_upgrade_hint}Each {COUNT} troop upgrades cost 1 Grey Warden reputation. This screen will spend {COST} on confirmation.";
         internal const string gwp_warden_upgrade_insufficient = "{=gwp_warden_upgrade_insufficient}You need more Grey Warden reputation to upgrade these troops.";
     }
 }

@@ -20,7 +20,11 @@ namespace GreyWardenPolicePurity
         internal static bool IsDispatchableTroop(PartyCharacterVM? character)
         {
             CharacterObject? troop = character?.Troop.Character;
+            // 借部队页挑人的副本界面（调兵订单、向祭司交人）右侧不是真实主队：在那里点交谈会强制完成，
+            // 等于没按完成就下单。（依据：独立审查 2026-11-15）
             return character != null &&
+                   !(GameStateManager.Current.ActiveState is PartyState { PartyScreenLogic: { } screen } &&
+                     GwpPartyScreenPreview.IsSelection(screen)) &&
                    character.Side == PartyScreenLogic.PartyRosterSide.Right &&
                    character.Type == PartyScreenLogic.TroopType.Member &&
                    troop != null && !troop.IsHero &&

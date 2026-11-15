@@ -128,13 +128,6 @@ namespace GreyWardenPolicePurity
                     committed = CompletePersonnelTrade(party, village, priest, kind, prisoners ? captives : members);
                     return committed;
                 },
-                partyPresentationDoneButtonConditionDelegate: (members, captives, _, _, _, _) =>
-                {
-                    var quote = PlayerBehaviorPool.QuoteFireswornTrade(kind, PersonnelTradeUnits(prisoners ? captives : members));
-                    return Tuple.Create(true, GwpText.Create(GwpTextCatalog.gwp_fs_trade_preview,
-                        "POINTS", PlayerBehaviorPool.FormatReputationUnits(quote.ReputationUnits),
-                        "REMAINDER", quote.Remainder, "RATE", FireswornTradeRules.UnitsPerPoint(kind)));
-                },
                 isTroopUpgradesDisabled: true);
             data.RightMemberRoster = rightMembers;
             data.RightPrisonerRoster = rightPrisoners;
@@ -145,7 +138,19 @@ namespace GreyWardenPolicePurity
             state.PartyScreenLogic.Initialize(data);
             // 原版选择页仍绑定背包；重置、取消也只应碰本次选择用的副本。
             state.PartyScreenLogic.CurrentData.RightItemRoster = new ItemRoster(party.ItemRoster);
+            // 像原版赎金界面在底部居中写「你将获得多少金币」一样，挑人时就写能换多少声望。
+            GwpPartyScreenPreview.RegisterSelection(state.PartyScreenLogic, logic =>
+                PersonnelTradePreview(kind, prisoners ? logic.CurrentData.LeftPrisonerRoster : logic.CurrentData.LeftMemberRoster));
             Game.Current.GameStateManager.PushState(state);
+        }
+
+        private static string? PersonnelTradePreview(FireswornTradeKind kind, TroopRoster selection) =>
+            TradePreview(kind, PersonnelTradeUnits(selection));
+
+        private static string? TradePreview(FireswornTradeKind kind, long units)
+        {
+            int reputation = PlayerBehaviorPool.QuoteFireswornTrade(kind, units).ReputationUnits;
+            return reputation > 0 ? GwpPartyScreenPreview.Gain(reputation) : null;
         }
 
         private static long PersonnelTradeUnits(TroopRoster selection) => selection.GetTroopRoster()
@@ -190,7 +195,8 @@ namespace GreyWardenPolicePurity
             logic.Initialize(selection, available, party.MemberRoster, isTrading: false, isSpecialActionsPermitted: false,
                 CharacterObject.PlayerCharacter, InventoryScreenHelper.InventoryCategoryType.None, village.Village.MarketData,
                 useBasePrices: false, state.InventoryMode, GwpText.Create(GwpTextCatalog.gwp_fs_trade_armory_title));
-            GwpArmoryTransferScreen.Register(logic, () => CompleteArmoryTrade(party, village, priest, selection));
+            GwpArmoryTransferScreen.Register(logic, () => CompleteArmoryTrade(party, village, priest, selection),
+                () => TradePreview(FireswornTradeKind.Armory, ArmoryTradeUnits(party, village, selection)));
             state.InventoryLogic = logic;
             Game.Current.GameStateManager.PushState(state);
         }
@@ -208,7 +214,7 @@ namespace GreyWardenPolicePurity
                     return NotifyPriestTradeUnavailable();
             }
 
-            long units = selection.Sum(entry => (long)ArmoryTradePrice(party, village, entry.EquipmentElement) * entry.Amount);
+            long units = ArmoryTradeUnits(party, village, selection);
             int count = MoveAll(selection, ledger, ItemsOf(_armories, village.StringId));
             _plans.Remove(party.StringId);
             _plans.Remove(village.StringId);
@@ -217,8 +223,9 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private static int ArmoryTradePrice(MobileParty party, Settlement village, EquipmentElement item) =>
-            village.Village.MarketData.GetPrice(item, party, true, village.Party);
+        private static long ArmoryTradeUnits(MobileParty party, Settlement village, ItemRoster selection) =>
+            selection.Sum(entry => (long)village.Village.MarketData.GetPrice(entry.EquipmentElement, party, true, village.Party) *
+                entry.Amount);
 
         private static bool NotifyPriestTradeUnavailable()
         {
@@ -229,9 +236,10 @@ namespace GreyWardenPolicePurity
         private static void NotifyPriestTradeCompleted(Settlement village, FireswornTradeKind kind, int count, long units)
         {
             var receipt = PlayerBehaviorPool.CompleteFireswornTrade(kind, units);
-            MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_fs_trade_receipt,
-                "POINTS", PlayerBehaviorPool.FormatReputationUnits(receipt.ReputationUnits),
-                "REMAINDER", receipt.Remainder, "RATE", FireswornTradeRules.UnitsPerPoint(kind)));
+            // 原版得金币后在左下角消息栏记一笔；声望同样只记得了多少，不讲换算和余数。
+            if (receipt.ReputationUnits > 0)
+                InformationManager.DisplayMessage(new InformationMessage(GwpText.Get(GwpTextCatalog.gwp_reputation_gained_log,
+                    "AMOUNT", PlayerBehaviorPool.FormatReputationUnits(receipt.ReputationUnits))));
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WriteFaith("PLAYER_PRIEST_TRADE", "village=" + village.StringId + "; kind=" + kind +
                 "; transferred=" + count + "; units=" + units + "; reputation=" +

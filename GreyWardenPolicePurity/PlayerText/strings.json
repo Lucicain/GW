@@ -1415,8 +1415,9 @@
       "zh": "这笔调兵订单已无法登记。"
     },
     "gwp_player_troop_order_capacity": {
-      "en": "After payment, {BUDGET} reputation allows {CAPACITY} Grey Warden troops in your party. This order would exceed that limit.",
-      "zh": "付款后剩 {BUDGET} 点灰袍声望，主队可接纳 {CAPACITY} 名灰袍兵。这笔订单会超过名额。"
+      "en": "After this payment, your Grey Warden reputation would not be enough to take this many Grey Warden troops.",
+      "zh": "付了这笔声望后，你的灰袍声望不够接收这么多灰袍兵。",
+      "context": "调兵订单超出主队灰袍兵名额时完成按钮的悬停说明和下单提示；按用户 2026-11-15「别告诉玩家机制」不写换算数字。"
     },
     "gwp_fa_charge_cooled": {
       "en": "Let us take up that charge again.",
@@ -2189,10 +2190,6 @@
     "gwp_sparring_reputation": {
       "en": "You earned {POINTS} Grey Warden reputation for winning the bout.",
       "zh": "切磋获胜，灰袍声望 +{POINTS}。"
-    },
-    "gwp_warden_upgrade_hint": {
-      "en": "Each {COUNT} troop upgrades cost 1 Grey Warden reputation. This screen will spend {COST} on confirmation.",
-      "zh": "每累计 {COUNT} 次灰袍兵升阶消耗 1 点灰袍声望。当前确认将扣除 {COST} 点。"
     },
     "gwp_warden_upgrade_insufficient": {
       "en": "You need more Grey Warden reputation to upgrade these troops.",
@@ -3508,29 +3505,33 @@
       "en": "Very well. The order is cancelled. The soldiers will stay with us.",
       "zh": "好吧。订单已取消，士兵会留在我们这里。"
     },
-    "gwp_player_troop_order_unit_price": {
-      "en": "{COST} standing each",
-      "zh": "每人 {COST} 点声望"
-    },
     "gwp_player_troop_order_line": {
       "en": "{COUNT} × {NAME}",
       "zh": "{COUNT} 名{NAME}"
     },
-    "gwp_player_troop_order_summary": {
-      "en": "{COUNT} soldiers  |  Cost {COST} reputation  |  Balance {REPUTATION}",
-      "zh": "{COUNT} 名士兵　应付 {COST} 点声望　现有 {REPUTATION} 点"
+    "gwp_player_troop_order_empty": {
+      "en": "Choose the troops you want to order.",
+      "zh": "请先挑选要订的士兵。",
+      "context": "调兵订单界面右侧还没有士兵时，完成按钮的悬停说明。"
+    },
+    "gwp_party_reputation_gain": {
+      "en": "You will gain {AMOUNT} Grey Warden reputation",
+      "zh": "你将获得 {AMOUNT} 点灰袍声望",
+      "context": "原版部队界面、背包界面底部居中的预期：向祭司交人或交装备时能换到的声望。"
+    },
+    "gwp_party_reputation_cost": {
+      "en": "You will spend {AMOUNT} Grey Warden reputation",
+      "zh": "你将消耗 {AMOUNT} 点灰袍声望",
+      "context": "原版部队界面底部居中的预期：灰袍兵升阶或调兵订单要花的声望。"
+    },
+    "gwp_reputation_gained_log": {
+      "en": "You gained {AMOUNT} Grey Warden reputation.",
+      "zh": "你获得了 {AMOUNT} 点灰袍声望。",
+      "context": "向祭司交付成交后，左下角消息栏的记录，同原版得金币的记法。"
     },
     "gwp_player_troop_order_title": {
       "en": "Place a troop order",
       "zh": "提交调兵订单"
-    },
-    "gwp_player_troop_order_description": {
-      "en": "Choose how many soldiers to order for each troop type. Pay the total reputation when the order is registered.",
-      "zh": "可分别填写各兵种人数。订单登记时扣除显示的声望总价。"
-    },
-    "gwp_player_troop_order_confirm": {
-      "en": "Send order",
-      "zh": "发送订单"
     },
     "gwp_player_troop_order_filed": {
       "en": "The Training Warden has your order. Payment received: {PAYMENT}. You will receive the troops once they are ready.",
@@ -5785,14 +5786,6 @@
     "gwp_fs_trade_armory_title": {
       "en": "Supply the Village Armoury",
       "zh": "交付军械"
-    },
-    "gwp_fs_trade_preview": {
-      "en": "On confirmation, Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.",
-      "zh": "确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。"
-    },
-    "gwp_fs_trade_receipt": {
-      "en": "Delivery accepted. Grey Warden reputation +{POINTS}. Progress carried forward {REMAINDER}/{RATE}.",
-      "zh": "祭司已收下。灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。"
     },
     "gwp_fs_trade_unavailable": {
       "en": "This delivery can no longer be made. Speak to the priest again.",

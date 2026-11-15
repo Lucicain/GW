@@ -231,6 +231,8 @@ OWNERS = [
      "GreyWardenTroopRequestBehavior.cs", "GreyWardenTroopRequestBehavior / TroopOrderComposition"),
     ("祭司交付声望结算", r"\b(?:FireswornTradeRules\.Quote|PlayerBehaviorPool\.CompleteFireswornTrade)\s*\(",
      "PlayerBehaviorPool.cs|GwpFireswornPlayerTrade.cs", "PlayerBehaviorPool.CompleteFireswornTrade / FireswornTradeRules"),
+    ("部队页声望预期与挑人副本界面", r"\bInfluenceChangeText\s*=|typeof\(PartyVM\)\s*,\s*\"(?:RefreshTopInformation|OnPartyInfluenceChanged)\"",
+     "GwpPartyScreenPreview.cs", "GwpPartyScreenPreview"),
     ("讲和", r"\b(?:FactionManager\.SetNeutral|MakePeaceAction\.Apply)\s*\(", "GwpPeace.cs", "GwpPeace.Make / EndPoliceWar"),
     ("临时队唯一编号", r"\bFindNextUniqueStringId\s*<\s*MobileParty\s*>\s*\(", "GwpPartyIdentity.cs", "GwpPartyIdentity.Next"),
     ("守村经验容量", r"\bCanTroopGainXp\s*\(", "GwpFireswornExperience.cs", "GwpFireswornBehavior.GrantGuardExperience"),

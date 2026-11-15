@@ -161,6 +161,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 兵员阶级声望折算 | `WardenReputationRules.TroopUnits` / `QuoteOrder` | 祭司交人的收益与练兵官订单价格查同一兵种阶级表；订兵额度按扣款后余额计算 |
 | 练兵订单组合编解码 | `GreyWardenTroopRequestBehavior` / `TroopOrderComposition` | 界面、订单和使者用同一组合，兵种名册和旧字段由订单方解析 |
 | 祭司交付声望结算 | `PlayerBehaviorPool.CompleteFireswornTrade` / `FireswornTradeRules` | 交付界面的报价和成交共用同一换算与余额，零头由玩家声望池保存 |
+| 部队页声望预期与挑人副本界面 | `GwpPartyScreenPreview` | 别处直接写 `PartyVM.InfluenceChangeText` 或另挂它的刷新；借部队页挑人的副本界面在这里登记，主队额度、升阶扣声望和派遣交谈按钮据此跳过副本 |
 | 讲和（含玩家战斗时序、灰袍交战理由） | `GwpPeace` | `FactionManager.SetNeutral`、`MakePeaceAction.Apply`；规则见 [调停](warden-mediation.md) |
 | 战场完整名册、预备兵与增援通知 | `IGwpBattleSceneSource`、`GwpBattleSceneContext` | 援军与音乐只查此入口；野战转接原供应器，城内由搜捕提供真实名册 |
 | 无战役伤亡回调的场景人物来源 | `GreyWardenSafePartyAgentOrigin` | 切磋、搜捕守军与提取身体表现复用此来源；玩家随行兵仍用原版PartyAgentOrigin结算伤亡 |

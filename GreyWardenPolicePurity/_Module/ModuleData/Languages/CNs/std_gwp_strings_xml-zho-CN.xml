@@ -348,7 +348,7 @@
   <string id="gwp_dispatch_troop_order" text="把我的调兵订单送到灰袍手里。" />
   <string id="gwp_player_troop_order_unaffordable" text="灰袍声望不足，无法支付这笔订单。" />
   <string id="gwp_player_troop_order_unavailable" text="这笔调兵订单已无法登记。" />
-  <string id="gwp_player_troop_order_capacity" text="付款后剩 {BUDGET} 点灰袍声望，主队可接纳 {CAPACITY} 名灰袍兵。这笔订单会超过名额。" />
+  <string id="gwp_player_troop_order_capacity" text="付了这笔声望后，你的灰袍声望不够接收这么多灰袍兵。" />
   <string id="gwp_fa_charge_cooled" text="这桩案子，我们再谈一次。" />
   <string id="gwp_warden_mediation_owed" text="此战因替灰袍出手而起，可请灰袍出面调停。" />
   <string id="gwp_warden_marry_ask" text="做我的妻子吧。" />
@@ -541,7 +541,6 @@
   <string id="gwp_sparring_accept" text="当然。只是友好切磋，不伤和气。" />
   <string id="gwp_sparring_cooldown" text="再过 {HOURS} 小时就能和灰袍领主切磋。" />
   <string id="gwp_sparring_reputation" text="切磋获胜，灰袍声望 +{POINTS}。" />
-  <string id="gwp_warden_upgrade_hint" text="每累计 {COUNT} 次灰袍兵升阶消耗 1 点灰袍声望。当前确认将扣除 {COST} 点。" />
   <string id="gwp_warden_upgrade_insufficient" text="灰袍声望不足，无法继续升级。" />
   <string id="gwp_player_warden_capacity" text="当前声望允许接收至多 {CAPACITY} 名灰袍士兵，名额不足。" />
   <string id="gwp_mapbar_warden_troops" text="主队灰袍兵" />
@@ -867,12 +866,12 @@
   <string id="gwp_player_troop_delivery_accepted" text="人归你了。从今往后他们听你的。" />
   <string id="gwp_player_troop_delivery_cancel" text="取消订单，士兵留给你。我知道预付款不会退还。" />
   <string id="gwp_player_troop_delivery_cancelled" text="好吧。订单已取消，士兵会留在我们这里。" />
-  <string id="gwp_player_troop_order_unit_price" text="每人 {COST} 点声望" />
   <string id="gwp_player_troop_order_line" text="{COUNT} 名{NAME}" />
-  <string id="gwp_player_troop_order_summary" text="{COUNT} 名士兵　应付 {COST} 点声望　现有 {REPUTATION} 点" />
+  <string id="gwp_player_troop_order_empty" text="请先挑选要订的士兵。" />
+  <string id="gwp_party_reputation_gain" text="你将获得 {AMOUNT} 点灰袍声望" />
+  <string id="gwp_party_reputation_cost" text="你将消耗 {AMOUNT} 点灰袍声望" />
+  <string id="gwp_reputation_gained_log" text="你获得了 {AMOUNT} 点灰袍声望。" />
   <string id="gwp_player_troop_order_title" text="提交调兵订单" />
-  <string id="gwp_player_troop_order_description" text="可分别填写各兵种人数。订单登记时扣除显示的声望总价。" />
-  <string id="gwp_player_troop_order_confirm" text="发送订单" />
   <string id="gwp_player_troop_order_filed" text="练兵官已登记订单，收到{PAYMENT}。训练完成后会把兵送来。" />
   <string id="gwp_player_troop_cost_reputation" text="{AMOUNT} 点灰袍声望" />
   <string id="gwp_player_troop_cost_denars" text="{AMOUNT} 第纳尔" />
@@ -1425,8 +1424,6 @@
   <string id="gwp_fs_trade_prisoners_title" text="交付俘虏" />
   <string id="gwp_fs_trade_troops_title" text="调入村庄民兵" />
   <string id="gwp_fs_trade_armory_title" text="交付军械" />
-  <string id="gwp_fs_trade_preview" text="确认后灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。" />
-  <string id="gwp_fs_trade_receipt" text="祭司已收下。灰袍声望 +{POINTS}，累积进度 {REMAINDER}/{RATE}。" />
   <string id="gwp_fs_trade_unavailable" text="这笔交付已无法完成，请再与祭司交谈。" />
   <string id="gwp_fs_party_pretalk" text="还有什么事？" />
   <string id="gwp_fs_party_buy" text="你们带了什么货？" />
