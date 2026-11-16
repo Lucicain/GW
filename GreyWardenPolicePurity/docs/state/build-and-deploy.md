@@ -165,17 +165,19 @@ release 正文由中英 README 的对应段落**程序化抽取**，不手写，
 
 ## 已发布版本与下一版的对比基线
 
-- 最新正式内容为 2026-11-12 的 r16.2：Bannerlord 1.4.8 用 [v1.4-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2)，1.5.7 用 [v1.5-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.5-r16.2)。1.4 发布页与同名下载地址沿用；首发 tag `55fd717` 与 11 月 11 日的 `v1.4-r16.2-refresh`（`9505b6d`）均保留。两份现行包的源码 tag `v1.4-r16.2-sync` 和 `v1.5-r16.2` 同指 `485bcc4`，后者设为 latest。**下一版的玩家说明对比 `v1.5-r16.2`。**（依据：用户要求两份正式玩家包内容一致、公开 Release 和 tag 核验 2026-11-12）
-- 上一正式版 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16)（模组版本 1.4.16），2026-10-29 发布，tag 指向 `fc87267`。
-- 较早正式版 [v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15)（模组版本1.4.15），2026-10-17发布，tag指向`d199c54`。v1.4-r14 同号替换过，替换包tag为`v1.4-r14-refresh`，原tag`v1.4-r14`不移动。美术包自r15未变，SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。
+- 最新正式内容是 2026-11-17 的 r17。Bannerlord 1.4.8 用 [v1.4-r17](https://github.com/Lucicain/GW/releases/tag/v1.4-r17)，1.5.7 用 [v1.5-r17](https://github.com/Lucicain/GW/releases/tag/v1.5-r17)。两个源码标签同指 `19f590a`，1.5 设为 latest。**下一版的玩家说明对比 `v1.5-r17`。**（依据：用户裁定与公开 Release、tag 核验 2026-11-17）
+- 上一双版本为 2026-11-12 的 [v1.4-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.4-r16.2) 和 [v1.5-r16.2](https://github.com/Lucicain/GW/releases/tag/v1.5-r16.2)。实际附件的源码标签是 `v1.4-r16.2-sync` 和 `v1.5-r16.2`，同指 `485bcc4`。1.4 首发 tag `55fd717` 与 11 月 11 日修订 `v1.4-r16.2-refresh`（`9505b6d`）均保留。旧的 r15–r16.2 美术包 SHA-256 `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`。（依据：公开 Release 和 tag 核验 2026-11-12）
+- 较早的 [v1.4-r16](https://github.com/Lucicain/GW/releases/tag/v1.4-r16) 指向 `fc87267`，[v1.4-r15](https://github.com/Lucicain/GW/releases/tag/v1.4-r15) 指向 `d199c54`。v1.4-r14 的替换包 tag 为 `v1.4-r14-refresh`，原 tag `v1.4-r14` 保留。
 
 ## 当前正式玩家包
 
 | 游戏 / 模组版本 | ZIP 字节数 | ZIP SHA-256 | 玩家 DLL SHA-256 |
 | --- | ---: | --- | --- |
-| 1.4.8 / 1.4.16.2 | 442,783,759 | `27dc778a112016e115b3dc44cc51e5aa243e770f2af9d74d192bdefb562a5a22` | `4ac84644613a8d37fb6aba430c0c412265af365a6de549acc9da9279c2887e72` |
-| 1.5.7 / 1.5.16.2 | 442,783,935 | `d7b747ce5b44802e40304dfd30ff8429a7aa8735114a7fca2bc5e197494ef2f5` | `a6def6edc3d7cc5aab20163646633c816b58c841ed6c0f50f5a2f03f444f75b2` |
+| 1.4.8 / 1.4.17 | 442,769,616 | `c71f866eaa6df4ce23378ac04ce7464c14dca81fbc05dda8b352f7746c0e9d1e` | `7e5b738aa7ac77140efd0c2634780785645aec69579e7b7c6b01f7534a926852` |
+| 1.5.7 / 1.5.17 | 442,769,778 | `432f4c0adf6aecef6194b5d2192822441c7333eeb371e86c5687730f669d9c19` | `e1cfb15d2785043e999131f0cdf22de330e87ec93bc71596ee26a36b991722be` |
 
-两个 Release 各有 ZIP 与校验文件。由公开链接重新下载，字节数、哈希、78 项清单、监控标记双编码与 README 均核验通过；DLL 与 `SubModule.xml` 的修订号按目标游戏构建，其余 76 项逐字节相同。两份都包含最新收养称呼，11 月 11 日公开的 1.4 附件缺少「修会同袍」改动。游戏 Modules 目录只留最新 v1.5-r16.2 包对。各版核验证据在 `build-check/package-<version>/`，旧 1.4 的核验分别见 `package-v1.4-r16.2-original/` 和 `package-v1.4-r16.2/published-20261111/`。（依据：发布与公开下载核验 2026-11-12）
+两个 Release 各有 ZIP 与校验文件。由公开链接重新下载后，整包 SHA-256、77 个解压项及 DLL 五组诊断标记的双编码检查均通过。除对应各自游戏版本的 DLL 与 `SubModule.xml` 外，其余 75 项逐字节相同，均含[单层旗帜图集](clan-banner.md#验证与发行状态)。游戏 Modules 目录保留 live 和两份 r17 包对，已移走 r16.2 的本地压缩包。各版核验证据在 `build-check/package-<version>/`。（依据：发布与公开下载核验 2026-11-17）
+
+r17 的 1.4.8 包以对应版本的引用程序集核对 674 个类型与 2,087 个完整成员签名，游戏内验证待做。1.5.7 包使用安装版实际程序集，完整签名和 128 个 Harmony 补丁类的绑定均通过，也用仅有原版模块的环境重跑了加载预检。新增卖货和两个玩家包的低画质旗帜仍待进游戏核对。（依据：兼容预检、原版签名对照与独立复审 2026-11-17）
 
 Windows PowerShell 5.1 从仓库的 `build-check` 或 `bin/Release/isolated` 加载 DLL 曾报 `0x80131515`。兼容预检使用本机临时目录中与待验 DLL 哈希一致的副本。
