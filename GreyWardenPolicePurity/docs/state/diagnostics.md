@@ -141,7 +141,7 @@ AI快照的 `ordinaryCaseEligible` 当前只调用 `PoliceStats.CanHandleOrdinar
 
 烧村抑制调查使用Case-Events中的`RAID_SCORE_SAMPLE`，每位领主每24游戏小时在普通村/有信众比例村各最多一行：真实原版返回baseScore、个人deterrenceMultiplier、faithShare、faithMultiplier、合计multiplier/result、当前注册activeModel与候选村。只旁观本次计算，不为打印重算评分；只编入GWP_DIAGNOSTICS，玩法无依赖，不保存采样冷却。用户确认抑制链路后退休此健康路径诊断。（依据：用户反馈、流程2026-10-16）
 
-行善战斗的 `GOOD_DEED_WEIGHT_SETTLED` 在有个人战果的胜仗结算时记录本场权重、旧余数、实际进账和新余数，每场最多一行。按玩家的正常游玩核对跨战斗和轮次间存读后再退休。（依据：阶级权重调试 2026-11-16）
+行善战斗的 `GOOD_DEED_WEIGHT_SETTLED` 在有战果的胜仗结算时记录个人和主队各自的原始阶级权重、合计权重、旧余数、实际进账和新余数。合计和余数以四分之一权重点为单位，每场最多一行。按玩家正常游玩核对混编、派兵和存读接续后再退休。（依据：阶级权重调试 2026-11-16）
 
 ## 限流是必需的
 

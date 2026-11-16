@@ -24,7 +24,9 @@ STATIC_TARGET_RE = re.compile(
     r"\[HarmonyPatch\(\s*typeof\(([\w.]+)\)\s*,\s*"
     r"(?:nameof\([\w.]*?(\w+)\)|\"([\w.]+)\")"
     r"(?:\s*,\s*MethodType\.(\w+))?", re.S)
-CLASS_RE = re.compile(r"\b(?:public|internal)\s+(?:(?:static|sealed|abstract|partial)\s+)*class\s+(\w+)[^{;]*\{")
+CLASS_RE = re.compile(
+    r"\b(?:(?:public|internal|private|protected|file|static|sealed|abstract|partial|new|unsafe)\s+)*"
+    r"class\s+(\w+)[^{;]*\{")
 NON_CODE_RE = re.compile(
     r'//[^\n]*|/\*[\s\S]*?\*/|@"(?:""|[^"])*"|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 # Harmony accepts either an explicit attribute or a method simply named

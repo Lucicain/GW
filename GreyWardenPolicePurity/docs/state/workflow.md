@@ -114,7 +114,6 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 - 跨战役残留的静态状态还有几处没收进 `GwpRuntimeState`：`GwpWardenDispatchDialogue` 的挂起对话/付款回调、`GwpPlayerIntervention._preview`、`GreyWardenVillageAdoptionBehavior._activeReliefPartyIds`（静态索引配实例数据）。只在交互进行到一半退回主菜单再开局时残留，或新档首小时内误认同号部队，影响小；改时一并做成实例字段或加进统一清空。（2026-11-11 登记）
 - 热路径小开销：`PoliceStats.GetPoliceClan()` 每次线性扫全部家族（80 多处调用）；`GwpLocationDutyBehaviorTextPatch` 对地图上每支部队的状态文字都跑三段 LINQ 查找，可先判是否灰袍部队；战斗里 `GwpBattleMasteryEffectiveSkillPatch` 每次读技能都调两次原版 `Mission.GetMissionBehavior<T>()`（按顺序逐个类型判断场景行为，找到才停），可按场景缓存两个行为实例。归入 progress「性能调查」一起测，不单独改。（2026-11-11 登记）
 - 发版核验归档位置不一：r12、r13 在 `GreyWardenPolicePurity/build-check/` 且进了 git（14 个文件约 9.7 MB，含 DLL/PDB），r14 起在被忽略的仓库根 `build-check/`。是否移出 git 待用户定。（2026-11-11 登记）
-- 自检 `tools/tests/test_code_map.py` 的 `test_current_repository_declarations_are_not_dropped` 失败：`GwpArmoryTransferScreen.cs`、`GwpPartyScreenPreview.cs` 里的 `LabelPatch`、`DonePatch`、`RefreshPatch`、`TransferPatch`、`InfluenceLinePatch` 五个补丁类有声明，code-map 生成器没抽到。两文件最后由 `aae6736` 改动，与 2026-11-16 职业合并无关；先查生成器漏抽哪种写法，再补生成器或测试。（2026-11-16 登记）
 - 原版机制手册续写：战场增援出兵（MissionAgentSpawnLogic、TroopSupplier 排序）、竞技场单挑流程、地图部队小时决策（MobilePartyAi.GetBehaviors、initiative、AiVisitSettlementBehavior 评分；warden-ai 与 case-assistance 里的原版评分段落可随之替成指向手册）；场景切换、逃跑、在城镇任务里带兵、比武大会、烧村五篇已写。（2026-10-28 登记）
 
 ## 接入 harness

@@ -159,7 +159,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 玩家护村身份 | `PlayerBehaviorMonitor.RaidedVillage` / `DefendedVillage` | 识别原版村庄劫掠，转场后按随档保存的参战侧认定，供声望和调停共用 |
 | 玩家主队灰袍兵名额 | `GwpPlayerWardenTroops` / `WardenReputationRules` | 同一个主队名册计数及声望换算，供升阶、接收、订兵和界面共用 |
 | 练兵订单阶级计价 | `WardenReputationRules.TroopOrderCostUnits` / `QuoteOrder` | 订兵逐阶计价，额度按扣款后余额计算 |
-| 兵员声望收入 | `WardenReputationRules.TroopRewardWeight` / `QuoteRewardProgress` | 交俘虏、交普通兵与行善战斗共用权重及进账，规则见[玩家声望](player-justice.md#加分) |
+| 兵员声望收入 | `WardenReputationRules` | 统一阶级权重、主队击倒折算及余数进账，规则见[玩家声望](player-justice.md#加分) |
 | 练兵订单组合编解码 | `GreyWardenTroopRequestBehavior` / `TroopOrderComposition` | 界面、订单和使者用同一组合，兵种名册和旧字段由订单方解析 |
 | 祭司交付声望结算 | `PlayerBehaviorPool.CompleteFireswornTrade` / `FireswornTradeRules` | 交付界面的报价和成交共用同一换算与余额，零头由玩家声望池保存 |
 | 部队页声望预期与挑人副本界面 | `GwpPartyScreenPreview` | 别处直接写 `PartyVM.InfluenceChangeText` 或另挂它的刷新；借部队页挑人的副本界面在这里登记，主队额度、升阶扣声望和派遣交谈按钮据此跳过副本 |

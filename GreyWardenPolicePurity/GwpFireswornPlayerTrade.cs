@@ -196,7 +196,8 @@ namespace GreyWardenPolicePurity
                 CharacterObject.PlayerCharacter, InventoryScreenHelper.InventoryCategoryType.None, village.Village.MarketData,
                 useBasePrices: false, state.InventoryMode, GwpText.Create(GwpTextCatalog.gwp_fs_trade_armory_title));
             GwpArmoryTransferScreen.Register(logic, () => CompleteArmoryTrade(party, village, priest, selection),
-                () => TradePreview(FireswornTradeKind.Armory, ArmoryTradeUnits(party, village, selection)));
+                () => selection.Count == 0 ? null
+                    : TradePreview(FireswornTradeKind.Armory, ArmoryTradeUnits(party, village, selection)));
             state.InventoryLogic = logic;
             Game.Current.GameStateManager.PushState(state);
         }

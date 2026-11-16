@@ -57,12 +57,25 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         [Fact]
         public void PersonalDefeatsCarryWeightAcrossVictories()
         {
-            const int rate = WardenReputationRules.TroopWeightPerPoint;
+            const int rate = WardenReputationRules.BattleWeightUnitsPerPoint;
+            int personal = 2 * WardenReputationRules.TroopRewardWeight(6) + WardenReputationRules.TroopRewardWeight(5);
             var first = WardenReputationRules.QuoteRewardProgress(0,
-                2 * WardenReputationRules.TroopRewardWeight(6) + WardenReputationRules.TroopRewardWeight(5), rate, 50);
-            Assert.Equal((0, 17), first);
+                WardenReputationRules.BattleRewardWeightUnits(personal, 0), rate, 50);
+            Assert.Equal((0, 68), first);
             var second = WardenReputationRules.QuoteRewardProgress(first.Remainder,
-                WardenReputationRules.TroopRewardWeight(4), rate, 50);
+                WardenReputationRules.BattleRewardWeightUnits(WardenReputationRules.TroopRewardWeight(4), 0), rate, 50);
+            Assert.Equal((5, 4), second);
+        }
+
+        [Fact]
+        public void MainPartyDefeatsCarryExactQuarterWeightAcrossVictories()
+        {
+            const int rate = WardenReputationRules.BattleWeightUnitsPerPoint;
+            var first = WardenReputationRules.QuoteRewardProgress(0,
+                WardenReputationRules.BattleRewardWeightUnits(17, 11), rate, 50);
+            Assert.Equal((0, 79), first);
+            var second = WardenReputationRules.QuoteRewardProgress(first.Remainder,
+                WardenReputationRules.BattleRewardWeightUnits(0, 2), rate, 50);
             Assert.Equal((5, 1), second);
         }
 

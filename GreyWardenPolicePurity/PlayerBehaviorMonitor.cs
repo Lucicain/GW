@@ -30,9 +30,10 @@ namespace GreyWardenPolicePurity
         private MapEventSide? _pendingBattleSide;
         private int _pendingEnemyCount = 0;
         private int _pendingPoliceCrimeSupport = 0; // 1=帮助灰袍守卫，-1=帮助犯人，0=普通战斗
-        // 同侧多轮共用个人战果；退出后改投对面时，原先一侧的击倒不能入账。
+        // 同侧多轮保留个人和主队战果。换边后从新参战侧开始记录。
         private MapEventSide? _goodDeedBattleSide;
-        private int _goodDeedBattleWeight;
+        private int _goodDeedPersonalWeight;
+        private int _goodDeedMainPartyWeight;
         private MapEventSide? _villageDefenseSide;
         private Settlement? _defendedVillage;
 
@@ -50,6 +51,7 @@ namespace GreyWardenPolicePurity
             CampaignEvents.VillageStateChanged.AddNonSerializedListener(this, OnVillageStateChanged);
             CampaignEvents.ForceVolunteersCompletedEvent.AddNonSerializedListener(this, OnForceVolunteers);
             CampaignEvents.ForceSuppliesCompletedEvent.AddNonSerializedListener(this, OnForceSupplies);
+            CampaignEvents.OnPlayerPartyKnockedOrKilledTroopEvent.AddNonSerializedListener(this, OnSimulatedMainPartyDefeat);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
         }
 
@@ -57,7 +59,8 @@ namespace GreyWardenPolicePurity
         {
             PlayerBehaviorPool.SyncData(dataStore);
             dataStore.SyncData("gwp_good_deed_battle_side", ref _goodDeedBattleSide);
-            dataStore.SyncData("gwp_good_deed_battle_weight", ref _goodDeedBattleWeight);
+            dataStore.SyncData("gwp_good_deed_battle_weight", ref _goodDeedPersonalWeight);
+            dataStore.SyncData("gwp_good_deed_main_party_battle_weight", ref _goodDeedMainPartyWeight);
             dataStore.SyncData("gwp_player_reputation_battle_side", ref _pendingBattleSide);
             // 沿用旧键接续护村旧档。所有玩家地图战斗均记录选边和战前人数。
             dataStore.SyncData("gwp_village_defense_enemy_count", ref _pendingEnemyCount);
@@ -84,7 +87,7 @@ namespace GreyWardenPolicePurity
             if (current <= baseline) return;
 
             _goodDeedBattleSide = side;
-            _goodDeedBattleWeight = (current - baseline) *
+            _goodDeedPersonalWeight = (current - baseline) *
                 (WardenReputationRules.TroopWeightPerPoint / PlayerBehaviorPool.LegacyGoodDeedKillsPerPoint);
         }
 
@@ -228,7 +231,7 @@ namespace GreyWardenPolicePurity
         {
             if (mapEvent == null) return;
             MapEventSide? winner = mapEvent.Winner;
-            int playerKillWeight = TakeGoodDeedBattleWeight(mapEvent, winner);
+            var weights = TakeGoodDeedBattleWeights(mapEvent, winner);
             (int enemyCount, int policeSupport) = TakeBattleContext(mapEvent, winner);
             Settlement? defendedVillage = winner != null ? DefendedVillage(winner) : null;
             bool recordedDefense = _villageDefenseSide?.MapEvent == mapEvent;
@@ -240,14 +243,14 @@ namespace GreyWardenPolicePurity
             if (winner == null || !winner.Parties.Any(p => p.Party?.MobileParty?.IsMainParty == true))
                 return;
 
-            if (TryResolvePendingPoliceCriminalReputation(mapEvent, playerKillWeight, policeSupport))
+            if (TryResolvePendingPoliceCriminalReputation(mapEvent, weights, policeSupport))
                 return;
 
             if (TryApplyPoliceBattlePenalty(mapEvent))
                 return;
 
-            // 在案罪犯、剿匪和救援共用个人击倒的阶级权重，协助灰袍的战果已在上面结算。
-            if (defendedVillage == null && TryResolveCaseCriminalReputation(mapEvent, playerKillWeight))
+            // 在案罪犯、剿匪和救援共用战果权重，协助灰袍的战果已在上面结算。
+            if (defendedVillage == null && TryResolveCaseCriminalReputation(mapEvent, weights))
                 return;
 
             bool enemyIsBandit = false;
@@ -273,7 +276,7 @@ namespace GreyWardenPolicePurity
             }
 
             bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defendedVillage != null;
-            if (anyGoodDeed && PlayerBehaviorPool.TryAwardGoodDeedReputation(playerKillWeight))
+            if (anyGoodDeed && PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
             {
                 string deedType = defendedVillage != null ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
                                 : defenderIsCaravan     ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_015)
@@ -449,14 +452,15 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent, int playerKillWeight, int policeSupport)
+        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent,
+            (int Personal, int MainParty) weights, int policeSupport)
         {
             if (policeSupport == 0)
                 return false;
 
             if (policeSupport > 0)
             {
-                if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(playerKillWeight))
+                if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
                     return true;
 
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -524,11 +528,11 @@ namespace GreyWardenPolicePurity
         }
 
         /// <summary>
-        /// 玩家获胜且失败方包含仍有开放案卷的罪犯部队时，按亲手击倒的阶级
-        /// 权重累计灰袍声望。仅当该罪犯同时是灰袍承办目标且玩家走了强制介入协助路径时，由
-        /// TryResolvePendingPoliceCriminalReputation 先结算并短路，不会重复计。
+        /// 玩家获胜且失败方包含仍有开放案卷的罪犯部队时，按个人和主队战果累计灰袍声望。
+        /// 命中强制介入协助分支时，由 TryResolvePendingPoliceCriminalReputation
+        /// 先结算并返回。
         /// </summary>
-        private bool TryResolveCaseCriminalReputation(MapEvent mapEvent, int playerKillWeight)
+        private bool TryResolveCaseCriminalReputation(MapEvent mapEvent, (int Personal, int MainParty) weights)
         {
             if (mapEvent == null || !mapEvent.HasWinner)
                 return false;
@@ -539,7 +543,7 @@ namespace GreyWardenPolicePurity
             if (loser == null || !SideContainsOpenCaseCriminal(loser))
                 return false;
 
-            if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(playerKillWeight))
+            if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
                 return true;
 
             InformationManager.DisplayMessage(new InformationMessage(
@@ -626,25 +630,37 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        internal void RecordGoodDeedDefeat(MapEventSide side, int tier)
+        private void OnSimulatedMainPartyDefeat(CharacterObject defeated)
+        {
+            if (PartyBase.MainParty?.MapEventSide is { MapEvent: { IsFinalized: false } } side)
+                RecordGoodDeedDefeat(side, defeated.Tier, personal: false);
+        }
+
+        internal void RecordGoodDeedDefeat(MapEventSide side, int tier, bool personal)
         {
             if (_goodDeedBattleSide != side)
             {
                 _goodDeedBattleSide = side;
-                _goodDeedBattleWeight = 0;
+                _goodDeedPersonalWeight = 0;
+                _goodDeedMainPartyWeight = 0;
             }
 
-            _goodDeedBattleWeight += WardenReputationRules.TroopRewardWeight(tier);
+            int weight = WardenReputationRules.TroopRewardWeight(tier);
+            if (personal) _goodDeedPersonalWeight += weight;
+            else _goodDeedMainPartyWeight += weight;
         }
 
-        private int TakeGoodDeedBattleWeight(MapEvent battle, MapEventSide? winner)
+        private (int Personal, int MainParty) TakeGoodDeedBattleWeights(MapEvent battle, MapEventSide? winner)
         {
-            if (_goodDeedBattleSide?.MapEvent != battle) return 0;
+            if (_goodDeedBattleSide?.MapEvent != battle) return default;
 
-            int weight = _goodDeedBattleSide == winner ? _goodDeedBattleWeight : 0;
+            (int Personal, int MainParty) weights = _goodDeedBattleSide == winner
+                ? (_goodDeedPersonalWeight, _goodDeedMainPartyWeight)
+                : default;
             _goodDeedBattleSide = null;
-            _goodDeedBattleWeight = 0;
-            return weight;
+            _goodDeedPersonalWeight = 0;
+            _goodDeedMainPartyWeight = 0;
+            return weights;
         }
 
         private (int EnemyCount, int PoliceSupport) TakeBattleContext(MapEvent battle, MapEventSide? winner)
@@ -720,15 +736,21 @@ namespace GreyWardenPolicePurity
         [HarmonyPostfix]
         private static void Postfix(Agent affectedAgent, Agent? affectorAgent)
         {
-            // 原版以 Agent.Main 认定个人击倒。只把地图战斗中倒下的敌方人形战斗员计入行善。
-            if (affectorAgent == null || affectorAgent != Agent.Main ||
+            PartyBase? mainParty = PartyBase.MainParty;
+            if (affectorAgent == null || !affectorAgent.IsHuman ||
                 affectedAgent.State is not (AgentState.Killed or AgentState.Unconscious) ||
                 !affectedAgent.IsHuman || !affectedAgent.IsEnemyOf(affectorAgent) ||
                 affectedAgent.Character is not CharacterObject troop ||
-                PartyBase.MainParty?.MapEventSide is not { MapEvent: { IsFinalized: false } } side)
+                mainParty?.MapEventSide is not { MapEvent: { IsFinalized: false } } side)
                 return;
 
-            Campaign.Current?.GetCampaignBehavior<PlayerBehaviorMonitor>()?.RecordGoodDeedDefeat(side, troop.Tier);
+            // 同队形的士兵仍归各自原部队。场景临时援军借用接应者的部队标识。
+            bool personal = affectorAgent == Agent.Main;
+            if (!personal && (affectorAgent.Origin is GwpBattleSupportOrigin ||
+                !ReferenceEquals(affectorAgent.Origin?.BattleCombatant, mainParty)))
+                return;
+
+            Campaign.Current?.GetCampaignBehavior<PlayerBehaviorMonitor>()?.RecordGoodDeedDefeat(side, troop.Tier, personal);
         }
     }
 }

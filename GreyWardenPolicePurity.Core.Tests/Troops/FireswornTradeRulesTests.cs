@@ -43,9 +43,11 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         }
 
         [Theory]
-        [InlineData(1450, 799, 70, 5, 249)]
-        [InlineData(1450, 799, 0, 0, 249)]
-        [InlineData(500, 3200000800L, 1, 1, 1300)]
+        [InlineData(150, 149, 70, 0, 299)]
+        [InlineData(150, 150, 70, 5, 0)]
+        [InlineData(250, 101, 0, 0, 51)]
+        [InlineData(1450, 50, 70, 25, 0)]
+        [InlineData(155, 3200000800L, 1, 1, 255)]
         public void ArmorySalesCarryRemainderAndRespectReputationLimit(int previous, long value,
             int room, int gained, int remainder)
         {

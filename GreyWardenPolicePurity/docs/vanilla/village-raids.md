@@ -42,6 +42,8 @@
 
 战役启动各场任务时，`StatisticsCampaignBehavior.OnMissionStarted` 加入 `StatisticsMissionLogic`。角色移除回调将被移除者与造成移除的角色传给 `StatisticsCampaignBehavior.OnAgentRemoved`。当后者是 `Agent.Main` 时，原版个人击倒或击杀累计加一；玩家部队的击倒有独立计数。`GetNumberOfTroopsKnockedOrKilledByPlayer` 只返回累计人数。逐人阶级可在移除回调根据受影响者的 `CharacterObject.Tier` 读取。
 
+实际战场里，`PartyGroupTroopSupplier.GetParty` 按士兵的 `UniqueTroopDescriptor` 找分配给该士兵的部队，`PartyGroupAgentOrigin.BattleCombatant` 返回这支部队的 `PartyBase`。混编、共用队形和接受玩家指挥时，士兵仍保留这个部队归属。派兵时，`MapEvent` 按实际出手士兵的编号查找出手部队。在玩家的自动战斗中，出手部队为主队且这击使敌人倒下时，才触发 `CampaignEvents.OnPlayerPartyKnockedOrKilledTroopEvent`，事件参数是倒下敌人的 `CharacterObject`。（依据：v1.4.8、v1.5.7 的 `PartyGroupAgentOrigin`、`PartyGroupTroopSupplier` 与 `MapEvent` 托管源码）
+
 `MapEvent.PlayerMapEvent` 指向玩家主队当前的地图事件。战斗任务的个体移除和地图事件最终结算是两个时机。两轮间回地图可以保存，继续战斗时用前节所述的同一个 `MapEvent`。（依据：v1.4.8、v1.5.7 的 `StatisticsCampaignBehavior` 与 `MapEvent` 托管源码）
 
 ## 容易想错的地方

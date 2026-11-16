@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
         internal static decimal PreciseReputation => ReputationUnits / (decimal)WardenReputationRules.ReputationUnitsPerPoint;
         private static int RemainingReputationUnits => MaxReputation * WardenReputationRules.ReputationUnitsPerPoint - ReputationUnits;
         private static int _reputationRemainder;
-        private static int _goodDeedRewardProgress;
+        private static int _goodDeedRewardProgressUnits;
         private static int _wardenUpgradeProgress;
         private static int _prisonerTradeProgress;
         private static int _troopTradeProgress;
@@ -76,18 +76,20 @@ namespace GreyWardenPolicePurity
                 "CUSTOM_REPUTATION_RESET",
                 "before=" + before + "; requested=" + value + "; after=" + Reputation);
         }
-        internal static bool TryAwardGoodDeedReputation(int weight)
+        internal static bool TryAwardGoodDeedReputation((int Personal, int MainParty) weights)
         {
-            if (weight <= 0) return false;
+            int weightUnits = WardenReputationRules.BattleRewardWeightUnits(weights.Personal, weights.MainParty);
+            if (weightUnits <= 0) return false;
 
-            int previousProgress = _goodDeedRewardProgress;
-            var award = WardenReputationRules.QuoteRewardProgress(previousProgress, weight,
-                WardenReputationRules.TroopWeightPerPoint, RemainingReputationUnits);
-            _goodDeedRewardProgress = award.Remainder;
+            int previousProgress = _goodDeedRewardProgressUnits;
+            var award = WardenReputationRules.QuoteRewardProgress(previousProgress, weightUnits,
+                WardenReputationRules.BattleWeightUnitsPerPoint, RemainingReputationUnits);
+            _goodDeedRewardProgressUnits = award.Remainder;
 #if GWP_DIAGNOSTICS
             GwpAiDiagnostics.WritePlayerJusticeState("GOOD_DEED_WEIGHT_SETTLED",
-                "weight=" + weight + "; previousProgress=" + previousProgress +
-                "; gain=" + FormatReputationUnits(award.ReputationUnits) + "; remainder=" + award.Remainder);
+                "personalWeight=" + weights.Personal + "; mainPartyWeight=" + weights.MainParty +
+                "; weightUnits=" + weightUnits + "; previousProgressUnits=" + previousProgress +
+                "; gain=" + FormatReputationUnits(award.ReputationUnits) + "; remainderUnits=" + award.Remainder);
 #endif
             if (award.ReputationUnits <= 0) return false;
 
@@ -164,14 +166,22 @@ namespace GreyWardenPolicePurity
         {
             bool usesTierWeights = dataStore.IsSaving;
             dataStore.SyncData("gwp_player_tier_reward_weights", ref usesTierWeights);
-            dataStore.SyncData("gwp_good_deed_kill_progress", ref _goodDeedRewardProgress);
+            bool hasBattleWeightUnits = dataStore.SyncData("gwp_good_deed_reward_weight_units", ref _goodDeedRewardProgressUnits);
             dataStore.SyncData("gwp_player_prisoner_trade_progress", ref _prisonerTradeProgress);
             dataStore.SyncData("gwp_player_troop_trade_progress", ref _troopTradeProgress);
             dataStore.SyncData("gwp_player_armory_trade_progress", ref _armoryTradeProgress);
 
-            if (!dataStore.IsLoading || usesTierWeights) return;
+            if (!dataStore.IsLoading) return;
+            if (!hasBattleWeightUnits)
+            {
+                int legacyBattleProgress = 0;
+                dataStore.SyncData("gwp_good_deed_kill_progress", ref legacyBattleProgress);
+                if (!usesTierWeights)
+                    legacyBattleProgress = RescaleLegacyRewardProgress(legacyBattleProgress, LegacyGoodDeedKillsPerPoint);
+                _goodDeedRewardProgressUnits = legacyBattleProgress * WardenReputationRules.TroopBattleRewardDivisor;
+            }
+            if (usesTierWeights) return;
             // 旧档的余数按还差多少才满一分折回新权重，已经入账的声望不参与换算。
-            _goodDeedRewardProgress = RescaleLegacyRewardProgress(_goodDeedRewardProgress, LegacyGoodDeedKillsPerPoint);
             _prisonerTradeProgress = RescaleLegacyRewardProgress(_prisonerTradeProgress, 5);
             _troopTradeProgress = RescaleLegacyRewardProgress(_troopTradeProgress, 5);
         }
@@ -185,7 +195,7 @@ namespace GreyWardenPolicePurity
         {
             Reputation = 0;
             _reputationRemainder = 0;
-            _goodDeedRewardProgress = 0;
+            _goodDeedRewardProgressUnits = 0;
             _wardenUpgradeProgress = 0;
             _prisonerTradeProgress = 0;
             _troopTradeProgress = 0;
