@@ -50,6 +50,10 @@
 
 战役的现场战斗和派兵共用 `SPScoreboardVM`。`BattleResultsReady` 触发 `OnBattleOver`，后者按当前 `PlayerEncounter.Battle` 的胜方选取奖励。`GetBattleRewards` 每次先清空 `BattleResults`，再填入声望、影响力、士气等结果，供 `SPScoreboard.xml` 的奖励栏显示。奖励栏在玩家离开战报前已打开。`MapEvent.FinalizeEvent` 进入 `WaitingRemoval` 后派发 `MapEventEnded`，随后清理参战侧。（依据：v1.4.8、v1.5.7 的 `SPScoreboardVM`、`PlayerEncounter`、`MapEvent` 与原版 Gauntlet 布局）
 
+### 战报和编辑器的旗帜
+
+战报绑定双方的 `BannerVisual`，旗帜编辑器通过 `GetTableauTextureLargeForBannerEditor` 请求大旗纹理。生成图案时，`BannerVisual.ConvertToMultiMesh` 按 `BannerIconData` 取材质，从 4×4 图集选一格。`gui_color_and_stroke` 对图集做各向异性采样，再按旗帜码着色。v1.5.7 原版 `custom_banner_icons*` 的 2048×2048 BC7 图集只有一层 mip。（依据：v1.5.7 托管源码、原版 Gauntlet 布局、shader 源和 Native `core.tpac`）
+
 ## 容易想错的地方
 
 - 原版烧村分里**没有**仁慈等性格项。常说的「关系影响烧村」是第 4 步的关系项，而且是和**村主家族**的关系，不是和村民或别的家族。

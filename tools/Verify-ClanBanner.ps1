@@ -72,5 +72,17 @@ if ($Installed) {
         throw 'BannerIcons XML registration is missing or duplicated'
     }
     Write-Output 'INSTALLED_XML=PASS: correct clan banner, one registration, all 3 live XML hashes match'
+
+    $texturePath = 'Assets/BannerIcons/gwp_commander_banner_tex.tpac'
+    $textureTpac = [IO.File]::ReadAllBytes((Join-Path $prepared (Split-Path $texturePath -Leaf)))
+    # The TPAC package GUID identifies its baked pixel cache.
+    $cacheGuid = [Guid]::new([byte[]]$textureTpac[8..23]).ToString().ToUpperInvariant()
+    $bannerAssets = @('Assets/BannerIcons/gwp_commander_banner_mtl.tpac', $texturePath, "RuntimeDataCache/$cacheGuid.rdc")
+    foreach ($relativePath in $bannerAssets) {
+        $referenceHash = (Get-FileHash -LiteralPath (Join-Path $prepared (Split-Path $relativePath -Leaf))).Hash
+        $installedHash = (Get-FileHash -LiteralPath (Join-Path $liveModule $relativePath)).Hash
+        if ($referenceHash -ne $installedHash) { throw "Banner asset differs: $relativePath" }
+    }
+    Write-Output 'INSTALLED_ASSETS=PASS: material, texture metadata, and baked pixel cache match'
 }
 Write-Output 'RUNTIME_RENDER=NOT_TESTED: this check does not run the engine'

@@ -16,14 +16,14 @@
 
 源：`D:/steam/steamapps/common/Mount & Blade II Bannerlord/Modules/GreyWarden/AssetSources/BannerIcons/gwp_commander_banner.dds`。
 
-DDS源是2048×2048 RGBA、单mip未压缩；用户 Kit 实际导入为DXT5、12mip，保留其格式，不直接篡改像素缓存。仅4×4网格的第0格有鸟徽，G=255、R/B=0、alpha承载轮廓。原版shader用 `alpha *= draw_stroke * R + G`，填色来自旗帜配置；绿色预览正常，不需要把它涂金。
+DDS 源是 2048×2048 RGBA、单层未压缩。4×4 网格的第 0 格有鸟徽，G=255、R/B=0，alpha 承载轮廓。原版 shader 用 `alpha *= draw_stroke * R + G`，填色来自旗帜配置。
 
-这里的 `gwp_commander_banner_tex.tpac` 是带 `dont_degrade` 的测试纹理，沿用上述 DDS 和导入数据段。重建本地测试模块时，在游戏与 Kit 关闭后，将它复制到 live 的 `Assets/BannerIcons/`。
+这里归档测试用的单层纹理。关闭游戏与 Kit 后，将 `gwp_commander_banner_tex.tpac` 复制到 live 的 `Assets/BannerIcons/`，同包 GUID 的 `E97ADA98-FDCF-499F-B830-2135638BA024.rdc` 复制到 live 的 `RuntimeDataCache/`。两个文件成对部署并验证。RDC 的 DXT5 像素取自 Kit 原缓存的最高分辨率层。
 
 ## 验收与后续打包
 
 下次完整加载游戏、开新档，看地图小旗、百科和战场旗帜是否黑底金鸟、方向正确、爪尾完整；同版本存读后保持。旧档的 Banner 属于原版保存状态，不通过新增迁移改写。
 
-本地开发版直接使用 live `Assets`。下一次玩家包发布时，由 Kit 将带 `dont_degrade` 的纹理装进 `pack0`。
+本地开发版使用 live 的 `Assets` 与对应的 `RuntimeDataCache`。下一次玩家包发布时，在 Kit 导入和发布结果中核对图集只有一层 mip。
 
 离线参考：[512/128/64像素](native-mask-preview.png)，非引擎截图。格式参照 [TaleWorlds 自定义旗帜图标文档](https://moddocs.bannerlord.com/asset-management/creating_custom_banner_icons/)。

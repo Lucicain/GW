@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[战报声望预览](player-justice.md#加分)、[军械交付费率](firesworn-economy.md#玩家向祭司交付)和[低画质旗帜贴图](clan-banner.md#可编辑素材与静态材质)。Client/Editor DLL 与通过兼容预检的隔离产物等哈希，SHA-256 为 `444DFD24A53B3C8ADE95A07ACD7629D97A51B651888397E23D7158F3CEFFFB45`。live 旗帜纹理与仓库归档的候选等哈希，完整哈希见旗帜页。仓库与 live 中文语言 XML 同为 `29077A616443E929C7DC5468F1AAD18C25729F7E8B9C2727FE76F155D02E144D`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。74 个运行时镜像文件校验一致。（依据：构建、部署、兼容预检及 SHA-256 核对 2026-11-16）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。当前 DLL 包含[战报声望预览](player-justice.md#加分)与[军械交付费率](firesworn-economy.md#玩家向祭司交付)。Client/Editor DLL 与通过兼容预检的隔离产物等哈希，SHA-256 为 `444DFD24A53B3C8ADE95A07ACD7629D97A51B651888397E23D7158F3CEFFFB45`。本轮部署[单层旗帜图集与缓存](clan-banner.md#可编辑素材与静态材质)，TPAC 和 RDC 的 live 哈希均与仓库归档一致。仓库与 live 中文语言 XML 同为 `29077A616443E929C7DC5468F1AAD18C25729F7E8B9C2727FE76F155D02E144D`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。74 个运行时镜像文件校验一致。（依据：构建、部署、兼容预检及 SHA-256 核对 2026-11-16）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 
