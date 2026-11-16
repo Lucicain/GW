@@ -40,6 +40,7 @@
 
 - [npc-voices](npc-voices.md)：普通 NPC 的对白、战场喊声与指令
 - [party-settlement-entry](party-settlement-entry.md)：部队访问聚落、军团统帅与附属部队进城
+- [settlement-menus](settlement-menus.md)：酒馆子菜单、村庄交易和剧情教程入口
 - [party-encounters](party-encounters.md)：追踪实时部队、实际接触、打开对话与返程
 - [map-party-trackers](map-party-trackers.md)：任务部队的地图标记登记、显示与移除
 - [volunteer-recruitment](volunteer-recruitment.md)：玩家、AI 领主和驻军如何判断要人的招募格子

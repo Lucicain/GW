@@ -1,9 +1,9 @@
 # 玩家送信队（使者）
 
-> 当前状态：复命/求援归入当前委托，订单/讲和/封地各归业务；1.5.7 的在途使者地图标记修复已部署
-> 最后验收：2026-10-21 用户反馈前轮无功能问题；日志确认订兵/讲和/复命选兵，封地送达与存读边界仍待测
+> 当前状态：复命/求援归入当前委托，订单/讲和/封地各归业务；1.5.7 在途使者地图标记获用户确认
+> 最后验收：2026-11-16 用户确认 `777622f` 的在途使者地图标记修复；封地送达与存读边界仍待测
 > 覆盖源码：`GwpWardenDispatch.cs` `GwpWardenDispatchBehavior.cs` `GwpDispatchCargo.cs` `GwpDispatchPrisonerCustody.cs` `GwpWardenDispatchDialogue.cs` `GwpPartyScreenTroopTalkPatch.cs` `GwpAssetPayment.cs` `GwpAssetAutoOfferPatch.cs` `GwpAssetOfferValidationPatch.cs` `GwpDispatchBarterScreen.cs` `GwpDispatchBarterFaultDiagnostics.cs` `GwpWardenDispatchBehavior.Affairs.cs`
-> 待实测：1.5.7 使者在途标记含读档恢复、归队后清除；城内抓捕复命在议价界面点配平不再报错、按收据带齐；委托内复命/求援及行程归类；封地选定/出发/送达/失效返回及存读接续；归队伤兵和累计经验；反复建队不重号
+> 待实测：城内抓捕复命在议价界面点配平不再报错、按收据带齐；委托内复命/求援及行程归类；封地选定/出发/送达/失效返回及存读接续；归队伤兵和累计经验；反复建队不重号
 
 送信队从开口到回来的全过程：对话入口、选人、定单子、地图上的一趟、交割、工资。
 
@@ -29,7 +29,7 @@
 
 ## 路上
 
-- 玩家使者出发和读档时登记大地图标记，随在途队伍移动，归队或被消灭后移除。1.5 使用原版 `MapTrackerManager` 的显式登记，1.4.8 沿用[原版任务队追踪](../vanilla/map-party-trackers.md)。本次存档有一支已发出的讲和使者，旧的任务占用和视觉追踪未进入 1.5.7 的地图标记列表。（依据：用户实机报告、存档只读核对及原版源码 2026-11-16）
+- 玩家使者出发和读档时登记大地图标记，随在途队伍移动，归队或被消灭后移除。1.5 使用原版 `MapTrackerManager` 的显式登记，1.4.8 沿用[原版任务队追踪](../vanilla/map-party-trackers.md)。故障档里已出发的讲和使者用旧式登记时漏了标记，部署后用户在正常游玩中确认修复。（依据：故障存档只读核对、原版源码、`rgl_log_25576.txt` 与用户验收 2026-11-16）
 - 出程直扑（`RequestRush`）；回程跟随玩家（`RequestEscort`），不用直扑，否则原版会拉出一场遭遇。
 - 攻击倾向 0.2、6 小时，每小时续：贴身弱敌照打，不为远处目标丢下差事。火誓者自建的传教队与村间转运队也用 `KeepCourierDisposition`；售货村民走原版村民AI，见[村民队](firesworn-villagers.md)。（依据：源码复核 2026-10-19）
 - 收件人每小时重选最近且**走得到**的灰袍领主；新目标要近 25 以上才改道。

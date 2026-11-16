@@ -117,9 +117,10 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 成就
 
-- 原版检测到非官方模组时会停用成就。如果唯一的原因是本模组，就恢复成就
+- 成就兼容的目标是仅豁免加载灰袍导致的停用
   （`GwpAchievementCompatibility`：后置 `DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved`，
   前置 `AchievementsCampaignBehavior.CheckAchievementSystemActivity`）。
+- 已知缺陷：原版[按顺序报告第一项成就停用原因](../vanilla/campaign-lifecycle.md#成就完整性检查)。当前补丁见到仅启用灰袍的模组原因就恢复成就，因此还会盖过其后的降版检查，以及 v1.5.7 新增的高级开局检查。已核实源码分支，实际成就授予待核对。（依据：v1.4.8、v1.5.7 原版与灰袍补丁对照 2026-11-16）
 
 装备反馈：当前 v14 / RBM 环境的领主自动换装入口与高军饷、低补兵预算已核对，见 temporary-parties.md；尚无具体装备槽位的实测因果记录。（依据：C# 反编译、实机诊断 2026-10-07）
 

@@ -1,6 +1,6 @@
 # 战役启动、新档事件与行为存读
 
-> 游戏版本：v1.4.8
+> 游戏版本：v1.4.8、v1.5.7
 > 源码：`TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` 的 `OnInitialize`、`OnNewGameCreated`；
 > `TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` 的 `AddModel`、`GetModel`；
 > `TaleWorlds.Core/TaleWorlds.Core/GameModelsManager.cs` 的 `GetGameModel`；
@@ -50,6 +50,10 @@
 战役从该列表建立 `GameModels`，其中 `GetGameModel<T>` 也从后往前取第一个匹配项。
 因此属性（如 `SettlementMilitiaModel`）返回最后注册的兼容模型。此前注册的实例仍在列表中，
 新模型可以通过 `BaseModel` 委托给前一个模型，也可以自行覆盖其规则。
+
+## 成就完整性检查
+
+`SandBox.CampaignBehaviors.DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved` 依序检查作弊使用、非官方模组、游戏版本降级。v1.5.7 在末尾增加高级开局选项检查。方法只返回第一个失败原因。`IsAdvancedStartOptionsUsed` 遇到 `Seed` 以外的已用选项时判定使用了高级开局，只有种子时通过。（依据：v1.4.8、v1.5.7 `SandBox/SandBox.CampaignBehaviors/DumpIntegrityCampaignBehavior.cs`）
 
 ## 容易想错的地方
 
