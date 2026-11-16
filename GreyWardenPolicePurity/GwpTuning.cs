@@ -98,13 +98,9 @@ namespace GreyWardenPolicePurity
             /// <summary>"附近有比武"指离双方中点最近的这几座能进的城（用户裁定 2026-10-15：附近没有就在最近的城新开一场）。</summary>
             public const int TournamentDuelNearbyTowns = 3;
             /// <summary>
-            /// The fine a Grey Warden lord levies per point of negative
-            /// standing.  It was a literal in the enforcement dialogue; the
-            /// case ledger has to quote the same figure, so both read it here.
-            /// 三档费率各不相同：当面缴给灰袍领主 100，纠察队 200（Patrol.FinePerPoint），
-            /// 被正式灰袍击败后押送 300（EscortFinePerPoint）。
+            /// NPC 案件的负声望计价、实缴抵扣，以及玩家向灰袍领主当面缴罚共用的费率。
             /// </summary>
-            public const int FinePerPoint = 100;
+            public const int FinePerPoint = 200;
             /// <summary>玩家被正式灰袍击败、押到城堡后的费率；只收现有金币，按实收每满一档恢复一点声望。</summary>
             public const int EscortFinePerPoint = 300;
 
@@ -278,14 +274,14 @@ namespace GreyWardenPolicePurity
             public const int HandInCompensationPerCasualty = 60;
             public const int HandInPerSeverityPoint = 120;
 
+            public const int AuditDenarsPerStandingPoint = 100;
             public const int StandingGainOnSubmit = 2;
         }
 
         internal static class Patrol
         {
             /// <summary>
-            /// 纠察队每点负声望收 200，高于当面缴给灰袍领主的 100（Enforcement.FinePerPoint）；
-            /// 两者按同一个声望计。
+            /// 纠察队按玩家灰袍负声望计价，费率与正式领主当面缴罚相同。
             /// </summary>
             public const int FinePerPoint = 200;
             public const int NegotiationDivisor = 4;

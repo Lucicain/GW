@@ -25,6 +25,6 @@ namespace GreyWardenPolicePurity
         }
 
         internal static int ShortfallPenalty(int assessed, int delivered) =>
-            Math.Max(0, assessed - Math.Max(0, delivered)) / GwpTuning.Enforcement.FinePerPoint;
+            Math.Max(0, assessed - Math.Max(0, delivered)) / GwpTuning.FieldArrest.AuditDenarsPerStandingPoint;
     }
 }

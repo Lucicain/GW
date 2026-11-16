@@ -188,7 +188,7 @@ namespace GreyWardenPolicePurity
                 Reports?.PendingReceivedFor(target.StringId) ?? 0);
             if (_casePeacefullyResolved || alreadySettled > 0)
                 Reports?.RecordExcessEnforcement(target.StringId,
-                    Math.Max(alreadySettled, GwpTuning.Enforcement.FinePerPoint));
+                    Math.Max(alreadySettled, GwpTuning.FieldArrest.AuditDenarsPerStandingPoint));
             GwpAiDiagnostics.WriteFieldArrest("CASE_BATTLE_OUTCOME",
                 "offender=" + target.StringId + "; defeated=True; first=" + first
                 + "; alreadySettled=" + alreadySettled
