@@ -60,7 +60,7 @@
 
 执勤旗回退基线 `7573179`：恢复 `items.xml`、`GwpIds.cs`、`GwpCommon.cs`、两份PlayerBountyBehavior源文件及主文本，删除 `GwpDutyBanner.cs` 和SubModule中的旗帜模型注册；事务界面回退见[玩家](player-justice.md)。恢复时保留本轮之前的人物追责与协力工作树改动。
 
-灰袍头盔面罩开口：指挥官翼盔 `wcomhelmethv`、士兵翼盔 `winfhelmethv`（重步兵、骑士）与无翼盔 `winfhelmet` 的开口已由用户在美术里下移，男女都能看到眼睛，用户实测确认（2026-10-14）。改前开口偏高，女性完全看不到眼睛；开口一圈只绑头部骨骼，转头不会错位。开发版 live 的 `Assets` 已是新模型，玩家包 `pack0.tpac` 尚未重新发布（见 [布料资源](cloth-assets.md)）。
+灰袍头盔面罩开口：指挥官翼盔 `wcomhelmethv`、士兵翼盔 `winfhelmethv`（重步兵、骑士）与无翼盔 `winfhelmet` 的开口已由用户在美术里下移，男女都能看到眼睛，用户实测确认（2026-10-14）。改前开口偏高，女性完全看不到眼睛；开口一圈只绑头部骨骼，转头不会错位。本机开发资源和现用玩家包的三顶模型元数据及共有的 16 个数据段一致。（依据：安装版和 `pack0.tpac` 资产记录与数据段核对 2026-11-17）
 
 ## 灰袍 NPC 的自动换装候选
 

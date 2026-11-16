@@ -35,8 +35,12 @@
 
 存档差异集中在订单组合和价款、升阶与声望尾数、切磋冷却、地图战果与护村状态、三类个人交付累计。旧的村民打赏和分类商队震慑记录及练兵队调货状态从现行保存退出。村庄子菜单复用原有村庄、祭司、交付和市场数据。现行读取按各属主的接续规则处理，现场验收范围见[声望](../state/player-justice.md#加分)、[订单](../state/troop-orders.md#订单阶段)和[村庄](../state/firesworn-villages.md#待实测)。
 
-## 同源码的测试版和无诊断构建
+## 用当前源码发正式版会有什么差异
 
-测试模块含 AI、案件、运行故障和交付诊断，库房明细和领主军械库问询只在诊断构建中注册。隔离的 1.5.7 无诊断构建保留本次拜访与交易入口。实测预检分别绑定 133 和 128 个补丁类，两者均通过。5 个开发版补丁是 `GwpArmyInfluenceFailureTracePatch`、`GwpDispatchBarterFaultDiagnostics`、`GwpEngineAssertDiagnostics`、`GwpFireswornUpgradePaymentTracePatch`、`GwpInitiativeDiagnosticsPatch`。旧版对照使用实际公开 DLL，现行无诊断 DLL 仅供本轮隔离核对。
+本节固定 Bannerlord 1.5.7 和当前源码 `84052d0`。正式构建用 `GwpDiagnosticsEnabled=false`，村庄拜访入口、库房概况、交付士兵和俘虏、军械整理及村庄市场都保留。开发版独有「查看教众库房」和领主对话「让我看看你们的军械库。」两个只读明细入口。条件编译中没有存档类型定义和数据键的差异。诊断版与无诊断版的预检分别绑定 133 和 128 个补丁类，均通过。开发版多出的五个补丁是 `GwpArmyInfluenceFailureTracePatch`、`GwpDispatchBarterFaultDiagnostics`、`GwpEngineAssertDiagnostics`、`GwpFireswornUpgradePaymentTracePatch`、`GwpInitiativeDiagnosticsPatch`。隔离玩家 DLL 的五组诊断标记均无。
+
+按 `tools/New-PlayerPackage.py` 枚举，不生成 ZIP，本机 425 个文件，正式包预计 77 个文件。以相同修订号计算，76 个同路径文件中 75 个哈希相同，唯一内容不同的是模组客户端 DLL。开发版多 `Assets` 112 项、`AssetSources` 64 项、`RuntimeDataCache` 167 项、`Shaders` 2 项、编辑器二进制及调试符号 4 项。正式包另有供客户端读取的 `AssetPackages/pack0.tpac`。
+
+读回现用打包输入 `pack0`，其中 148 项资源均在开发版 `Assets` 里注册同名同 GUID 资源，开发版另有 27 项 FBX 导入记录。共有的 232 个内嵌数据段哈希相同，另有 16 条双刀动画记录仅元数据版本字段不同。三顶调整过面罩的灰袍头盔的元数据及共有的模型数据段一致。旗帜例外，包中 `gwp_commander_banner` 是 2048×2048、12 层 mip，用户已验收的开发资源为单层。用现有 `pack0` 出包会遗漏低画质旗帜修复。带上修复需要从 Kit 重新导出并读回旗帜记录。玩家 README 的过时内容已登记在[清理台账](../state/workflow.md#清理台账)，留随发版同步。
 
 本机镜像的 74 个运行时文件、Client/Editor 的 DLL/PDB、新语言 XML 经比对。1.4.8 以对应引用程序集编译和核对，1.5.7 另做实际加载与 Harmony 预检。107 项规则测试、27 项工具自检、文本键和独立复审通过。村庄子菜单实际显示、几种交易的确认与取消、返回和特殊村庄仍按正常游玩验收。
