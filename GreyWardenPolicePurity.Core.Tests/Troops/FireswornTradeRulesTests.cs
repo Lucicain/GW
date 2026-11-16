@@ -26,18 +26,20 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         [Fact]
         public void MixedTierPrisonersEarnStandingAcrossDeliveries()
         {
-            int firstPrisoners = WardenReputationRules.TroopUnits(1) + WardenReputationRules.TroopUnits(2);
+            int firstPrisoners = 2 * WardenReputationRules.TroopRewardWeight(6) +
+                WardenReputationRules.TroopRewardWeight(4) + WardenReputationRules.TroopRewardWeight(2);
             var first = FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, 0, firstPrisoners, 100);
-            Assert.Equal((0, 3), first);
+            Assert.Equal((0, 18), first);
             Assert.Equal((5, 1), FireswornTradeRules.Quote(FireswornTradeKind.Prisoners, first.Remainder,
-                WardenReputationRules.TroopUnits(3), 100));
+                WardenReputationRules.TroopRewardWeight(3), 100));
         }
 
         [Fact]
         public void HigherTierSoldiersAndRemainderCombineInOneDelivery()
         {
-            int units = WardenReputationRules.TroopUnits(1) + WardenReputationRules.TroopUnits(6);
-            Assert.Equal((10, 1), FireswornTradeRules.Quote(FireswornTradeKind.Troops, 2, units, 70));
+            int weight = 2 * WardenReputationRules.TroopRewardWeight(6) +
+                WardenReputationRules.TroopRewardWeight(5) + WardenReputationRules.TroopRewardWeight(1);
+            Assert.Equal((5, 0), FireswornTradeRules.Quote(FireswornTradeKind.Troops, 2, weight, 70));
         }
 
         [Theory]

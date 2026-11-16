@@ -111,7 +111,7 @@ namespace GreyWardenPolicePurity
             string branch = side == BattleSideEnum.Attacker ? "attackers" : "defenders";
             var condition = AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_join_encounter_help_" + branch + "_on_condition");
             if (!(bool)condition.Invoke(native, new object[] { args }) || !args.IsEnabled) return;
-            Campaign.Current.GetCampaignBehavior<PlayerBehaviorMonitor>().PrepareIntervention(battle, side);
+            (int enemyCount, int policeSupport) = PlayerBehaviorMonitor.DescribeIntervention(battle, side);
             _preview = null;
             _committing = true;
             try
@@ -121,7 +121,10 @@ namespace GreyWardenPolicePurity
                     .Invoke(native, new object[] { args });
             }
             finally { _committing = false; }
-            if (PlayerEncounter.Current == null || MobileParty.MainParty.MapEvent == null ||
+            if (PartyBase.MainParty?.MapEventSide is not { MapEvent: { IsFinalized: false } } joinedSide) return;
+            Campaign.Current.GetCampaignBehavior<PlayerBehaviorMonitor>()
+                .RecordInterventionBattle(joinedSide, enemyCount, policeSupport);
+            if (PlayerEncounter.Current == null ||
                 Campaign.Current.CurrentMenuContext?.GameMenu.StringId != "encounter") return;
             if (simulate) MenuHelper.EncounterOrderAttackConsequence(args);
             else MenuHelper.EncounterAttackConsequence(args);

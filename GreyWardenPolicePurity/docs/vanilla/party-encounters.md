@@ -11,6 +11,10 @@
 3. 接触后通过 `MobileParty.OnPartyInteraction` 调 `EncounterManager.StartPartyEncounter`。涉及主队时创建或更新 `PlayerEncounter`。未卷入战斗、攻城等特殊分支的普通两队相遇，由 `DefaultEncounterGameMenuModel` 选择 `encounter_meeting`，此时 `startBattle`、`joinBattle` 均为 `false`。海战剧情的专用相遇由 NavalDLC 的 `NavalEncounterMenuModel` 决定，普通会面交回原版基础模型。
 4. `encounter_meeting` 第一次初始化就调用 `DoMeeting`。`DoMeetingInternal` 设置 `_meetingDone`，陆地打开地图对话，海上打开专用会面场景。回到会面菜单时，`LeaveEncounter` 已置位便结束遭遇，否则菜单可继续进入战斗。
 
+## 玩家离开地图战斗
+
+退出遭遇时，`PlayerEncounter.Finish` 经战斗结算和 `LeaveBattle` 收尾。v1.5.7 的 `LeaveBattle` 在主队为非领队且同侧还有可继续打的 NPC 队伍等情形，先清主队的 `MapEventSide`，原地图战斗可继续；在其余普通离战情形可直接 `FinalizeEvent`。`MapEvent.InvolvedParties` 枚举当时两侧队伍，主队先解绑时，稍后派发的 `MapEventEnded` 仍是同一事件，此时名单里已无主队。（依据：v1.5.7 `PlayerEncounter.Finish`、`LeaveBattle`，以及 `MapEvent` 的 `InvolvedParties` 与 `FinalizeEventAux`）
+
 ## 返程与再次接触
 
 仅关闭对话会留下原版部队的行进命令。两队还重叠时，任务方可先切换到 `SetMoveGoToSettlement`，由 `ResetAllMovementParameters` 清理旧移动目标，再结束本次遭遇。原版 `FinishEncounterInternal` 对敌对双方的特定非胜利离场也会给遇到的队伍两小时 `DoNotAttackMainParty`，该保护用于压制短期进攻。持续下达 `EngageParty` 的任务仍需自行结束。

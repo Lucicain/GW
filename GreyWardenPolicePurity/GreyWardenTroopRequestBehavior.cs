@@ -360,7 +360,7 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        internal static int GetUnitCost(CharacterObject troop) => WardenReputationRules.TroopUnits(troop.Tier);
+        internal static int GetUnitCost(CharacterObject troop) => WardenReputationRules.TroopOrderCostUnits(troop.Tier);
 
         internal static string EncodeOrder(IEnumerable<(string TroopId, int Count)> lines) => TroopOrderComposition.Encode(lines);
 
@@ -432,7 +432,7 @@ namespace GreyWardenPolicePurity
 
         private string FormattedPrice() => _orderPaidWithReputation
             ? PlayerBehaviorPool.FormatReputationUnits(_orderPriceUnits > 0 ? _orderPriceUnits :
-                _orderPrice * WardenReputationRules.TroopUnitsPerPoint) : _orderPrice.ToString();
+                _orderPrice * WardenReputationRules.ReputationUnitsPerPoint) : _orderPrice.ToString();
 
         private string DescribeComposition() => string.Join(", ", _orderLines.Select(line =>
             GwpText.Get(GwpTextCatalog.gwp_player_troop_order_line, "COUNT", line.Count, "NAME", line.Troop.Name)));

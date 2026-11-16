@@ -35,9 +35,35 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         [InlineData(5, 6)]
         [InlineData(6, 8)]
         [InlineData(7, 8)]
-        public void TroopValueUsesTier(int tier, int units)
+        public void OrderCostUsesLogisticalTierRates(int tier, int units)
         {
-            Assert.Equal(units, WardenReputationRules.TroopUnits(tier));
+            Assert.Equal(units, WardenReputationRules.TroopOrderCostUnits(tier));
+        }
+
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 1)]
+        [InlineData(2, 2)]
+        [InlineData(3, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 5)]
+        [InlineData(6, 6)]
+        [InlineData(7, 6)]
+        public void PersonnelRewardsUseOneThroughSix(int tier, int weight)
+        {
+            Assert.Equal(weight, WardenReputationRules.TroopRewardWeight(tier));
+        }
+
+        [Fact]
+        public void PersonalDefeatsCarryWeightAcrossVictories()
+        {
+            const int rate = WardenReputationRules.TroopWeightPerPoint;
+            var first = WardenReputationRules.QuoteRewardProgress(0,
+                2 * WardenReputationRules.TroopRewardWeight(6) + WardenReputationRules.TroopRewardWeight(5), rate, 50);
+            Assert.Equal((0, 17), first);
+            var second = WardenReputationRules.QuoteRewardProgress(first.Remainder,
+                WardenReputationRules.TroopRewardWeight(4), rate, 50);
+            Assert.Equal((5, 1), second);
         }
 
         [Theory]
@@ -51,13 +77,13 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
             int balance, bool hasRoom)
         {
             Assert.Equal((balance, hasRoom), WardenReputationRules.QuoteOrder(
-                WardenReputationRules.TroopUnits(tier) * count, count, reputation, troops));
+                WardenReputationRules.TroopOrderCostUnits(tier) * count, count, reputation, troops));
         }
 
         [Fact]
         public void MixedOrderUsesExactCostAndFractionalCapacity()
         {
-            int units = 3 * WardenReputationRules.TroopUnits(1) + 2 * WardenReputationRules.TroopUnits(3);
+            int units = 3 * WardenReputationRules.TroopOrderCostUnits(1) + 2 * WardenReputationRules.TroopOrderCostUnits(3);
             Assert.Equal((18, true), WardenReputationRules.QuoteOrder(units, 5, 27, 2));
             Assert.Equal((18, false), WardenReputationRules.QuoteOrder(units, 5, 27, 3));
         }

@@ -25,6 +25,8 @@ v1.5.7 的 AI 自动升级先用模型的 `IsTroopUpgradeable` 筛兵种，再�
 
 ## 赎金选人与结算
 
+普通俘虏的默认赎金以无招募者的兵种招募价的四分之一为底，卖家的相关特长及仁慈可继续修正。例如 v1.5.7 中，16 级无马且无职业加价的普通步兵属三阶，招募价为 100 第纳尔，赎金基价为 25。（依据：v1.5.7 `DefaultRansomValueCalculationModel.PrisonerRansomValue`、`DefaultPartyWageModel.GetTroopRecruitmentCost`、`DefaultCharacterStatsModel.GetTier`）
+
 v1.5.7 的酒馆赎金商在 `TavernEmployeesCampaignBehavior` 的对话结果里打开 `PartyScreenHelper.OpenScreenAsRansom`。它创建 `Ransom` 模式的 `PartyState`，右侧是主队成员和俘虏的副本，左侧从空名册开始。把俘虏移去左侧时，`TransferableWithTrade` 按赎金模型调整预览金额；确认委托 `SellPrisonersDoneHandler` 才交给 `SellPrisonersAction` 实际卖出和付款。返回对话后先接一条 NPC 答复，再重建玩家选项；若直接衔接玩家主选项，它们会在界面尚未成交时便被 `OnConversationContinue` 生成。
 
 `CreateBasicInitDataWithMainParty` 默认会给出主队真实名册，`PartyScreenData.BindRostersFrom` 还会经右侧所有者绑定真实背包。纯选择用途需显式替换成副本，因为 `ResetUsing` 会清空再按打开时的状态重填。`TroopRoster.CloneRosterData` 复制人数和伤兵；确认侧另从实际源名册核对并搬运经验。`Ransom` 只显示俘虏，`TroopsManage` 只显示成员。普通 `Transferable` 只移动待选名册。`IsTroopUpgradesDisabled` 同时关闭升级和部队页招降路径。模组接入见[玩家向祭司交付](../state/firesworn-economy.md#玩家向祭司交付)。（依据：v1.5.7 C# 反编译 `TavernEmployeesCampaignBehavior`、`ConversationManager`、`MissionConversationVM`、`PartyScreenHelper`、`PartyScreenLogic`、`PartyScreenData`、`PartyVM`、`TroopRoster`，2026-11-15）

@@ -19,12 +19,14 @@ namespace GreyWardenPolicePurity
 
         public const int MaxReputation =  100; // 声望上限
         public const int MinReputation = -100; // 声望下限
+        internal const int LegacyGoodDeedKillsPerPoint = 10;
 
         public static int Reputation { get; private set; } = 0;
-        internal static int ReputationUnits => Reputation * WardenReputationRules.TroopUnitsPerPoint + _reputationRemainder;
-        internal static decimal PreciseReputation => ReputationUnits / (decimal)WardenReputationRules.TroopUnitsPerPoint;
+        internal static int ReputationUnits => Reputation * WardenReputationRules.ReputationUnitsPerPoint + _reputationRemainder;
+        internal static decimal PreciseReputation => ReputationUnits / (decimal)WardenReputationRules.ReputationUnitsPerPoint;
+        private static int RemainingReputationUnits => MaxReputation * WardenReputationRules.ReputationUnitsPerPoint - ReputationUnits;
         private static int _reputationRemainder;
-        public static int GoodDeedKillProgress { get; private set; } = 0;
+        private static int _goodDeedRewardProgress;
         private static int _wardenUpgradeProgress;
         private static int _prisonerTradeProgress;
         private static int _troopTradeProgress;
@@ -42,7 +44,7 @@ namespace GreyWardenPolicePurity
 
         public static void AddCrime(string type, Vec2 location, string detail, IFaction? victimFaction = null)
         {
-            SetReputationUnits(ReputationUnits - WardenReputationRules.TroopUnitsPerPoint);
+            SetReputationUnits(ReputationUnits - WardenReputationRules.ReputationUnitsPerPoint);
 
             if (victimFaction != null) _victimFactions.Add(victimFaction);
 
@@ -62,32 +64,39 @@ namespace GreyWardenPolicePurity
         }
 
         internal static string FormatReputationUnits(int units) =>
-            (units / (decimal)WardenReputationRules.TroopUnitsPerPoint).ToString("0.#", CultureInfo.CurrentCulture);
+            (units / (decimal)WardenReputationRules.ReputationUnitsPerPoint).ToString("0.#", CultureInfo.CurrentCulture);
 
         public static string GetReputationDisplay() => GwpText.Get(GwpTextCatalog.gwp_gwpdata_005, "VAR_1", FormatReputationUnits(ReputationUnits));
 
         public static void ResetReputation(int value)
         {
             int before = Reputation;
-            SetReputationUnits(value * WardenReputationRules.TroopUnitsPerPoint);
+            SetReputationUnits(value * WardenReputationRules.ReputationUnitsPerPoint);
             GwpAiDiagnostics.WritePlayerJusticeState(
                 "CUSTOM_REPUTATION_RESET",
                 "before=" + before + "; requested=" + value + "; after=" + Reputation);
         }
-        public static void ResetGoodDeedKillProgress(int value) => GoodDeedKillProgress = Math.Max(0, Math.Min(9, value));
-
-        public static int AccumulateGoodDeedKills(int killCount)
+        internal static bool TryAwardGoodDeedReputation(int weight)
         {
-            if (killCount <= 0) return 0;
+            if (weight <= 0) return false;
 
-            int accumulated = GoodDeedKillProgress + killCount;
-            int reputationGain = accumulated / 10;
-            GoodDeedKillProgress = accumulated % 10;
-            return reputationGain;
+            int previousProgress = _goodDeedRewardProgress;
+            var award = WardenReputationRules.QuoteRewardProgress(previousProgress, weight,
+                WardenReputationRules.TroopWeightPerPoint, RemainingReputationUnits);
+            _goodDeedRewardProgress = award.Remainder;
+#if GWP_DIAGNOSTICS
+            GwpAiDiagnostics.WritePlayerJusticeState("GOOD_DEED_WEIGHT_SETTLED",
+                "weight=" + weight + "; previousProgress=" + previousProgress +
+                "; gain=" + FormatReputationUnits(award.ReputationUnits) + "; remainder=" + award.Remainder);
+#endif
+            if (award.ReputationUnits <= 0) return false;
+
+            ChangeReputationUnits(award.ReputationUnits);
+            return true;
         }
         public static void ChangeReputation(int delta)
         {
-            ChangeReputationUnits(delta * WardenReputationRules.TroopUnitsPerPoint);
+            ChangeReputationUnits(delta * WardenReputationRules.ReputationUnitsPerPoint);
         }
 
         private static void ChangeReputationUnits(int delta)
@@ -103,7 +112,7 @@ namespace GreyWardenPolicePurity
 
         private static void SetReputationUnits(int units)
         {
-            const int scale = WardenReputationRules.TroopUnitsPerPoint;
+            const int scale = WardenReputationRules.ReputationUnitsPerPoint;
             int clamped = Math.Max(MinReputation * scale, Math.Min(MaxReputation * scale, units));
             Reputation = WardenReputationRules.WholePointsFromUnits(clamped);
             _reputationRemainder = clamped - Reputation * scale;
@@ -130,8 +139,7 @@ namespace GreyWardenPolicePurity
         }
 
         internal static (int ReputationUnits, int Remainder) QuoteFireswornTrade(FireswornTradeKind kind, long units) =>
-            FireswornTradeRules.Quote(kind, FireswornTradeProgress(kind), units,
-                MaxReputation * WardenReputationRules.TroopUnitsPerPoint - ReputationUnits);
+            FireswornTradeRules.Quote(kind, FireswornTradeProgress(kind), units, RemainingReputationUnits);
 
         internal static (int ReputationUnits, int Remainder) CompleteFireswornTrade(FireswornTradeKind kind, long units)
         {
@@ -152,12 +160,24 @@ namespace GreyWardenPolicePurity
             }
         }
 
-        private static void SyncFireswornTradeProgress(IDataStore dataStore)
+        private static void SyncReputationIncomeProgress(IDataStore dataStore)
         {
+            bool usesTierWeights = dataStore.IsSaving;
+            dataStore.SyncData("gwp_player_tier_reward_weights", ref usesTierWeights);
+            dataStore.SyncData("gwp_good_deed_kill_progress", ref _goodDeedRewardProgress);
             dataStore.SyncData("gwp_player_prisoner_trade_progress", ref _prisonerTradeProgress);
             dataStore.SyncData("gwp_player_troop_trade_progress", ref _troopTradeProgress);
             dataStore.SyncData("gwp_player_armory_trade_progress", ref _armoryTradeProgress);
+
+            if (!dataStore.IsLoading || usesTierWeights) return;
+            // 旧档的余数按还差多少才满一分折回新权重，已经入账的声望不参与换算。
+            _goodDeedRewardProgress = RescaleLegacyRewardProgress(_goodDeedRewardProgress, LegacyGoodDeedKillsPerPoint);
+            _prisonerTradeProgress = RescaleLegacyRewardProgress(_prisonerTradeProgress, 5);
+            _troopTradeProgress = RescaleLegacyRewardProgress(_troopTradeProgress, 5);
         }
+
+        private static int RescaleLegacyRewardProgress(int progress, int oldRate) =>
+            Math.Max(0, Math.Min(oldRate - 1, progress)) * WardenReputationRules.TroopWeightPerPoint / oldRate;
 
         public static void SetAtonementTaskActive(bool active) => HasAtonementTask = active;
 
@@ -165,7 +185,7 @@ namespace GreyWardenPolicePurity
         {
             Reputation = 0;
             _reputationRemainder = 0;
-            GoodDeedKillProgress = 0;
+            _goodDeedRewardProgress = 0;
             _wardenUpgradeProgress = 0;
             _prisonerTradeProgress = 0;
             _troopTradeProgress = 0;
@@ -181,10 +201,8 @@ namespace GreyWardenPolicePurity
                 dataStore.SyncData("gwp_reputation", ref reputation);
                 dataStore.SyncData("gwp_reputation_order_remainder", ref _reputationRemainder);
 
-                int goodDeedKillProgress = GoodDeedKillProgress;
-                dataStore.SyncData("gwp_good_deed_kill_progress", ref goodDeedKillProgress);
                 dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
-                SyncFireswornTradeProgress(dataStore);
+                SyncReputationIncomeProgress(dataStore);
 
                 List<string> victimFactionIds = VictimFactions
                     .Where(static faction => faction != null)
@@ -214,11 +232,8 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_reputation_order_remainder", ref reputationRemainder);
             SetReputationUnits(ReputationUnits + reputationRemainder);
 
-            int loadedGoodDeedKillProgress = 0;
-            dataStore.SyncData("gwp_good_deed_kill_progress", ref loadedGoodDeedKillProgress);
-            ResetGoodDeedKillProgress(loadedGoodDeedKillProgress);
             dataStore.SyncData("gwp_warden_upgrade_progress", ref _wardenUpgradeProgress);
-            SyncFireswornTradeProgress(dataStore);
+            SyncReputationIncomeProgress(dataStore);
 
             int victimCountOnLoad = 0;
             dataStore.SyncData("gwp_victim_count", ref victimCountOnLoad);

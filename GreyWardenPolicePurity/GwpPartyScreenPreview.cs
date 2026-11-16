@@ -37,7 +37,7 @@ namespace GreyWardenPolicePurity
             if (Selections.TryGetValue(logic, out Func<PartyScreenLogic, string?> preview)) return preview(logic);
             if (logic.RightOwnerParty?.MobileParty?.IsMainParty != true) return null;
             int cost = PlayerBehaviorPool.WardenUpgradeCost(GwpPlayerWardenTroops.PendingUpgrades(logic));
-            return cost > 0 ? Cost(cost * WardenReputationRules.TroopUnitsPerPoint) : null;
+            return cost > 0 ? Cost(cost * WardenReputationRules.ReputationUnitsPerPoint) : null;
         }
 
         [HarmonyPatch(typeof(PartyVM), "OnPartyInfluenceChanged")]

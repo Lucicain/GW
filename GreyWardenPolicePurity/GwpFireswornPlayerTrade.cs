@@ -155,7 +155,7 @@ namespace GreyWardenPolicePurity
 
         private static long PersonnelTradeUnits(TroopRoster selection) => selection.GetTroopRoster()
             .Where(batch => batch.Number > 0)
-            .Sum(batch => (long)batch.Number * WardenReputationRules.TroopUnits(batch.Character.Tier));
+            .Sum(batch => (long)batch.Number * WardenReputationRules.TroopRewardWeight(batch.Character.Tier));
 
         private bool CompletePersonnelTrade(MobileParty party, Settlement village, Hero priest,
             FireswornTradeKind kind, TroopRoster selection)

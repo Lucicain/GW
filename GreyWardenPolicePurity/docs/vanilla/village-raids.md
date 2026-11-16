@@ -38,6 +38,12 @@
 5. 战后玩家可以在 `MapEventEnded` 前选择俘虏或释放败方领主。释放可走 `MakeHeroFugitiveAction`，领主与原部队的关联会改变。战后回查领主目前带的队伍，无法恢复出战时选择援救哪个村。
 6. 战斗若还有下一轮，`FieldBattleEventComponent.OnPlayerEncounterContinueBattle` 在同一 `MapEvent` 上结算本轮并重置胜方。回到地图菜单后，`MapScreen` 的 `IMapStateHandler.AfterTick` 可以发出快速存档；`MapState` 在判断菜单状态前处理存档队列。`SandBoxGameManager` 恢复遭遇菜单并调用 `PlayerEncounter.OnLoad`，同版野战继续使用存档里的 `MapEvent` 和两侧。
 
+### 个人击倒与地图战斗
+
+战役启动各场任务时，`StatisticsCampaignBehavior.OnMissionStarted` 加入 `StatisticsMissionLogic`。角色移除回调将被移除者与造成移除的角色传给 `StatisticsCampaignBehavior.OnAgentRemoved`。当后者是 `Agent.Main` 时，原版个人击倒或击杀累计加一；玩家部队的击倒有独立计数。`GetNumberOfTroopsKnockedOrKilledByPlayer` 只返回累计人数。逐人阶级可在移除回调根据受影响者的 `CharacterObject.Tier` 读取。
+
+`MapEvent.PlayerMapEvent` 指向玩家主队当前的地图事件。战斗任务的个体移除和地图事件最终结算是两个时机。两轮间回地图可以保存，继续战斗时用前节所述的同一个 `MapEvent`。（依据：v1.4.8、v1.5.7 的 `StatisticsCampaignBehavior` 与 `MapEvent` 托管源码）
+
 ## 容易想错的地方
 
 - 原版烧村分里**没有**仁慈等性格项。常说的「关系影响烧村」是第 4 步的关系项，而且是和**村主家族**的关系，不是和村民或别的家族。

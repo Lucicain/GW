@@ -42,7 +42,7 @@ namespace GreyWardenPolicePurity
             int previous = Count(initialRoster);
             int current = Count(screen.CurrentData.RightMemberRoster);
             int reputationUnits = PlayerBehaviorPool.ReputationUnits -
-                PlayerBehaviorPool.WardenUpgradeCost(upgrades) * WardenReputationRules.TroopUnitsPerPoint;
+                PlayerBehaviorPool.WardenUpgradeCost(upgrades) * WardenReputationRules.ReputationUnitsPerPoint;
             return current > Math.Max(previous, Capacity(reputationUnits)) ? CapacityMessage(reputationUnits) : null;
         }
 

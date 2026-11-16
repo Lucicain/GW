@@ -17,7 +17,7 @@
    模块可以添加模型和行为。此时还未执行行为数据的恢复。
 3. 设置模型、初始化战役时间和对象；经 `SandBoxManager.OnCampaignStart` 继续建立战役。
 4. 新档建立 `CampaignBehaviorManager`；读档则调用 `InitializeCampaignBehaviors`、
-   `LoadBehaviorData`、`RegisterEvents`，依次创建本次行为、恢复其保存数据、注册监听。
+   `LoadBehaviorData`、`RegisterEvents`，依次创建本次行为、恢复其保存数据、注册监听。`LoadBehaviorData` 按 starter 中的行为登记顺序逐个读入，先登记的行为先从存档恢复。（依据：v1.5.7 `CampaignBehaviorManager`）
 5. 完成对象初始化，最后才调 `Game.OnGameStart`（游戏 handler 回调）和模块的
    `OnGameInitializationFinished`。它们不能与第 2 步的模块 `OnGameStart` 混用。
 
