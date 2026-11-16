@@ -145,7 +145,7 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
-| [`family.md`](family.md) | 成员、五个本职与继承、婚姻、与要人的关系、六人声音与性格、成就兼容 |
+| [`family.md`](family.md) | 成员、五个本职与继承、婚姻、与要人的关系、六人声音与性格 |
 | [`kingdom-membership.md`](kingdom-membership.md) | 灰袍不入国：四个入国入口拦截、内战流亡收容排除、读档离国、宣战监听、反馈环境与回退 |
 | [`clan-banner.md`](clan-banner.md) | 黑底金鸟旗帜、自定义图标、静态材质与美术源 |
 | [`village-relief.md`](village-relief.md) | 被焚村庄的善后与收养、重建、请愿 |

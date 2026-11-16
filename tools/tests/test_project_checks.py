@@ -160,6 +160,25 @@ class DeadReferenceTests(unittest.TestCase):
 class ChangeImpactTests(unittest.TestCase):
     impact = load("Check-ChangeImpact")
 
+    def test_reports_a_deleted_file_when_there_are_no_edited_lines(self):
+        deleted = "GreyWardenPolicePurity/GwpRemoved.cs"
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory:
+            db = Path(directory) / "codegraph.db"
+            db.touch()
+            with (
+                patch.object(self.impact, "DB", db),
+                patch("sys.argv", ["Check-ChangeImpact.py"]),
+                patch.object(self.impact.subprocess, "run"),
+                patch.object(self.impact, "changed_lines", return_value={}),
+                patch.object(self.impact, "deleted_files", return_value=[deleted]),
+                patch.object(self.impact, "cover_map", return_value={}),
+                contextlib.redirect_stdout(output),
+            ):
+                self.assertEqual(0, self.impact.main())
+        self.assertIn("1 个删除", output.getvalue())
+        self.assertIn(deleted, output.getvalue())
+
     def test_hunks_mark_added_lines_and_the_line_a_deletion_left(self):
         diff = ("+++ b/GreyWardenPolicePurity/GwpStrength.cs\n"
                 "@@ -10,2 +10,3 @@\n"

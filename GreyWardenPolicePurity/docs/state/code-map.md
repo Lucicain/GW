@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-238 个源文件、60,098 行、457 个公开类型、135 条 Harmony 目标声明（含动态入口，共 135 个补丁类）。
+237 个源文件、59,956 行、454 个公开类型、133 条 Harmony 目标声明（含动态入口，共 133 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -19,7 +19,6 @@
 
 | 原版类型 | 成员 | 方式 | 补丁类 | 文件 |
 |---|---|---|---|---|
-| `AchievementsCampaignBehavior` | `CheckAchievementSystemActivity` | Prefix | `GwpAchievementActivityPatch` | GwpAchievementCompatibilityPatch.cs:131 |
 | `AgentStatCalculateModel` | `GetEffectiveSkill` | Postfix | `GwpBattleMasteryEffectiveSkillPatch` | GwpAgentStatCalculateModel.cs:163 |
 | `AiEngagePartyBehavior` | `AiHourlyTick` | Finalizer/Postfix/Prefix | `GwpAssistanceArmyNativeEngageDesirePatch` | GwpAssistanceArmyLifecyclePatch.cs:252 |
 | `AiPartyThinkBehavior` | `PartyHourlyAiTick` | Prefix | `GwpPartyThinkDirectAttackLockPatch` | GwpPartyDutyMovementPatch.cs:97 |
@@ -53,7 +52,6 @@
 | `DefaultPersuasionModel` | `GetChances` | Postfix/Prefix | `GwpNegotiationChancePatch` | GwpNegotiationChancePatch.cs:8 |
 | `DestroyPartyAction` | `ApplyForDisbanding` | Prefix | `GwpShipLoanReturnOnDisbandPatch` | PoliceResourceManager.cs:719 |
 | `DestroyPartyAction` | `ApplyInternal` | Prefix | `GwpShipLoanReturnPatch` | PoliceResourceManager.cs:705 |
-| `DumpIntegrityCampaignBehavior` | `IsGameIntegrityAchieved` | Postfix | `GwpDumpIntegrityAchievementPatch` | GwpAchievementCompatibilityPatch.cs:109 |
 | `EncounterGameMenuBehavior` | `army_encounter_background_on_init` | Prefix | `GwpAssistanceArmyEncounterBackgroundPatch` | GwpAssistanceArmyLifecyclePatch.cs:178 |
 | `EncounterGameMenuBehavior` | `game_menu_army_talk_to_other_members_item_on_condition` | Prefix | `GwpLeaderlessSupportConversationItemPatch` | GwpAssistanceArmyLifecyclePatch.cs:200 |
 | `EncounterGameMenuBehavior` | `game_menu_army_talk_to_other_members_on_condition` | Postfix | `GwpLeaderlessSupportConversationMenuPatch` | GwpAssistanceArmyLifecyclePatch.cs:226 |
@@ -280,8 +278,6 @@
 - `GreyWardenTroopRequestBehavior` → GreyWardenTroopRequestBehavior.Cohort.cs , GreyWardenTroopRequestBehavior.cs , GreyWardenTroopRequestBehavior.OrderScreen.cs
 - `GreyWardenVillageAdoptionBehavior` → GreyWardenVillageAdoptionBehavior.cs
 - `GreyWardenVillageReconstructionBehavior` → GreyWardenVillageReconstructionBehavior.cs
-- `GwpAchievementActivityPatch` → GwpAchievementCompatibilityPatch.cs ←
-- `GwpAchievementCompatibility` → GwpAchievementCompatibilityPatch.cs
 - `GwpActionCacheDiagnostics` → GwpCharacterPreviewDiagnostics.cs ←
 - `GwpAdultCommanderLoadoutPatch` → GwpAdultCommanderLoadoutPatch.cs
 - `GwpAffairsChoiceVM` → GwpAffairsVM.cs ←
@@ -400,7 +396,6 @@
 - `GwpDualWieldCollisionPatch` → GwpDualWieldingPatch.cs ←
 - `GwpDualWieldDamageTypePatch` → GwpDualWieldingPatch.cs ←
 - `GwpDuelOpponentMarkerPatch` → GwpDuelOpponentMarkerPatch.cs
-- `GwpDumpIntegrityAchievementPatch` → GwpAchievementCompatibilityPatch.cs ←
 - `GwpDutyBanner` → GwpDutyBanner.cs
 - `GwpDutyBannerClanEmblemPatch` → GwpDutyBanner.cs ←
 - `GwpDutyBannerItemModel` → GwpDutyBanner.cs ←
@@ -634,7 +629,7 @@
 - `WardenReputationRules` → WardenReputationRules.cs
 - `WardenStandingTier` → GwpFieldArrestBehavior.cs ←
 
-`←` 标出文件名里找不到该类型名的 234 个，它们靠 Glob 找不到。
+`←` 标出文件名里找不到该类型名的 232 个，它们靠 Glob 找不到。
 
 ## 文件索引
 
@@ -777,7 +772,7 @@
 
 - `SubModule.cs` — 189 行 · `SubModule` : MBSubModuleBase
 
-### 其他（144 个文件）
+### 其他（143 个文件）
 
 - `GwpTextCatalog.g.cs` — 1438 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1357 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
@@ -831,7 +826,6 @@
 - `GwpLandlessShipTradePatch.cs` — 144 行 · `GwpLandlessShipTrade`，另含 2 个类型
 - `GwpPersuasionRound.cs` — 144 行 · `GwpPersuasionRound`
 - `GwpMapBarReputationPatch.cs` — 143 行 · `GwpMapBarReputation`，另含 2 个类型
-- `GwpAchievementCompatibilityPatch.cs` — 142 行 · `GwpAchievementCompatibility`，另含 2 个类型
 - `GwpLastStand.cs` — 138 行 · `GwpLastStandBehavior` : MissionBehavior
 - `GwpCitySearchBehavior.Hall.cs` — 137 行 · `GwpCitySearchBehavior`
 - `GwpFireswornPartyDialogs.cs` — 137 行 · `GwpFireswornPartyDialogs`

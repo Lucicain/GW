@@ -139,7 +139,8 @@ def main() -> int:
                    cwd=str(ROOT), capture_output=True)
 
     edits = changed_lines(args.base)
-    if not edits:
+    gone = deleted_files(args.base)
+    if not edits and not gone:
         print(f"相对 {args.base} 没有 .cs 改动。")
         return 0
 
@@ -183,6 +184,7 @@ def main() -> int:
                     seen.add(source_id)
                     nxt.add(source_id)
         frontier = nxt
+    db.close()
 
     covers = cover_map()
     docs_edited = defaultdict(set)
@@ -195,7 +197,7 @@ def main() -> int:
             if doc not in docs_edited:
                 docs_reached[doc].update(f"{Path(path).name}: {w}" for w in sorted(why)[:3])
 
-    print(f"相对 {args.base}：{len(edits)} 个 .cs 文件改动，落在 {len(changed)} 个符号上；"
+    print(f"相对 {args.base}：{len(edits)} 个 .cs 文件增改，{len(gone)} 个删除，命中 {len(changed)} 个符号。"
           f"依赖它们的代码分布在 {len(reached)} 个其他文件（深度 {args.depth}）。\n")
 
     owners = owner_hits(changed.values(), hygiene.OWNERS)
@@ -205,7 +207,6 @@ def main() -> int:
             print(f"  {concept}（{use}）：{', '.join(sorted(touched)[:6])}")
         print()
 
-    gone = deleted_files(args.base)
     if gone:
         print("[!] 删除的文件——索引里已没有它们的调用方，用 rg 查残留引用和 state 正文：")
         for path in gone:

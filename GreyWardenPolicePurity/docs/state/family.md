@@ -2,7 +2,7 @@
 
 > 当前状态：内战同开新档的家谱已验收，百科称呼、首次任命与旧档接续待实测；满关系锁定已取消，免费求婚保留；商队护卫与护村合并为乡路巡法，已部署待实测
 > 最后验收：婚姻 `2e7eb6c`（2026-10-14）；外貌 `7a7c779`（用户确认 2026-10-15）
-> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpEncyclopediaFamilyRolePatch.cs` `GwpAchievementCompatibilityPatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `_Module/ModuleData/heroes.xml` `GwpFounderVoiceRegisterPatch.cs`
+> 覆盖源码：`GreyWardenFamilyBehavior.cs` `PoliceHeroCreationModel.cs` `PoliceMarriageModel.cs` `GwpWardenMarriageBehavior.cs` `PoliceClanTierModel.cs` `GreyWardenLeaderBalanceBehavior.cs` `GreyWardenLoreBehavior.cs` `GwpAdultCommanderLoadoutPatch.cs` `GwpEncyclopediaClanPageVM.cs` `GwpEncyclopediaFamilyRolePatch.cs` `GwpPartySizeLimitModel.cs` `_Module/ModuleData/spspecialcharacters.xml` `_Module/ModuleData/heroes.xml` `GwpFounderVoiceRegisterPatch.cs`
 > 待实测：见文末
 
 家族旗帜的当前图案、颜色和替换偏好只在 [旗帜](clan-banner.md) 定义。
@@ -117,15 +117,13 @@ Apply在新档设置18项技能后ClearPerks，不另外发放战斗perk；之�
 
 ## 成就
 
-- 成就兼容的目标是仅豁免加载灰袍导致的停用
-  （`GwpAchievementCompatibility`：后置 `DumpIntegrityCampaignBehavior.IsGameIntegrityAchieved`，
-  前置 `AchievementsCampaignBehavior.CheckAchievementSystemActivity`）。
-- 已知缺陷：原版[按顺序报告第一项成就停用原因](../vanilla/campaign-lifecycle.md#成就完整性检查)。当前补丁见到仅启用灰袍的模组原因就恢复成就，因此还会盖过其后的降版检查，以及 v1.5.7 新增的高级开局检查。已核实源码分支，实际成就授予待核对。（依据：v1.4.8、v1.5.7 原版与灰袍补丁对照 2026-11-16）
+- 灰袍成就兼容已退休。成就资格交回[原版检查](../vanilla/campaign-lifecycle.md#成就完整性检查)或玩家另行启用的成就模组。（依据：用户裁定 2026-11-16）
 
 装备反馈：当前 v14 / RBM 环境的领主自动换装入口与高军饷、低补兵预算已核对，见 temporary-parties.md；尚无具体装备槽位的实测因果记录。（依据：C# 反编译、实机诊断 2026-10-07）
 
 ## 待实测
 
+- 成就兼容退休后正常读档进大地图，观察当前模组组合下游戏显示的成就资格。
 - 读旧档后约珥、弥瑟百科称号都是「灰袍乡路巡法者」，介绍改为同追劫掠者；事务界面职能剩五类，乡路巡法列出两人及村民、商队、烧村案。正常游玩遇两人同时接案时，核对各自选最近可接案，以及同一案的承办队。
 - 同开内战新档过首次任命复核后，核对六队仍有领主带队。旧档补齐缺失关系后另存，连续同版读档，核对双方家谱各记一次。后续村庄收养核对完成善后的领主登记为养亲。用 r16.2 修复包的存档核对原版约珥百科的「修会同袍」和梵蒂百科的「修会后辈」，同开内战时核对直接、隔代和反向头像称呼。
 - 正常游玩中的关系变化不再被恢复100，免费求婚入口及婚后身份保持。旧档现值保留，不将取消锁定误报为已还原历史关系。
