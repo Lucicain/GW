@@ -24,12 +24,6 @@ namespace GreyWardenPolicePurity
     {
         private readonly Hero? _hero;
 
-        private readonly struct DesireSuppressionDetails
-        {
-            public float VillageMultiplier { get; init; }
-            public float CaravanMultiplier { get; init; }
-        }
-
         internal GwpEncyclopediaHeroPageExtension(Hero? hero)
         {
             _hero = hero;
@@ -48,12 +42,12 @@ namespace GreyWardenPolicePurity
                 return;
 
             GwpAiDeterrenceState.DeterrenceDetails details = GwpAiDeterrenceState.GetDeterrenceDetails(_hero);
-            DesireSuppressionDetails suppression = GetDesireSuppressionDetails(_hero);
+            float desireMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(_hero);
             Settlement? locationSettlement = GwpAiDeterrenceState.GetTrackingSettlement(_hero);
             string description = BuildDeterrenceDescription(
                 _hero,
                 details,
-                suppression,
+                desireMultiplier,
                 locationSettlement);
 
             GwpLinkedInquiryState.Begin();
@@ -92,7 +86,7 @@ namespace GreyWardenPolicePurity
         private static string BuildDeterrenceDescription(
             Hero hero,
             GwpAiDeterrenceState.DeterrenceDetails details,
-            DesireSuppressionDetails suppression,
+            float desireMultiplier,
             Settlement? locationSettlement)
         {
             TextObject locationText = locationSettlement?.EncyclopediaLinkWithName
@@ -108,25 +102,14 @@ namespace GreyWardenPolicePurity
                         "VAR_1", details.TotalCrimeCount, "VAR_2", details.TotalArrestCount),
                     BuildLedgerBlock(hero),
                     string.Empty,
-                    GwpText.Get(GwpTextCatalog.gwp_det_ui_village_heading),
-                    GwpText.Get(GwpTextCatalog.gwp_det_ui_villager_desire,
-                        "VAR_1", FormatDesirePercent(suppression.VillageMultiplier),
-                        "VAR_2", FormatSuppressionPercent(suppression.VillageMultiplier)),
-                    GwpText.Get(GwpTextCatalog.gwp_det_ui_raid_desire,
-                        "VAR_1", FormatDesirePercent(suppression.VillageMultiplier)),
-                    BuildSourceLine(details.VillageDirectPenalty, details.VillageSharedPenalty),
-                    BuildRecoveryLine(details.VillageEffectivePenalty,
-                        details.VillageRecoveryFloor,
-                        details.VillageRecoveryDaysRemaining, details.RecoveryPaused),
-                    string.Empty,
-                    GwpText.Get(GwpTextCatalog.gwp_det_ui_caravan_heading),
-                    GwpText.Get(GwpTextCatalog.gwp_det_ui_caravan_desire,
-                        "VAR_1", FormatDesirePercent(suppression.CaravanMultiplier),
-                        "VAR_2", FormatSuppressionPercent(suppression.CaravanMultiplier)),
-                    BuildSourceLine(details.CaravanDirectPenalty, details.CaravanSharedPenalty),
-                    BuildRecoveryLine(details.CaravanEffectivePenalty,
-                        details.CaravanRecoveryFloor,
-                        details.CaravanRecoveryDaysRemaining, details.RecoveryPaused),
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_harm_heading),
+                    GwpText.Get(GwpTextCatalog.gwp_det_ui_harm_desire,
+                        "VAR_1", FormatDesirePercent(desireMultiplier),
+                        "VAR_2", FormatSuppressionPercent(desireMultiplier)),
+                    BuildSourceLine(details.DirectPenalty, details.SharedPenalty),
+                    BuildRecoveryLine(details.EffectivePenalty,
+                        details.RecoveryFloor,
+                        details.RecoveryDaysRemaining, details.RecoveryPaused),
                     string.Empty,
                     GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_015, "VAR_1", FormatLastEnforcement(details)),
                     GwpText.Get(GwpTextCatalog.gwp_gwpencyclopediaheropagevm_016, "VAR_1", details.MapStatus),
@@ -268,20 +251,6 @@ namespace GreyWardenPolicePurity
 
         private static string FormatSuppressionPercent(float multiplier) =>
             GwpText.Format((1f - MathF.Max(0f, MathF.Min(1f, multiplier))) * 100f, "0.#");
-
-        private static DesireSuppressionDetails GetDesireSuppressionDetails(Hero? hero)
-        {
-            float villageMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero,
-                GwpCrimeCategory.VillageViolence);
-            float caravanMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(hero,
-                GwpCrimeCategory.CaravanAttack);
-
-            return new DesireSuppressionDetails
-            {
-                VillageMultiplier = villageMultiplier,
-                CaravanMultiplier = caravanMultiplier
-            };
-        }
     }
 
     [HarmonyPatch]

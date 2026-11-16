@@ -195,13 +195,6 @@ namespace GreyWardenPolicePurity
             GoodDeedKillProgress = accumulated % 10;
         }
 
-        public int CaravanArrestCount { get; set; }
-        public float CaravanDirectDeterrencePoints { get; set; }
-        public float CaravanSharedDeterrencePoints { get; set; }
-        public int CaravanSharedDeterrenceCount { get; set; }
-        public float CaravanLastDeterrenceUpdatedHours { get; set; }
-        public float CaravanLastEnforcementHours { get; set; }
-
         public Hero? Hero
         {
             get
@@ -493,17 +486,11 @@ namespace GreyWardenPolicePurity
             GetUnassignedOpenCases().Where(c => c.IsOffenderPursuable())
                 .OrderBy(c => pos.Distance(c.Offender!.GetPosition2D)).FirstOrDefault(predicate);
 
-        public static bool IsCategoryIntakeEnabled(GwpCrimeCategory category) => category switch
-        {
-            GwpCrimeCategory.CaravanAttack => GreyWardenFamilyBehavior.HasLivingDutyHolder(
-                GreyWardenFamilyBehavior.DutyKind.CaravanProtection),
-            GwpCrimeCategory.VillageViolence => GreyWardenFamilyBehavior.HasLivingDutyHolder(
-                GreyWardenFamilyBehavior.DutyKind.VillageProtection),
-            // The sixth office is reserved for future player petitions. Existing
-            // player wanted cases remain part of the pre-existing criminal system.
-            GwpCrimeCategory.PlayerCase => true,
-            _ => true
-        };
+        // Villager, caravan and raid cases need a living roads-and-villages holder.
+        // The player's wanted case still follows its own intake rules.
+        public static bool IsCategoryIntakeEnabled(GwpCrimeCategory category) =>
+            !GreyWardenDutyScheduler.IsRoadsAndVillagesCase(category) ||
+            GreyWardenFamilyBehavior.HasLivingDutyHolder(GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages);
 
         public static CrimeRecord? GetNearestNonPlayerFromAll(Vec2 pos) => SelectNearest(
             _ledger.Values.Where(c => c.CrimeId != PlayerCrimeId && GwpPlayerCaseAssignment.CanTakeCase(c)), pos);
@@ -827,10 +814,7 @@ namespace GreyWardenPolicePurity
             !string.IsNullOrWhiteSpace(history.HeroId) &&
             (history.TotalCrimeCount > 0 || history.TotalArrestCount > 0 ||
              history.DirectDeterrencePoints > 0f || history.SharedDeterrencePoints > 0f ||
-             history.SharedDeterrenceCount > 0 || history.CaravanArrestCount > 0 ||
-             history.CaravanDirectDeterrencePoints > 0f ||
-             history.CaravanSharedDeterrencePoints > 0f ||
-             history.CaravanSharedDeterrenceCount > 0);
+             history.SharedDeterrenceCount > 0);
 
         private static void SyncRecord(
             IDataStore store,
@@ -910,12 +894,6 @@ namespace GreyWardenPolicePurity
             int sharedCount = history.SharedDeterrenceCount;
             float updated = history.LastDeterrenceUpdatedHours;
             float enforced = history.LastEnforcementHours;
-            int caravanArrests = history.CaravanArrestCount;
-            float caravanDirect = history.CaravanDirectDeterrencePoints;
-            float caravanShared = history.CaravanSharedDeterrencePoints;
-            int caravanSharedCount = history.CaravanSharedDeterrenceCount;
-            float caravanUpdated = history.CaravanLastDeterrenceUpdatedHours;
-            float caravanEnforced = history.CaravanLastEnforcementHours;
             int negativeStanding = history.NegativeStanding;
             int crimeProgress = history.CrimeKillProgress;
             int deedProgress = history.GoodDeedKillProgress;
@@ -928,12 +906,6 @@ namespace GreyWardenPolicePurity
             store.SyncData($"gwp_h_{i}_sharedcount", ref sharedCount);
             store.SyncData($"gwp_h_{i}_updated", ref updated);
             store.SyncData($"gwp_h_{i}_enforced", ref enforced);
-            store.SyncData($"gwp_h_{i}_caravan_arrests", ref caravanArrests);
-            store.SyncData($"gwp_h_{i}_caravan_direct", ref caravanDirect);
-            store.SyncData($"gwp_h_{i}_caravan_shared", ref caravanShared);
-            store.SyncData($"gwp_h_{i}_caravan_sharedcount", ref caravanSharedCount);
-            store.SyncData($"gwp_h_{i}_caravan_updated", ref caravanUpdated);
-            store.SyncData($"gwp_h_{i}_caravan_enforced", ref caravanEnforced);
             store.SyncData($"gwp_h_{i}_negative", ref negativeStanding);
             store.SyncData($"gwp_h_{i}_crimeprog", ref crimeProgress);
             store.SyncData($"gwp_h_{i}_deedprog", ref deedProgress);
@@ -948,12 +920,6 @@ namespace GreyWardenPolicePurity
                 history.SharedDeterrenceCount = Math.Max(0, sharedCount);
                 history.LastDeterrenceUpdatedHours = updated;
                 history.LastEnforcementHours = enforced;
-                history.CaravanArrestCount = Math.Max(0, caravanArrests);
-                history.CaravanDirectDeterrencePoints = MathF.Max(0f, caravanDirect);
-                history.CaravanSharedDeterrencePoints = MathF.Max(0f, caravanShared);
-                history.CaravanSharedDeterrenceCount = Math.Max(0, caravanSharedCount);
-                history.CaravanLastDeterrenceUpdatedHours = caravanUpdated;
-                history.CaravanLastEnforcementHours = caravanEnforced;
                 history.NegativeStanding = Math.Max(0, negativeStanding);
                 history.CrimeKillProgress = Math.Max(0, crimeProgress);
                 history.GoodDeedKillProgress = Math.Max(0, deedProgress);

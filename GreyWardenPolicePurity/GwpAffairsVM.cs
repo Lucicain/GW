@@ -164,7 +164,12 @@ namespace GreyWardenPolicePurity
             _categories[_page] = _category;
             _page = page;
             _category = _categories.TryGetValue(page, out string remembered) ? remembered : page switch
-            { 0 => "current", 1 => "Training", 2 => "CaravanProtection", _ => "faith" };
+            {
+                0 => "current",
+                1 => nameof(GreyWardenFamilyBehavior.DutyKind.Training),
+                2 => nameof(GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages),
+                _ => "faith"
+            };
             _status = string.Empty;
             BuildCategories();
         }
@@ -173,7 +178,7 @@ namespace GreyWardenPolicePurity
         {
             SetPage(2);
             string? duty = _entries.Where(e => e.IsOffer).OrderBy(e => e.DistanceToPlayer).FirstOrDefault()?.Duty.ToString();
-            SelectCategory(duty ?? "CaravanProtection");
+            SelectCategory(duty ?? nameof(GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages));
         }
         public void ExecuteTakeBounty() => BrowseCases();
         public void ExecuteRefresh() => Refresh();
@@ -238,7 +243,7 @@ namespace GreyWardenPolicePurity
                     _ => false
                 }).ToList();
             // Cases precede other work; choose by the offender's current distance to the player.
-            if (_page == 2 && (_category == "CaravanProtection" || _category == "VillageProtection"))
+            if (_page == 2 && _category == nameof(GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages))
                 _visible = _visible.OrderByDescending(e => e.IsCase).ThenBy(e => e.DistanceToPlayer)
                     .ThenBy(e => e.Id, StringComparer.OrdinalIgnoreCase).ToList();
             foreach (GwpAffairsEntry entry in _visible)

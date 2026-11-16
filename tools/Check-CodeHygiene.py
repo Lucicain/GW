@@ -243,6 +243,9 @@ OWNERS = [
     ("收养家谱", r"\.(?:Mother|Father)\s*=(?!=|>)", "GreyWardenFamilyBehavior.cs", "GreyWardenFamilyBehavior.RegisterAdoptiveParent"),
     ("战役状态清空", r"\b(?:CrimePool|PlayerBehaviorPool)\.ClearAll\s*\(|\b(?!GwpRuntimeState\b)\w+\.ResetForCampaign\s*\(",
      "GwpRuntimeState.cs", "GwpRuntimeState.ResetForCampaign"),
+    ("乡路巡法负责的案件类别", r"\bGwpCrimeCategory\.(?:CaravanAttack|VillageViolence)\s*"
+     r"(?:or\s+|\|\|\s*(?:\w+\.)*\w+\s*==\s*)GwpCrimeCategory\.(?:CaravanAttack|VillageViolence)\b",
+     "GreyWardenDutyScheduler.cs", "GreyWardenDutyScheduler.IsRoadsAndVillagesCase"),
     ("案件状态", r"\bCrimePool\.(?:EndTask|ReleaseTask|CloseCase|ReopenCase)\s*\(",
      "PoliceEnforcementBehavior*.cs|GwpData.cs",
      "PoliceEnforcementBehavior.CloseCase / ReleaseWardensFromCase"),

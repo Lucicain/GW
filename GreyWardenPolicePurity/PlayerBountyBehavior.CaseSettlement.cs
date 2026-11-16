@@ -160,8 +160,7 @@ namespace GreyWardenPolicePurity
 
             var deterrence = Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>();
             if (deterrence == null) return;
-            deterrence.RegisterEnforcementOutcome(
-                battle, target, (GwpCrimeCategory)_activeBountyCrimeCategory, countAsArrest);
+            deterrence.RegisterEnforcementOutcome(battle, target, countAsArrest);
             GwpAiDiagnostics.WriteFieldArrest("CASE_DETERRENCE_REGISTERED",
                 "offender=" + target.StringId + "; countAsArrest=" + countAsArrest
                 + "; battle=" + (battle != null));

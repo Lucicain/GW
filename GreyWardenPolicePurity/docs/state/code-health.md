@@ -175,6 +175,7 @@ Core 独立编译主项目的同一份规则源码。无样本回放、专用序
 | 案件状态 | `PoliceEnforcementBehavior.CaseLifecycle.cs` | `CrimePool` 的 `EndTask`、`ReleaseTask`、`CloseCase`、`ReopenCase` |
 | 玩家承办权限、占案与目标预留 | `GwpPlayerCaseAssignment` | 其他调用方直查普通悬赏或赎罪各自的权限/持案方法；共享规则与专项回归见[赎罪](atonement.md) |
 | 差事占用 | `GwpWardenDuties` | 其他系统的占用判断（`IsVillageReliefParty` 等） |
+| 乡路巡法负责的案件类别 | `GreyWardenDutyScheduler.IsRoadsAndVillagesCase` | 立案、派单、改追、事务列表与可领案件统一查询此入口，规则见[家族](family.md#本职) |
 | 守村经验分配与容量 | `GwpFireswornBehavior.GrantGuardExperience`（`GwpFireswornExperience.cs`） | `CanTroopGainXp`；烧人经验调用这一入口 |
 | 守村灰袍升级付款人 | `GwpFireswornUpgradePayment` | 升级模型只选择当前兵种，原版Owner钩子只查询这一处；公库钱包仍由 `PoliceResourceManager` 定义 |
 | 灰袍领主进聚落的意愿（候选、招兵数、打分、各项改动的来由） | `GwpWardenVisitDesire` | 别处对 `AiVisitSettlementBehavior` 打补丁 |

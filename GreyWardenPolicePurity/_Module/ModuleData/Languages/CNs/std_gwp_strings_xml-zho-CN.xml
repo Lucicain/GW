@@ -32,11 +32,11 @@
   <string id="gwp_crime_raid_village" text="劫掠村庄" />
   <string id="gwp_custom_commander_yao" text="灰袍纠察官尧" />
   <string id="gwp_enc_chenxi" text="{HERO_NAME}负责战后的村庄重建。追兵离开以后，她往往还留在村里，安排人手修屋、清井，帮助流散的人家回来。她把这些劳作视作应尽的侍奉，与追捕劫掠者同样要紧。她待人热心，愿意亲手分担活计，也擅长把纷乱的事情一件件安排妥当。" />
-  <string id="gwp_enc_mise" text="{HERO_NAME}负责村庄遇袭后的追捕。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路。接到劫掠的消息，她便召集人手出发；在她看来，是否入教都不能成为任人劫杀的理由。她不善高声争辩，却愿意耐心听完受害者的话；开战前总先安排老幼避险。" />
+  <string id="gwp_enc_mise" text="{HERO_NAME}与一位修会姊妹共同追捕劫掠者，村民、商队和村庄遭了袭击，都归她们去追。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路；在她看来，是否入教都不能成为任人劫杀的理由。她不善高声争辩，却愿意耐心听完受害者的话；开战前总先安排老幼避险。" />
   <string id="gwp_enc_muguang" text="{HERO_NAME}替修会接待贵族的申诉，尤其留意灰袍成员遭受的不公。她会先问清事情的经过，再召集有关的人公开议决。旧例不能解决的事，她也愿意带回修会商议。她说话温和，许诺之前会想清楚；一旦答应，便会耐心把事情办到底。" />
   <string id="gwp_enc_shengduo" text="{HERO_NAME}为修会听取各地请愿。村庄首领、商人和工匠都可能向她陈述争端，她也会走进巷道询问那些不愿见官的人。她随身带着旧帝国的法令，用它们辨明案情，再依修会的戒律主持调解。她头脑灵活，常用一句玩笑缓和争执，遇到证词矛盾时又问得很细。" />
   <string id="gwp_enc_vandi" text="{HERO_NAME}是灰袍现任统领，负责训练修会的战士。她常在天亮前检阅新兵，要求老兵亲自纠正盾墙的空隙。她相信守护百姓是上天交给灰袍的职责，不许部下以修会之名争夺王位或扩张私产。她说话简短，做事先立规矩；遇险时总要求自己先站到前面。" />
-  <string id="gwp_enc_yoer" text="{HERO_NAME}负责保护商路，常在桥梁、渡口和集市之间奔走。她追查商队遇袭与沿途勒索，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。她性子爽朗，行军时也愿陪护卫谈笑，答应替人守住的路便不肯轻易放弃。" />
+  <string id="gwp_enc_yoer" text="{HERO_NAME}与一位修会姊妹共同追捕劫掠者：袭击商队、杀害村民、焚烧村庄的人，都归她们去追。她常在桥梁、渡口和集市之间奔走，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。她性子爽朗，行军时也愿陪护卫谈笑，答应替人守住的路便不肯轻易放弃。" />
   <string id="gwp_greet_bad" text="你做过的事，我们有所耳闻。肯改过，就还有挽回的余地。" />
   <string id="gwp_greet_good" text="你为百姓做过些好事。有话请说。" />
   <string id="gwp_greet_high" text="你帮过那些受害的人，灰袍记得这份情。" />
@@ -160,9 +160,6 @@
   <string id="gwp_gwpencyclopediaheropagevm_009" text="累计犯罪：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_010" text="被灰袍抓获：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_011" text="本人震慑：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_012" text="烧村欲望倍率：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_013" text="攻击村民欲望倍率：{VAR_1}" />
-  <string id="gwp_gwpencyclopediaheropagevm_014" text="攻击商队欲望倍率：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_015" text="最近一次执法：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_016" text="大地图状态：{VAR_1}" />
   <string id="gwp_gwpencyclopediaheropagevm_017" text="所在位置：{VAR_1}" />
@@ -781,19 +778,15 @@
   <string id="gwp_mapbar_reputation_hint" text="灰袍守卫对你的评价。犯罪扣分，行善加分。" />
   <string id="gwp_mapbar_reputation_wanted" text="你已被通缉。灰袍领主会对你立案。" />
   <string id="gwp_join_recruits_granted" text="{VAR_1} 名灰袍新兵加入了你的队伍。" />
-  <string id="gwp_gwpencyclopediaheropagevm_020" text="村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
-  <string id="gwp_gwpencyclopediaheropagevm_021" text="商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）" />
   <string id="gwp_duty_training" text="灰袍练兵者" />
-  <string id="gwp_duty_caravan" text="灰袍商路巡法者" />
-  <string id="gwp_duty_village" text="灰袍乡土巡法者" />
+  <string id="gwp_duty_roads_villages" text="灰袍乡路巡法者" />
   <string id="gwp_duty_issues" text="灰袍请愿巡行者" />
   <string id="gwp_duty_player" text="贵族事务协调官" />
   <string id="gwp_adult_adopted_origin" text="{VAR_1}幼时因{VAR_2}遭劫焚毁而被灰袍收养，成年后留在修会任职。{VAR_3}" />
   <string id="gwp_adult_born_origin" text="{VAR_1}在灰袍修会长大，从小受戒律约束，成年后承担修会的职责。{VAR_2}" />
   <string id="gwp_bio_hint_law" text="她随巡察队处理各地案件。" />
   <string id="gwp_bio_hint_training" text="她负责操练士兵，要求新兵先学会守住队列。" />
-  <string id="gwp_bio_hint_caravan" text="她巡察商路，追捕袭击商队的人。" />
-  <string id="gwp_bio_hint_village" text="她负责村庄遇袭后的追捕，保护往来的村民。" />
+  <string id="gwp_bio_hint_roads_villages" text="她追捕袭击村民、商队和焚烧村庄的人。" />
   <string id="gwp_bio_hint_issues" text="她往来于村庄和城镇，听取要人的请愿。" />
   <string id="gwp_bio_hint_rebuild" text="她留在受灾村庄安排重建，帮助流散的居民回来。" />
   <string id="gwp_bio_hint_player" text="她受理贵族的申诉，为受到不公对待的灰袍成员请求公开议决。" />
@@ -810,11 +803,8 @@
   <string id="gwp_training_ledger_travel" text="运往{VAR_1}" />
   <string id="gwp_training_stage_travel" text="运送老兵" />
   <string id="gwp_det_ui_record" text="累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}" />
-  <string id="gwp_det_ui_village_heading" text="【侵害村民】" />
-  <string id="gwp_det_ui_villager_desire" text="攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
-  <string id="gwp_det_ui_raid_desire" text="烧村欲望：原版的 {VAR_1}%（与攻击村民共用同一压制）" />
-  <string id="gwp_det_ui_caravan_heading" text="【侵害商队】" />
-  <string id="gwp_det_ui_caravan_desire" text="攻击商队欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
+  <string id="gwp_det_ui_harm_heading" text="【侵害村民与商队】" />
+  <string id="gwp_det_ui_harm_desire" text="攻击村民、商队与烧村的欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）" />
   <string id="gwp_det_ui_source" text="压制来源：本人 {VAR_1} | 他人传递 {VAR_2}（{VAR_3}）" />
   <string id="gwp_det_ui_source_personal" text="本人经历为主" />
   <string id="gwp_det_ui_source_transmitted" text="族人转述或亲眼目击为主" />

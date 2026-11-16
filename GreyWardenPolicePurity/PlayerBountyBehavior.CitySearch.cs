@@ -26,7 +26,7 @@ namespace GreyWardenPolicePurity
             if (!IsCommissionTarget(target) || !IsTrackingBountyTarget) return;
             CrimeRecord? crime = CrimePool.GetRecord(target);
             if (crime?.HasOpenCase != true) return;
-            GwpFieldArrestBehavior.RegisterFieldEnforcement(target, crime);
+            GwpFieldArrestBehavior.RegisterFieldEnforcement(target);
             NotifyCasePeacefullyResolved(target, 0);
             PoliceEnforcementBehavior.CloseCase(crime, "city_support_duel_agreement");
             // 与使者约斗免罚相同，CloseCase只结束执行；不收钱、不抵负声望与未赎人命。

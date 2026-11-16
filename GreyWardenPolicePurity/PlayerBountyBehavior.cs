@@ -45,7 +45,6 @@ namespace GreyWardenPolicePurity
         private string _activeBountyTargetName = null!;     // 目标显示名（读档后恢复任务标题用）
         private string _activeBountyTargetFactionId = null!;
         private string _activeBountyTargetHeroId = null!;
-        private int _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private bool _waitingForCollection = false;
         // 对应案子的罪责点（决定领主给多少办案报酬）。
         private int _pendingFieldFineSeverity = 0;
@@ -114,7 +113,6 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetName = null!;
             _activeBountyTargetFactionId = null!;
             _activeBountyTargetHeroId = null!;
-            _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
         }
 
         /// <summary>
@@ -310,7 +308,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_bounty_target_name",      ref _activeBountyTargetName); // 读档后补回任务标题
             dataStore.SyncData("gwp_bounty_target_faction_id",ref _activeBountyTargetFactionId);
             dataStore.SyncData("gwp_bounty_target_hero_id",   ref _activeBountyTargetHeroId);
-            dataStore.SyncData("gwp_bounty_crime_category",   ref _activeBountyCrimeCategory);
             dataStore.SyncData("gwp_bounty_waiting",          ref waitingInt);
             dataStore.SyncData("gwp_field_fine_severity",     ref _pendingFieldFineSeverity);
             dataStore.SyncData("gwp_field_prisoner_assessed", ref _pendingPrisonerAssessed);
@@ -328,8 +325,6 @@ namespace GreyWardenPolicePurity
                 _voluntaryExitCount = Math.Max(0, Math.Min(
                     _voluntaryExitCount,
                     GwpTuning.Bounty.MaximumVoluntaryExits));
-                if (!Enum.IsDefined(typeof(GwpCrimeCategory), _activeBountyCrimeCategory))
-                    _activeBountyCrimeCategory = (int)GwpCrimeCategory.Unknown;
                 _waitingForCollection  = waitingInt  != 0;
                 _playerFactionWasAtWarWhenBountyAccepted = playerWasAtWarInt != 0;
                 _bountyTargetEncounterStarted = targetEncounterStartedInt != 0;

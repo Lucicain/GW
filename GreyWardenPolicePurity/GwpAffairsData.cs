@@ -54,8 +54,7 @@ namespace GreyWardenPolicePurity
         internal static string Duty(GreyWardenFamilyBehavior.DutyKind duty) => GwpText.Get(duty switch
         {
             GreyWardenFamilyBehavior.DutyKind.Training => GwpTextCatalog.gwp_duty_training,
-            GreyWardenFamilyBehavior.DutyKind.CaravanProtection => GwpTextCatalog.gwp_duty_caravan,
-            GreyWardenFamilyBehavior.DutyKind.VillageProtection => GwpTextCatalog.gwp_duty_village,
+            GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages => GwpTextCatalog.gwp_duty_roads_villages,
             GreyWardenFamilyBehavior.DutyKind.IssueResolution => GwpTextCatalog.gwp_duty_issues,
             GreyWardenFamilyBehavior.DutyKind.Reconstruction => GwpTextCatalog.gwp_greywardenfamilybehavior_053,
             GreyWardenFamilyBehavior.DutyKind.PlayerRequests => GwpTextCatalog.gwp_duty_player,
@@ -67,8 +66,8 @@ namespace GreyWardenPolicePurity
     {
         internal static readonly GreyWardenFamilyBehavior.DutyKind[] Duties =
         {
-            GreyWardenFamilyBehavior.DutyKind.Training, GreyWardenFamilyBehavior.DutyKind.CaravanProtection,
-            GreyWardenFamilyBehavior.DutyKind.VillageProtection, GreyWardenFamilyBehavior.DutyKind.IssueResolution,
+            GreyWardenFamilyBehavior.DutyKind.Training, GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages,
+            GreyWardenFamilyBehavior.DutyKind.IssueResolution,
             GreyWardenFamilyBehavior.DutyKind.Reconstruction, GreyWardenFamilyBehavior.DutyKind.PlayerRequests
         };
         internal static MobileParty? FindParty(string id) => MobileParty.All.FirstOrDefault(p => p.StringId == id);
@@ -93,13 +92,12 @@ namespace GreyWardenPolicePurity
                 .GroupBy(t => t.TargetCrimeId).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
             var reports = PoliceEnforcementBehavior.GetEnvoyReports();
             foreach (CrimeRecord crime in CrimePool.LedgerRecords.Where(c => c.HasOpenCase &&
-                         (c.CrimeCategory == GwpCrimeCategory.CaravanAttack || c.CrimeCategory == GwpCrimeCategory.VillageViolence)))
+                         GreyWardenDutyScheduler.IsRoadsAndVillagesCase(c.CrimeCategory)))
             {
                 assigned.TryGetValue(crime.CrimeId, out PoliceTask? task);
-                var duty = crime.CrimeCategory == GwpCrimeCategory.CaravanAttack
-                    ? GreyWardenFamilyBehavior.DutyKind.CaravanProtection : GreyWardenFamilyBehavior.DutyKind.VillageProtection;
                 var item = new GwpCaseArchiveItemVM(crime, task);
-                GwpAffairsEntry entry = Formatted(crime.CrimeId, duty, item, task?.PolicePartyId ?? string.Empty);
+                GwpAffairsEntry entry = Formatted(crime.CrimeId, GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages,
+                    item, task?.PolicePartyId ?? string.Empty);
                 entry.NotesTitle = GwpText.Get(GwpTextCatalog.gwp_affairs_incident);
                 entry.Fields.Insert(0, item.AssignmentText);
                 entry.Hero = crime.OffenderHero;
@@ -156,7 +154,7 @@ namespace GreyWardenPolicePurity
             // Completed negotiations are reports on a member/case, never additional work or cases.
             foreach (var item in GreyWardenVillageAdoptionBehavior.GetTaskSnapshots())
             {
-                var entry = Formatted("relief:" + item.VillageSettlementId, GreyWardenFamilyBehavior.DutyKind.VillageProtection,
+                var entry = Formatted("relief:" + item.VillageSettlementId, GreyWardenFamilyBehavior.DutyKind.RoadsAndVillages,
                     new GwpCaseArchiveItemVM(item), item.PolicePartyId);
                 entry.Place = Settlement.Find(item.VillageSettlementId);
                 result.Add(entry);

@@ -12,6 +12,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 威慑状态与累计次数存放在每位领主唯一的长期数字档案中。
+    /// 袭击村民、袭击商队与烧村共用同一个震慑度（用户裁定 2026-11-16）。
     /// 本人被捕与家族受震慑分别累计、按总量共同衰退；重复被捕形成永久恢复下限，
     /// 长期数字不会因当前案件结案而删除。
     /// </summary>
@@ -23,22 +24,11 @@ namespace GreyWardenPolicePurity
             public float DirectPenalty { get; init; }
             public float SharedPenalty { get; init; }
             public float EffectivePenalty { get; init; }
+            public float RecoveryFloor { get; init; }
+            public float RecoveryDaysRemaining { get; init; }
             public int TotalCrimeCount { get; init; }
             public int TotalArrestCount { get; init; }
-            public int EnforcementCount { get; init; }
             public int SharedDeterrenceCount { get; init; }
-            public float RaidScoreMultiplier { get; init; }
-            public float VillageDirectPenalty { get; init; }
-            public float VillageSharedPenalty { get; init; }
-            public float VillageEffectivePenalty { get; init; }
-            public float VillageRecoveryFloor { get; init; }
-            public float CaravanDirectPenalty { get; init; }
-            public float CaravanSharedPenalty { get; init; }
-            public float CaravanEffectivePenalty { get; init; }
-            public float CaravanRecoveryFloor { get; init; }
-            public float CaravanScoreMultiplier { get; init; }
-            public float VillageRecoveryDaysRemaining { get; init; }
-            public float CaravanRecoveryDaysRemaining { get; init; }
             public bool RecoveryPaused { get; init; }
             public float DaysSinceLastEnforcement { get; init; }
             public string MapStatus { get; init; }
@@ -54,26 +44,18 @@ namespace GreyWardenPolicePurity
                 record.SharedDeterrenceCount = 0;
                 record.LastDeterrenceUpdatedHours = 0f;
                 record.LastEnforcementHours = 0f;
-                record.CaravanArrestCount = 0;
-                record.CaravanDirectDeterrencePoints = 0f;
-                record.CaravanSharedDeterrencePoints = 0f;
-                record.CaravanSharedDeterrenceCount = 0;
-                record.CaravanLastDeterrenceUpdatedHours = 0f;
-                record.CaravanLastEnforcementHours = 0f;
             }
         }
 
         /// <summary>登记一次由灰袍实际实施的抓捕，并返回本次新增的本人威慑。</summary>
-        public static float RegisterPoliceArrest(Hero leader, GwpCrimeCategory category) =>
-            RegisterEnforcementOutcome(leader, category, countAsArrest: true);
+        public static float RegisterPoliceArrest(Hero leader) =>
+            RegisterEnforcementOutcome(leader, countAsArrest: true);
 
         /// <summary>同一条登记路径，由调用方决定这次执法是否构成一次实际拘捕。</summary>
-        public static float RegisterEnforcementOutcomeFor(Hero leader, GwpCrimeCategory category,
-            bool countAsArrest) =>
-            RegisterEnforcementOutcome(leader, category, countAsArrest);
+        public static float RegisterEnforcementOutcomeFor(Hero leader, bool countAsArrest) =>
+            RegisterEnforcementOutcome(leader, countAsArrest);
 
-        private static float RegisterEnforcementOutcome(Hero leader, GwpCrimeCategory category,
-            bool countAsArrest)
+        private static float RegisterEnforcementOutcome(Hero leader, bool countAsArrest)
         {
             // Only actual Warden custody clears the offender record.
             PartyBase? captor = leader?.PartyBelongedToAsPrisoner;
@@ -89,20 +71,11 @@ namespace GreyWardenPolicePurity
             if (leader == null || !CanTrack(leader)) return 0f;
 
             HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
-            return category == GwpCrimeCategory.CaravanAttack
-                ? RegisterCaravanArrest(record, leader, countAsArrest)
-                : RegisterVillageViolenceArrest(record, leader, countAsArrest);
-        }
-
-        private static float RegisterVillageViolenceArrest(HeroCrimeStats record, Hero leader,
-            bool countAsArrest)
-        {
-
             UpdateDecay(record, leader, updateRecord: true);
             int totalArrests = countAsArrest
                 ? CrimePool.RecordArrest(leader)
                 : record.TotalArrestCount;
-            int arrestCount = Math.Max(1, totalArrests - record.CaravanArrestCount);
+            int arrestCount = Math.Max(1, totalArrests);
             float desiredGain = MathF.Min((float)arrestCount, GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
             float previousDirect = record.DirectDeterrencePoints;
             record.DirectDeterrencePoints = MathF.Min(
@@ -117,31 +90,6 @@ namespace GreyWardenPolicePurity
             record.SharedDeterrencePoints = MathF.Min(record.SharedDeterrencePoints, remainingSharedRoom);
             record.LastDeterrenceUpdatedHours = (float)CampaignTime.Now.ToHours;
             record.LastEnforcementHours = record.LastDeterrenceUpdatedHours;
-            return actualGain;
-        }
-
-        private static float RegisterCaravanArrest(HeroCrimeStats record, Hero leader,
-            bool countAsArrest)
-        {
-            UpdateCaravanDecay(record, leader, updateRecord: true);
-            if (countAsArrest) CrimePool.RecordArrest(leader);
-            int arrestCount = countAsArrest
-                ? ++record.CaravanArrestCount
-                : Math.Max(1, record.CaravanArrestCount);
-            float desiredGain = MathF.Min((float)arrestCount,
-                GwpTuning.Deterrence.MaxPenaltyGainPerCapture);
-            float previousDirect = record.CaravanDirectDeterrencePoints;
-            record.CaravanDirectDeterrencePoints = MathF.Min(
-                GwpTuning.Deterrence.RaidPenaltyCap, previousDirect + desiredGain);
-            float actualGain = record.CaravanDirectDeterrencePoints - previousDirect;
-            float remainingSharedRoom = MathF.Max(0f,
-                GwpTuning.Deterrence.RaidPenaltyCap - record.CaravanDirectDeterrencePoints);
-            record.CaravanSharedDeterrencePoints = MathF.Min(
-                record.CaravanSharedDeterrencePoints, remainingSharedRoom);
-            record.CaravanLastDeterrenceUpdatedHours = (float)CampaignTime.Now.ToHours;
-            record.CaravanLastEnforcementHours = record.CaravanLastDeterrenceUpdatedHours;
-            record.LastEnforcementHours = MathF.Max(record.LastEnforcementHours,
-                record.CaravanLastEnforcementHours);
             return actualGain;
         }
 
@@ -169,18 +117,9 @@ namespace GreyWardenPolicePurity
                 PoliceEnforcementBehavior.CloseCase(crime, "arrested_record_cleared");
         }
 
-        public static float RegisterSharedFamilyDeterrence(Hero leader, float penaltyGain,
-            GwpCrimeCategory category)
+        public static float RegisterSharedFamilyDeterrence(Hero leader, float penaltyGain)
         {
             if (!CanTrack(leader) || penaltyGain <= 0f) return 0f;
-
-            return category == GwpCrimeCategory.CaravanAttack
-                ? RegisterSharedCaravanDeterrence(leader, penaltyGain)
-                : RegisterSharedVillageDeterrence(leader, penaltyGain);
-        }
-
-        private static float RegisterSharedVillageDeterrence(Hero leader, float penaltyGain)
-        {
 
             HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
             UpdateDecay(record, leader, updateRecord: true);
@@ -199,45 +138,20 @@ namespace GreyWardenPolicePurity
             return record.DirectDeterrencePoints + record.SharedDeterrencePoints;
         }
 
-        private static float RegisterSharedCaravanDeterrence(Hero leader, float penaltyGain)
-        {
-            HeroCrimeStats record = CrimePool.GetOrCreateHistory(leader);
-            UpdateCaravanDecay(record, leader, updateRecord: true);
-            float total = record.CaravanDirectDeterrencePoints +
-                          record.CaravanSharedDeterrencePoints;
-            float actualGain = MathF.Min(penaltyGain,
-                MathF.Max(0f, GwpTuning.Deterrence.RaidPenaltyCap - total));
-            if (actualGain <= 0f) return total;
-            record.CaravanSharedDeterrencePoints += actualGain;
-            record.CaravanSharedDeterrenceCount++;
-            record.CaravanLastDeterrenceUpdatedHours = (float)CampaignTime.Now.ToHours;
-            record.CaravanLastEnforcementHours = record.CaravanLastDeterrenceUpdatedHours;
-            record.LastEnforcementHours = MathF.Max(record.LastEnforcementHours,
-                record.CaravanLastEnforcementHours);
-            return record.CaravanDirectDeterrencePoints +
-                   record.CaravanSharedDeterrencePoints;
-        }
-
-        public static float GetCaravanAttackScoreMultiplier(MobileParty? party) =>
-            GetCrimeDesireMultiplier(party, GwpCrimeCategory.CaravanAttack);
-
-        public static float GetVillagerAttackScoreMultiplier(MobileParty? party) =>
-            GetCrimeDesireMultiplier(party, GwpCrimeCategory.VillageViolence);
-
-        public static float GetCrimeDesireMultiplier(MobileParty? party,
-            GwpCrimeCategory category)
+        /// <summary>袭击村民队、袭击商队与烧村共用的意愿倍率。</summary>
+        public static float GetCrimeDesireMultiplier(MobileParty? party)
         {
             if (party == null) return 1f;
             if (GwpCommon.IsGreyWardenClan(party.ActualClan)) return 0f;
-            return GetCrimeDesireMultiplier(party.LeaderHero, category);
+            return GetCrimeDesireMultiplier(party.LeaderHero);
         }
 
-        public static float GetCrimeDesireMultiplier(Hero? hero, GwpCrimeCategory category)
+        public static float GetCrimeDesireMultiplier(Hero? hero)
         {
             if (Campaign.Current == null || hero == null) return 1f;
             if (GwpCommon.IsGreyWardenClanMember(hero)) return 0f;
 
-            float penalty = GetCurrentPenalty(hero, category);
+            float penalty = GetCurrentPenalty(hero);
             if (penalty <= GwpTuning.Deterrence.ForgetThreshold) return 1f;
 
             float multiplier = MathF.Pow(GwpTuning.Deterrence.RaidScoreMultiplierPerPoint, penalty);
@@ -252,19 +166,6 @@ namespace GreyWardenPolicePurity
             return direct + shared;
         }
 
-        public static float GetCurrentPenalty(Hero? hero, GwpCrimeCategory category)
-        {
-            HeroCrimeStats? record = CrimePool.GetHistory(hero);
-            if (record == null || hero == null) return 0f;
-            if (category == GwpCrimeCategory.CaravanAttack)
-            {
-                GetEffectiveCaravanComponents(record, hero, out float direct, out float shared);
-                return direct + shared;
-            }
-            GetEffectiveComponents(record, hero, out float villageDirect, out float villageShared);
-            return villageDirect + villageShared;
-        }
-
         public static DeterrenceDetails GetDeterrenceDetails(Hero? hero)
         {
             if (hero == null)
@@ -275,60 +176,36 @@ namespace GreyWardenPolicePurity
             string location = BuildTrackingLocation(hero);
             if (record == null)
             {
-                DeterrenceDetails empty = EmptyDetails();
                 return new DeterrenceDetails
                 {
                     MapStatus = status,
-                    MapLocation = location,
-                    RaidScoreMultiplier = empty.RaidScoreMultiplier
+                    MapLocation = location
                 };
             }
 
             GetEffectiveComponents(record, hero, out float direct, out float shared);
-            GetEffectiveCaravanComponents(record, hero, out float caravanDirect,
-                out float caravanShared);
-            float villageTotal = direct + shared;
-            float caravanTotal = caravanDirect + caravanShared;
-            float villageRecoveryFloor = GetVillageRecoveryFloor(record);
-            float caravanRecoveryFloor = GetCaravanRecoveryFloor(record);
-            float total = villageTotal + caravanTotal;
+            float total = direct + shared;
+            float recoveryFloor = GetRecoveryFloor(record);
             float now = (float)CampaignTime.Now.ToHours;
             float days = record.LastEnforcementHours > 0f
                 ? MathF.Max(0f, (now - record.LastEnforcementHours) / CampaignTime.HoursInDay)
                 : 0f;
             float recoveryPerDay = GetRecoveryPerDay(hero);
             bool recoveryPaused = !CanRecoverPenalty(hero) &&
-                                  (HasRecoverablePenalty(villageTotal, villageRecoveryFloor) ||
-                                   HasRecoverablePenalty(caravanTotal, caravanRecoveryFloor));
+                                  HasRecoverablePenalty(total, recoveryFloor);
 
             return new DeterrenceDetails
             {
                 HasEntry = true,
-                DirectPenalty = direct + caravanDirect,
-                SharedPenalty = shared + caravanShared,
+                DirectPenalty = direct,
+                SharedPenalty = shared,
                 EffectivePenalty = total,
+                RecoveryFloor = recoveryFloor,
+                RecoveryDaysRemaining = GetRecoveryDaysRemaining(
+                    total, recoveryFloor, recoveryPerDay),
                 TotalCrimeCount = record.TotalCrimeCount,
                 TotalArrestCount = record.TotalArrestCount,
-                EnforcementCount = record.TotalArrestCount,
-
-                SharedDeterrenceCount = record.SharedDeterrenceCount +
-                                         record.CaravanSharedDeterrenceCount,
-                RaidScoreMultiplier = GetCrimeDesireMultiplier(hero,
-                    GwpCrimeCategory.VillageViolence),
-                VillageDirectPenalty = direct,
-                VillageSharedPenalty = shared,
-                VillageEffectivePenalty = villageTotal,
-                VillageRecoveryFloor = villageRecoveryFloor,
-                CaravanDirectPenalty = caravanDirect,
-                CaravanSharedPenalty = caravanShared,
-                CaravanEffectivePenalty = caravanTotal,
-                CaravanRecoveryFloor = caravanRecoveryFloor,
-                CaravanScoreMultiplier = GetCrimeDesireMultiplier(hero,
-                    GwpCrimeCategory.CaravanAttack),
-                VillageRecoveryDaysRemaining = GetRecoveryDaysRemaining(
-                    villageTotal, villageRecoveryFloor, recoveryPerDay),
-                CaravanRecoveryDaysRemaining = GetRecoveryDaysRemaining(
-                    caravanTotal, caravanRecoveryFloor, recoveryPerDay),
+                SharedDeterrenceCount = record.SharedDeterrenceCount,
                 RecoveryPaused = recoveryPaused,
                 DaysSinceLastEnforcement = days,
                 MapStatus = status,
@@ -339,7 +216,6 @@ namespace GreyWardenPolicePurity
         private static DeterrenceDetails EmptyDetails() => new DeterrenceDetails
         {
             HasEntry = false,
-            RaidScoreMultiplier = 1f,
             MapStatus = GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_001),
             MapLocation = GwpText.Get(GwpTextCatalog.gwp_gwpaideterrencestate_002)
         };
@@ -356,10 +232,6 @@ namespace GreyWardenPolicePurity
             if (record == null) return false;
 
             GetEffectiveComponents(record, hero, out float direct, out float shared);
-            GetEffectiveCaravanComponents(record, hero, out float caravanDirect,
-                out float caravanShared);
-            direct += caravanDirect;
-            shared += caravanShared;
             float total = direct + shared;
             if (total < GwpTuning.Deterrence.ActiveDialogueThreshold)
                 return false;
@@ -465,7 +337,6 @@ namespace GreyWardenPolicePurity
                 Hero? hero = record.Hero;
                 if (hero == null) continue;
                 UpdateDecay(record, hero, updateRecord: true);
-                UpdateCaravanDecay(record, hero, updateRecord: true);
             }
         }
 
@@ -476,7 +347,7 @@ namespace GreyWardenPolicePurity
         {
             float total = UpdateDecay(record, hero, updateRecord: false);
             float storedTotal = record.DirectDeterrencePoints + record.SharedDeterrencePoints;
-            float recoveryFloor = GetVillageRecoveryFloor(record);
+            float recoveryFloor = GetRecoveryFloor(record);
             if (storedTotal <= 0f || total <= 0f)
             {
                 direct = total;
@@ -497,37 +368,12 @@ namespace GreyWardenPolicePurity
             shared = record.SharedDeterrencePoints * scale;
         }
 
-        private static void GetEffectiveCaravanComponents(HeroCrimeStats record, Hero hero,
-            out float direct, out float shared)
-        {
-            float total = UpdateCaravanDecay(record, hero, updateRecord: false);
-            float storedTotal = record.CaravanDirectDeterrencePoints +
-                                record.CaravanSharedDeterrencePoints;
-            float recoveryFloor = GetCaravanRecoveryFloor(record);
-            if (storedTotal <= 0f || total <= 0f)
-            {
-                direct = total;
-                shared = 0f;
-                return;
-            }
-            if (total <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
-                total > storedTotal)
-            {
-                direct = total;
-                shared = 0f;
-                return;
-            }
-            float scale = total / storedTotal;
-            direct = record.CaravanDirectDeterrencePoints * scale;
-            shared = record.CaravanSharedDeterrencePoints * scale;
-        }
-
-        /// <summary>两类威慑按当前占比共同衰退，避免分别扣减造成来源比重突变。</summary>
+        /// <summary>本人与家族两部分按当前占比共同衰退，避免分别扣减造成来源比重突变。</summary>
         private static float UpdateDecay(HeroCrimeStats record, Hero hero, bool updateRecord)
         {
             float storedTotal = MathF.Max(0f, record.DirectDeterrencePoints) +
                                 MathF.Max(0f, record.SharedDeterrencePoints);
-            float recoveryFloor = GetVillageRecoveryFloor(record);
+            float recoveryFloor = GetRecoveryFloor(record);
             if (storedTotal <= 0f && recoveryFloor <= 0f) return 0f;
 
             float now = (float)CampaignTime.Now.ToHours;
@@ -561,48 +407,6 @@ namespace GreyWardenPolicePurity
                 }
             }
 
-            return effective;
-        }
-
-        private static float UpdateCaravanDecay(HeroCrimeStats record, Hero hero,
-            bool updateRecord)
-        {
-            float storedTotal = MathF.Max(0f, record.CaravanDirectDeterrencePoints) +
-                                MathF.Max(0f, record.CaravanSharedDeterrencePoints);
-            float recoveryFloor = GetCaravanRecoveryFloor(record);
-            if (storedTotal <= 0f && recoveryFloor <= 0f) return 0f;
-            float now = (float)CampaignTime.Now.ToHours;
-            float updated = record.CaravanLastDeterrenceUpdatedHours > 0f
-                ? record.CaravanLastDeterrenceUpdatedHours
-                : record.LastDeterrenceUpdatedHours;
-            float elapsedDays = CanRecoverPenalty(hero)
-                ? MathF.Max(0f, (now - updated) / CampaignTime.HoursInDay)
-                : 0f;
-            float effective = MathF.Max(
-                recoveryFloor,
-                storedTotal - elapsedDays * GetRecoveryPerDay(hero));
-            if (updateRecord)
-            {
-                if (effective <= recoveryFloor + GwpTuning.Deterrence.RecoveryFloorTolerance ||
-                    effective > storedTotal)
-                {
-                    record.CaravanDirectDeterrencePoints = effective;
-                    record.CaravanSharedDeterrencePoints = 0f;
-                }
-                else
-                {
-                    float scale = effective / storedTotal;
-                    record.CaravanDirectDeterrencePoints *= scale;
-                    record.CaravanSharedDeterrencePoints *= scale;
-                }
-                record.CaravanLastDeterrenceUpdatedHours = now;
-                if (recoveryFloor <= 0f &&
-                    effective <= GwpTuning.Deterrence.ForgetThreshold)
-                {
-                    record.CaravanDirectDeterrencePoints = 0f;
-                    record.CaravanSharedDeterrencePoints = 0f;
-                }
-            }
             return effective;
         }
 
@@ -650,27 +454,16 @@ namespace GreyWardenPolicePurity
                    recoveryTarget + GwpTuning.Deterrence.RecoveryFloorTolerance;
         }
 
-        private static float GetVillageRecoveryFloor(HeroCrimeStats record)
-        {
-            int villageArrests = Math.Max(
-                0,
-                record.TotalArrestCount - record.CaravanArrestCount);
-            return GetRecoveryFloor(villageArrests);
-        }
-
-        private static float GetCaravanRecoveryFloor(HeroCrimeStats record) =>
-            GetRecoveryFloor(Math.Max(0, record.CaravanArrestCount));
-
         /// <summary>
-        /// 每次被捕新增与本分类累计被捕次数相同的震慑；恢复下限随每次被捕
+        /// 每次被捕新增与累计被捕次数相同的震慑，不分袭击村民、商队还是烧村；恢复下限随每次被捕
         /// 提高一级。因此第一、二、三、四次被捕后的下限依次为 0、1、2、3，
         /// 最终停在九级上限。
         /// </summary>
-        private static float GetRecoveryFloor(int arrestCount)
+        private static float GetRecoveryFloor(HeroCrimeStats record)
         {
             return MathF.Min(
                 GwpTuning.Deterrence.RaidPenaltyCap,
-                (float)Math.Max(0, arrestCount - 1));
+                (float)Math.Max(0, record.TotalArrestCount - 1));
         }
 
         private static bool CanTrack(Hero? hero) =>

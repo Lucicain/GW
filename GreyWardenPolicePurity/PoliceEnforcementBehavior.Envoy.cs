@@ -482,7 +482,7 @@ namespace GreyWardenPolicePurity
             int wealth = GwpAssetPayment.Wealth(offender, target.Party);
             int charm = warden.GetSkillValue(DefaultSkills.Charm);
             float renown = warden.Clan?.Renown ?? 0f;
-            int layerOne = GwpNegotiationResistance.LayerOneResistance(offender, crime.CrimeCategory, ours, theirs,
+            int layerOne = GwpNegotiationResistance.LayerOneResistance(offender, ours, theirs,
                 GwpFieldArrestBehavior.WardenStandingTier.Ordinary, renown, wealth, fine);
             double refusal = GwpNegotiationPolicy.RefusalChance(layerOne,
                 offender.GetTraitLevel(DefaultTraits.Honor), offender.GetTraitLevel(DefaultTraits.Mercy),
@@ -549,7 +549,7 @@ namespace GreyWardenPolicePurity
                 case GwpOffenderDesire.SurrenderSelf:
                     // 谈妥就结案：使者路上出事是灰袍的风险，不让他担（用户裁定 2026-10-15）。
                     // 交到灰袍手里那一刻原版抓捕事件只认还开着的案子，所以震慑、清账在这里先做。
-                    GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                    GwpFieldArrestBehavior.RegisterFieldEnforcement(offender);
                     GwpAiDeterrenceState.ClearArrestRecord(offender);
                     RecordEnvoyReport(envoyCase, "surrender", 0);
                     ResolveEnvoyCase(envoyCase, crime, true, "envoy_surrender");
@@ -567,7 +567,7 @@ namespace GreyWardenPolicePurity
                         Math.Max(1, fine * GwpTuning.FieldArrest.BribeSharePercent / 100));
                     if (bribe > 0)
                         GiveGoldAction.ApplyBetweenCharacters(offender, warden, bribe, true);
-                    GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                    GwpFieldArrestBehavior.RegisterFieldEnforcement(offender);
                     RecordEnvoyReport(envoyCase, "bribed", bribe);
                     ResolveEnvoyCase(envoyCase, crime, false, "envoy_bribed");
                     return;
@@ -716,7 +716,7 @@ namespace GreyWardenPolicePurity
                 GiveGoldAction.ApplyForCharacterToParty(offender, envoy.Party, collected, true);
             GwpFieldReportLedger.SettleWithWardens(offender, GwpFieldArrestPricing.AssessFine(crime),
                 collected, GwpFieldArrestPricing.BaseChargeFor(crime));
-            GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+            GwpFieldArrestBehavior.RegisterFieldEnforcement(offender);
             return collected;
         }
 
@@ -977,7 +977,7 @@ namespace GreyWardenPolicePurity
                     PoliceResourceManager.CreditJudicialTreasuryFromCourier(collected);
                 }
                 GwpFieldReportLedger.SettleWithWardens(offender, fine, collected, GwpFieldArrestPricing.BaseChargeFor(crime));
-                GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+                GwpFieldArrestBehavior.RegisterFieldEnforcement(offender);
                 RecordEnvoyReport(envoyCase, "duel_won", collected);
                 ResolveEnvoyCase(envoyCase, crime, true, "envoy_duel_won_" + collected);
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -988,7 +988,7 @@ namespace GreyWardenPolicePurity
             }
 
             // 他赢了按约免罚：案子销掉，案底照留。
-            GwpFieldArrestBehavior.RegisterFieldEnforcement(offender, crime);
+            GwpFieldArrestBehavior.RegisterFieldEnforcement(offender);
             RecordEnvoyReport(envoyCase, "duel_lost", 0);
             ResolveEnvoyCase(envoyCase, crime, false, "envoy_duel_lost");
             InformationManager.DisplayMessage(new InformationMessage(

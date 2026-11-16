@@ -303,6 +303,8 @@ namespace GreyWardenPolicePurity
             public const float VillageReliefArrivalDistance = 3f;
             public const int AdoptedGirlMinAge = 2;
             public const int AdoptedGirlMaxAge = 6;
+            // 乡路巡法事情多，派两位领主；新成员按名额补人（用户裁定 2026-11-16）。
+            public const int RoadsAndVillagesSeats = 2;
         }
 
         internal static class Reconstruction

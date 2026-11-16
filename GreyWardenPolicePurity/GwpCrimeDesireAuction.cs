@@ -17,13 +17,11 @@ namespace GreyWardenPolicePurity
                 if (score <= 0f || behavior.Party is not MobileParty target)
                     continue;
 
-                float multiplier;
-                if (target.PartyComponent is CaravanPartyComponent)
-                    multiplier = GwpAiDeterrenceState.GetCaravanAttackScoreMultiplier(offender);
-                else if (target.PartyComponent is VillagerPartyComponent)
-                    multiplier = GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(offender);
-                else
+                if (target.PartyComponent is not CaravanPartyComponent &&
+                    target.PartyComponent is not VillagerPartyComponent)
                     continue;
+
+                float multiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(offender);
 
                 if (multiplier >= 0.9999f) continue;
                 AIBehaviorData candidate = behavior;

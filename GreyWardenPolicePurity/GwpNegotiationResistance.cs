@@ -18,7 +18,7 @@ namespace GreyWardenPolicePurity
         /// 第一层：他认不认这次执法。三个维度——性格、实力差、来谈的人在灰袍这边的分量。数值越高越难说服。
         /// 玩家当面谈和灰袍使者谈用同一个公式（用户裁定 2026-10-15：使者第一层看灰袍主队实力）。
         /// </summary>
-        internal static int LayerOneResistance(Hero offender, GwpCrimeCategory category, float mine, float his,
+        internal static int LayerOneResistance(Hero offender, float mine, float his,
             GwpFieldArrestBehavior.WardenStandingTier standing, float counterpartRenown, int wealth, int fine)
         {
             // 打得过你的人不容易低头——但也仅此而已。以势均力敌为基线，实力差只作一个有限摆幅，
@@ -46,7 +46,7 @@ namespace GreyWardenPolicePurity
 
             // 被灰袍抓过的人知道这本账的分量。
             float taught = MBMath.ClampFloat(
-                GwpAiDeterrenceState.GetCurrentPenalty(offender, category)
+                GwpAiDeterrenceState.GetCurrentPenalty(offender)
                 / Math.Max(1f, GwpTuning.FieldArrest.DeterrenceReference),
                 0f, 1.2f) * GwpTuning.FieldArrest.DeterrenceSwing;
 

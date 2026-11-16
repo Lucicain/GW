@@ -39,7 +39,6 @@ namespace GreyWardenPolicePurity
         private string _atonementTargetPartyId = string.Empty;
         private string _atonementTargetName = string.Empty;
         private string _atonementTargetHeroId = string.Empty;
-        private int _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
         private int _atonementReputationReward = 0;
         private float _atonementDeadlineHours = 0f;
         /// <summary>
@@ -129,7 +128,6 @@ namespace GreyWardenPolicePurity
             dataStore.SyncData("gwp_enf_atone_target_id", ref _atonementTargetPartyId);
             dataStore.SyncData("gwp_enf_atone_target_name", ref _atonementTargetName);
             dataStore.SyncData("gwp_enf_atone_target_hero_id", ref _atonementTargetHeroId);
-            dataStore.SyncData("gwp_enf_atone_crime_category", ref _atonementTargetCrimeCategory);
             dataStore.SyncData("gwp_enf_atone_target_faction_id", ref _atonementTargetFactionId);
             dataStore.SyncData("gwp_enf_atone_reward", ref _atonementReputationReward);
             dataStore.SyncData("gwp_enf_atone_deadline_hours", ref _atonementDeadlineHours);
@@ -151,8 +149,6 @@ namespace GreyWardenPolicePurity
                 if (double.IsNaN(_nextPlayerEnforcementContactHour) ||
                     double.IsInfinity(_nextPlayerEnforcementContactHour))
                     _nextPlayerEnforcementContactHour = -1d;
-                if (!Enum.IsDefined(typeof(GwpCrimeCategory), _atonementTargetCrimeCategory))
-                    _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
                 PlayerBehaviorPool.SetAtonementTaskActive(HasAtonementTask);
             }
         }
@@ -237,12 +233,8 @@ namespace GreyWardenPolicePurity
                 Hero? completedOffender = AtonementTargetHero ?? completedCrime?.OffenderHero
                     ?? completedTarget?.LeaderHero;
 
-                GwpCrimeCategory completedCategory = (GwpCrimeCategory)_atonementTargetCrimeCategory;
-                if (completedCategory == GwpCrimeCategory.Unknown)
-                    completedCategory = completedCrime?.CrimeCategory ?? GwpCrimeCategory.Unknown;
-
                 Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                    ?.RegisterEnforcementOutcome(mapEvent, completedOffender, completedCategory, countAsArrest: completedOffender?.IsPrisoner == true);
+                    ?.RegisterEnforcementOutcome(mapEvent, completedOffender, countAsArrest: completedOffender?.IsPrisoner == true);
 
                 MarkAtonementReady("target_defeated");
                 CloseCase(completedCrime, "atonement_target_defeated");
@@ -266,7 +258,6 @@ namespace GreyWardenPolicePurity
             _atonementTargetPartyId = string.Empty;
             _atonementTargetName = string.Empty;
             _atonementTargetHeroId = string.Empty;
-            _atonementTargetCrimeCategory = (int)GwpCrimeCategory.Unknown;
             _atonementTargetFactionId = string.Empty;
             _atonementTargetSizeSnapshot = 0;
             _atonementReputationReward = 0;
@@ -547,20 +538,19 @@ namespace GreyWardenPolicePurity
                 .OrderBy(party => party.StringId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // First pass preserves each office's own priority. The second pass lets every
-            // idle office holder help with any ordinary case already admitted to the pool.
+            // First pass lets the roads-and-villages office pick before anyone else. The second
+            // pass lets every idle office holder help with any ordinary case already admitted.
             foreach (MobileParty pp in available.ToList())
             {
                 if (!CrimePool.IsDispatchReady)
                     break;
 
-                GwpCrimeCategory preferred = GetPreferredCrimeCategory(pp);
-                if (preferred == GwpCrimeCategory.Unknown)
+                if (!GreyWardenFamilyBehavior.IsRoadsAndVillagesHero(pp.LeaderHero))
                     continue;
 
                 float musterable = GetMaximumMusterableStrength(pp);
                 CrimeRecord? crime = CrimePool.GetNearest(pp.GetPosition2D,
-                    candidate => candidate.CrimeCategory == preferred &&
+                    candidate => GreyWardenDutyScheduler.IsRoadsAndVillagesCase(candidate.CrimeCategory) &&
                         CanPickUpCase(candidate, musterable));
                 if (crime == null) continue;
                 BeginTask(pp, crime);
@@ -617,15 +607,14 @@ namespace GreyWardenPolicePurity
                 MobileParty? current = task.TargetCrime?.Offender;
                 if (current?.IsActive != true) continue;
 
-                // 类型归属必须守住：有专职的领主只在自己这一类里改追，否则某一职位的
-                // 领主死绝之后，那一类罪案就再没有人专门负责了。
+                // 乡路巡法本职只在本职案件里改追，不去顶别的案子。
                 // 改追等于接新案：接案的两道门槛（凑不出兵的冷却、难度上限）同样要过，
                 // 否则刚因凑不出兵退回台账的案子会被就近改追回来，接了又放。
-                GwpCrimeCategory preferred = GetPreferredCrimeCategory(owner);
+                bool caseDuty = GreyWardenFamilyBehavior.IsRoadsAndVillagesHero(owner.LeaderHero);
                 float musterable = GetMaximumMusterableStrength(owner);
                 CrimeRecord? candidate = CrimePool.GetNearest(owner.GetPosition2D,
-                    record => (preferred == GwpCrimeCategory.Unknown ||
-                            record.CrimeCategory == preferred) &&
+                    record => (!caseDuty ||
+                            GreyWardenDutyScheduler.IsRoadsAndVillagesCase(record.CrimeCategory)) &&
                         CanPickUpCase(record, musterable));
                 if (candidate?.Offender?.IsActive != true) continue;
 
@@ -647,7 +636,7 @@ namespace GreyWardenPolicePurity
                     "; newCase=" + candidate.CrimeId +
                     "; newOffender=" + candidate.Offender.StringId +
                     "; newDistance=" + candidateDistance.ToString("0.00", CultureInfo.InvariantCulture) +
-                    "; category=" + preferred);
+                    "; caseDuty=" + caseDuty);
             }
         }
 
@@ -686,20 +675,6 @@ namespace GreyWardenPolicePurity
             return targetStrength <= 0f ||
                    targetStrength <=
                        musterableStrength * GwpTuning.Enforcement.CaseIntakeStrengthMargin;
-        }
-
-        private static GwpCrimeCategory GetPreferredCrimeCategory(MobileParty party)
-        {
-            if (!GreyWardenFamilyBehavior.TryGetDuty(party?.LeaderHero,
-                    out GreyWardenFamilyBehavior.DutyKind duty))
-                return GwpCrimeCategory.Unknown;
-
-            return duty switch
-            {
-                GreyWardenFamilyBehavior.DutyKind.CaravanProtection => GwpCrimeCategory.CaravanAttack,
-                GreyWardenFamilyBehavior.DutyKind.VillageProtection => GwpCrimeCategory.VillageViolence,
-                _ => GwpCrimeCategory.Unknown
-            };
         }
 
         private void ReconcileTaskWarStatesWithDiplomacy()
@@ -1358,11 +1333,7 @@ namespace GreyWardenPolicePurity
                 return;
 
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterEnforcementOutcome(mapEvent, offenderHero,
-                    crime!.CrimeCategory == GwpCrimeCategory.CaravanAttack
-                        ? GwpCrimeCategory.CaravanAttack
-                        : GwpCrimeCategory.VillageViolence,
-                    countAsArrest: false);
+                ?.RegisterEnforcementOutcome(mapEvent, offenderHero, countAsArrest: false);
         }
 
         private static bool WasTaskOffenderActuallyDefeatedInEvent(

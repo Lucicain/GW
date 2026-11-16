@@ -29,7 +29,7 @@ namespace GreyWardenPolicePurity
             if (missionType != Army.ArmyTypes.Raider || baseScore <= 0f || mobileParty?.LeaderHero == null)
                 return baseScore;
 
-            float deterrenceMultiplier = GwpAiDeterrenceState.GetVillagerAttackScoreMultiplier(mobileParty);
+            float deterrenceMultiplier = GwpAiDeterrenceState.GetCrimeDesireMultiplier(mobileParty);
             float faithShare = GwpFireswornBehavior.GetPreachedVillageShare(targetSettlement);
             float faithMultiplier = 1f - GwpTuning.Firesworn.MaximumFaithRaidScoreReduction * faithShare;
             float multiplier = deterrenceMultiplier * faithMultiplier;

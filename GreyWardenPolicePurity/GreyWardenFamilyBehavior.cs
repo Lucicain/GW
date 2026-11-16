@@ -21,8 +21,8 @@ namespace GreyWardenPolicePurity
             LegacyOrdinary = 0,
             Reconstruction = 1,
             Training = 2,
-            CaravanProtection = 3,
-            VillageProtection = 4,
+            // 商队护卫与护村合并为乡路巡法（用户裁定 2026-11-16）；4 已停用，读档按未定义值滤掉。
+            RoadsAndVillages = 3,
             IssueResolution = 5,
             PlayerRequests = 6
         }
@@ -324,6 +324,9 @@ namespace GreyWardenPolicePurity
         internal static bool IsPlayerRequestsHero(Hero? hero) =>
             TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.PlayerRequests;
 
+        internal static bool IsRoadsAndVillagesHero(Hero? hero) =>
+            TryGetDuty(hero, out DutyKind kind) && kind == DutyKind.RoadsAndVillages;
+
         internal static Hero? GetLivingDutyHolder(DutyKind duty)
         {
             Clan? clan = PoliceStats.GetPoliceClan();
@@ -371,8 +374,7 @@ namespace GreyWardenPolicePurity
             return kind switch
             {
                 DutyKind.Training => GwpText.Get(GwpTextCatalog.gwp_duty_training),
-                DutyKind.CaravanProtection => GwpText.Get(GwpTextCatalog.gwp_duty_caravan),
-                DutyKind.VillageProtection => GwpText.Get(GwpTextCatalog.gwp_duty_village),
+                DutyKind.RoadsAndVillages => GwpText.Get(GwpTextCatalog.gwp_duty_roads_villages),
                 DutyKind.IssueResolution => GwpText.Get(GwpTextCatalog.gwp_duty_issues),
                 DutyKind.Reconstruction => GwpText.Get(GwpTextCatalog.gwp_greywardenfamilybehavior_053),
                 DutyKind.PlayerRequests => GwpText.Get(GwpTextCatalog.gwp_duty_player),
@@ -387,8 +389,7 @@ namespace GreyWardenPolicePurity
                 _dutyByHeroId[CoreLeaderIds[i]] = i switch
                 {
                     0 => DutyKind.Training,
-                    1 => DutyKind.CaravanProtection,
-                    2 => DutyKind.VillageProtection,
+                    1 or 2 => DutyKind.RoadsAndVillages,
                     3 => DutyKind.IssueResolution,
                     4 => DutyKind.Reconstruction,
                     _ => DutyKind.PlayerRequests
@@ -419,6 +420,7 @@ namespace GreyWardenPolicePurity
 
             // A duty line can be reinforced only while at least one adult holder remains alive.
             // Once its last holder dies, later children cannot resurrect that lost function.
+            // Lines are compared by holders per seat, so a two-seat office refills first when short.
             var livingCounts = Enum.GetValues(typeof(DutyKind))
                 .Cast<DutyKind>()
                 .Where(kind => kind != DutyKind.LegacyOrdinary)
@@ -431,7 +433,7 @@ namespace GreyWardenPolicePurity
                         assigned == kind)
                 })
                 .Where(row => row.Count > 0)
-                .OrderBy(row => row.Count)
+                .OrderBy(row => (double)row.Count / DutySeats(row.Kind))
                 .ThenBy(row => DutySuccessionPriority(row.Kind))
                 .ToList();
 
@@ -451,12 +453,14 @@ namespace GreyWardenPolicePurity
         {
             DutyKind.Reconstruction => 0,
             DutyKind.IssueResolution => 1,
-            DutyKind.VillageProtection => 2,
-            DutyKind.CaravanProtection => 3,
-            DutyKind.Training => 4,
-            DutyKind.PlayerRequests => 5,
+            DutyKind.RoadsAndVillages => 2,
+            DutyKind.Training => 3,
+            DutyKind.PlayerRequests => 4,
             _ => 99
         };
+
+        private static int DutySeats(DutyKind kind) =>
+            kind == DutyKind.RoadsAndVillages ? GwpTuning.Family.RoadsAndVillagesSeats : 1;
 
         private static bool IsAdult(Hero hero)
         {
@@ -649,8 +653,7 @@ namespace GreyWardenPolicePurity
             return kind switch
             {
                 DutyKind.Training => GwpText.Get(GwpTextCatalog.gwp_bio_hint_training),
-                DutyKind.CaravanProtection => GwpText.Get(GwpTextCatalog.gwp_bio_hint_caravan),
-                DutyKind.VillageProtection => GwpText.Get(GwpTextCatalog.gwp_bio_hint_village),
+                DutyKind.RoadsAndVillages => GwpText.Get(GwpTextCatalog.gwp_bio_hint_roads_villages),
                 DutyKind.IssueResolution => GwpText.Get(GwpTextCatalog.gwp_bio_hint_issues),
                 DutyKind.Reconstruction => GwpText.Get(GwpTextCatalog.gwp_bio_hint_rebuild),
                 DutyKind.PlayerRequests => GwpText.Get(GwpTextCatalog.gwp_bio_hint_player),

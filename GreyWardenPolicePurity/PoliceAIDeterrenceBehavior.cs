@@ -19,7 +19,6 @@ namespace GreyWardenPolicePurity
         {
             public string OffenderClanId { get; init; } = string.Empty;
             public float SharedGain { get; init; }
-            public GwpCrimeCategory Category { get; init; }
         }
 
         private sealed class PoliceCaptureBatch
@@ -53,7 +52,7 @@ namespace GreyWardenPolicePurity
 
         public override void SyncData(IDataStore dataStore)
         {
-            // 累计次数与两类威慑由 CrimePool 的长期数字档案保存；单场目击批次只存在于运行时。
+            // 累计次数与震慑由 CrimePool 的长期数字档案保存；单场目击批次只存在于运行时。
             GwpAiDeterrenceState.SyncData(dataStore);
         }
 
@@ -146,20 +145,16 @@ namespace GreyWardenPolicePurity
                     return;
             }
 
-            GwpCrimeCategory category = record?.CrimeCategory == GwpCrimeCategory.CaravanAttack
-                ? GwpCrimeCategory.CaravanAttack
-                : GwpCrimeCategory.VillageViolence;
-            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(prisoner, category);
+            float directGain = GwpAiDeterrenceState.RegisterPoliceArrest(prisoner);
             float sharedGain = directGain * 0.5f;
             if (sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;
 
-            ApplyClanShock(prisoner, sharedGain, category);
+            ApplyClanShock(prisoner, sharedGain);
             batch?.Shocks.Add(new CaptureShock
             {
                 OffenderClanId = prisoner.Clan?.StringId ?? string.Empty,
-                SharedGain = sharedGain,
-                Category = category
+                SharedGain = sharedGain
             });
         }
 
@@ -188,7 +183,7 @@ namespace GreyWardenPolicePurity
                         continue;
 
                     GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(witness,
-                        shock.SharedGain, shock.Category);
+                        shock.SharedGain);
                 }
             }
         }
@@ -210,7 +205,6 @@ namespace GreyWardenPolicePurity
         internal void RegisterEnforcementOutcome(
             MapEvent? mapEvent,
             Hero? offender,
-            GwpCrimeCategory category,
             bool countAsArrest)
         {
             if (offender == null || offender == Hero.MainHero ||
@@ -225,18 +219,14 @@ namespace GreyWardenPolicePurity
                 return;
             _lastPlayerEnforcementHours[offender.StringId] = now;
 
-            category = category == GwpCrimeCategory.CaravanAttack
-                ? GwpCrimeCategory.CaravanAttack
-                : GwpCrimeCategory.VillageViolence;
-
             if (mapEvent == null)
             {
                 // 缴款和谈成的处置没有战场，只登记本人与同族，不虚构目击者。
                 float peacefulGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
-                    offender, category, countAsArrest);
+                    offender, countAsArrest);
                 float peacefulShared = peacefulGain * 0.5f;
                 if (peacefulShared > GwpTuning.Deterrence.ForgetThreshold)
-                    ApplyClanShock(offender, peacefulShared, category);
+                    ApplyClanShock(offender, peacefulShared);
                 return;
             }
 
@@ -246,18 +236,17 @@ namespace GreyWardenPolicePurity
                     return;
 
                 float pendingDirectGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
-                    offender, category, countAsArrest);
+                    offender, countAsArrest);
                 float pendingSharedGain = pendingDirectGain * 0.5f;
                 if (pendingSharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                     return;
 
-                ApplyClanShock(offender, pendingSharedGain, category);
+                ApplyClanShock(offender, pendingSharedGain);
                 AddBattleWitnesses(pendingBatch, mapEvent, offender);
                 pendingBatch.Shocks.Add(new CaptureShock
                 {
                     OffenderClanId = offender.Clan?.StringId ?? string.Empty,
-                    SharedGain = pendingSharedGain,
-                    Category = category
+                    SharedGain = pendingSharedGain
                 });
                 return;
             }
@@ -271,13 +260,13 @@ namespace GreyWardenPolicePurity
                 return;
 
             float directGain = GwpAiDeterrenceState.RegisterEnforcementOutcomeFor(
-                offender, category, countAsArrest);
+                offender, countAsArrest);
             float sharedGain = directGain * 0.5f;
             if (sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;
 
-            ApplyClanShock(offender, sharedGain, category);
-            ApplyBattleWitnessShock(mapEvent, offender, sharedGain, category);
+            ApplyClanShock(offender, sharedGain);
+            ApplyBattleWitnessShock(mapEvent, offender, sharedGain);
         }
 
         private static void AddBattleWitnesses(
@@ -292,8 +281,7 @@ namespace GreyWardenPolicePurity
         private static void ApplyBattleWitnessShock(
             MapEvent mapEvent,
             Hero offender,
-            float sharedGain,
-            GwpCrimeCategory category)
+            float sharedGain)
         {
             foreach (Hero witness in GetDefeatedSideWitnesses(mapEvent, offender))
             {
@@ -303,8 +291,7 @@ namespace GreyWardenPolicePurity
 
                 GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(
                     witness,
-                    sharedGain,
-                    category);
+                    sharedGain);
             }
         }
 
@@ -338,8 +325,7 @@ namespace GreyWardenPolicePurity
         private static bool IsEligibleWitness(Hero? hero) =>
             hero != null && hero != Hero.MainHero && hero.IsAlive && !GwpCommon.IsGreyWardenClanMember(hero);
 
-        private static void ApplyClanShock(Hero offender, float sharedGain,
-            GwpCrimeCategory category)
+        private static void ApplyClanShock(Hero offender, float sharedGain)
         {
             if (offender.Clan == null || sharedGain <= GwpTuning.Deterrence.ForgetThreshold)
                 return;
@@ -350,7 +336,7 @@ namespace GreyWardenPolicePurity
                     continue;
 
                 GwpAiDeterrenceState.RegisterSharedFamilyDeterrence(clanMember,
-                    sharedGain, category);
+                    sharedGain);
             }
         }
 

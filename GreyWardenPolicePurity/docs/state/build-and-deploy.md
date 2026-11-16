@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[交付与升阶的底部声望预期](firesworn-economy.md#玩家向祭司交付)、[原版部队界面挑兵下单](troop-orders.md#订单阶段)和[村民打赏退休](village-relief.md#村民打赏已退休)。Client/Editor DLL 的 SHA-256 同为 `7B2E37C4068DB661938FC9E193341140EFB6039F3AE354E367C5FE4DEAC2AF60`（复命配平修复后重新部署）。仓库与 live 中文语言 XML 同为 `1427F572962604EBC8AE941F849AF68E6674BFA384B30B1F9F544EC25FBF7928`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。安装版兼容预检通过，部署后的 DLL 与受检文件等哈希，live 镜像核对无差异。（依据：构建、部署与兼容预检 2026-11-16，复命配平修复后复核）
+live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。本轮部署[乡路巡法](family.md#本职)和[统一震慑](crime-intake.md#震慑gwpaideterrencestate)。Client/Editor DLL 与通过兼容预检的隔离产物等哈希，SHA-256 为 `FFF4B4DECEC4FC7B062DCC8CEB3248F0E72AC9EC664FED871D0C8331CA755A38`。仓库与 live 中文语言 XML 同为 `29077A616443E929C7DC5468F1AAD18C25729F7E8B9C2727FE76F155D02E144D`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。74 个运行时镜像文件校验一致。（依据：构建、部署、兼容预检及 SHA-256 核对 2026-11-16）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 

@@ -568,15 +568,13 @@ namespace GreyWardenPolicePurity
         /// 表现就是"我明明罚过他了，他照样接着抢"。和平兑现也累加执法/被捕计数，
         /// 罪犯赢约斗免罚亦然；计数与负声望抵扣分开（用户裁定 2026-10-17）。
         /// </summary>
-        internal static void RegisterFieldEnforcement(Hero? offender, CrimeRecord? crime)
+        internal static void RegisterFieldEnforcement(Hero? offender)
         {
             if (offender == null) return;
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterEnforcementOutcome(null, offender,
-                    crime?.CrimeCategory ?? GwpCrimeCategory.VillageViolence, countAsArrest: true);
+                ?.RegisterEnforcementOutcome(null, offender, countAsArrest: true);
             GwpAiDiagnostics.WriteFieldArrest("FIELD_ENFORCEMENT_REGISTERED",
-                "offender=" + (offender.StringId ?? "-") +
-                "; category=" + (crime?.CrimeCategory.ToString() ?? "-"));
+                "offender=" + (offender.StringId ?? "-"));
         }
 
         private static TextObject DescribeCrime(GwpCrimeCategory category) =>
@@ -622,7 +620,7 @@ namespace GreyWardenPolicePurity
         {
             if (_offender == null || _offenderParty == null) return 50;
             (float mine, float his) = FieldBalance();
-            return GwpNegotiationResistance.LayerOneResistance(_offender, _crime?.CrimeCategory ?? GwpCrimeCategory.Unknown,
+            return GwpNegotiationResistance.LayerOneResistance(_offender,
                 mine, his, CurrentStandingTier(), Hero.MainHero.Clan?.Renown ?? 0f, OffenderWealth, EnsureFine());
         }
 
@@ -983,7 +981,7 @@ namespace GreyWardenPolicePurity
 
             GwpPlayerCaseAssignment.NotifySettledInField(_offender, collected, owed, standingBefore);
 
-            RegisterFieldEnforcement(_offender, _crime);
+            RegisterFieldEnforcement(_offender);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_submitted");
             PlayerBehaviorPool.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
@@ -1029,7 +1027,7 @@ namespace GreyWardenPolicePurity
             LeaveEncounterPeacefully();
 
             GwpPlayerCaseAssignment.NotifyCaptured(_offender, assessed, standing);
-            RegisterFieldEnforcement(_offender, _crime);
+            RegisterFieldEnforcement(_offender);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_captured");
             PlayerBehaviorPool.ChangeReputation(GwpTuning.FieldArrest.StandingGainOnSubmit);
 
@@ -1063,7 +1061,7 @@ namespace GreyWardenPolicePurity
             GwpFieldReportLedger.Instance?.RecordSettlement(
                 _offender, owed, 0, CalculateBaseFine(_crime), false, taken, receipt ?? (prepaid == null ? new GwpCaseReceipt { Gold = taken } : null));
             GwpPlayerCaseAssignment.NotifySettledInField(_offender, 0, owed, GetNegativeStanding(_crime));
-            RegisterFieldEnforcement(_offender, _crime);
+            RegisterFieldEnforcement(_offender);
             PoliceEnforcementBehavior.CloseCase(_crime, "field_settled_short");
 
             GwpAiDiagnostics.WriteFieldArrest(
@@ -1118,7 +1116,7 @@ namespace GreyWardenPolicePurity
                 // 他赢了，按他自己开出的条件免罚。案子就此销掉，案底照留。
                 GwpFieldReportLedger.Instance?.RecordSettlement(opponent, fine, 0, CalculateBaseFine(crime), false);
                 GwpPlayerCaseAssignment.NotifySettledInField(opponent, 0, fine, GetNegativeStanding(crime));
-                RegisterFieldEnforcement(opponent, crime);
+                RegisterFieldEnforcement(opponent);
                 PoliceEnforcementBehavior.CloseCase(crime, "field_duel_lost");
                 InformationManager.DisplayMessage(new InformationMessage(
                     GwpText.Get(GwpTextCatalog.gwp_fieldarrest_msg_duel_lost,

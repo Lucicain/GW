@@ -104,11 +104,12 @@ namespace GreyWardenPolicePurity
         {
             foreach (MobileParty source in PoliceStats.GetAllPoliceParties().Where(CanAssignOrdinaryCaseNow).ToList())
             {
-                GwpCrimeCategory preferred = GetPreferredCrimeCategory(source);
+                bool caseDuty = GreyWardenFamilyBehavior.IsRoadsAndVillagesHero(source.LeaderHero);
                 var candidates = CrimePool.LedgerRecords.Where(record => record.IsOffenderSearchableInSettlement()
                         && CityPartyState(record) == null && !HasEnvoyAgreement(record)
                         && !CrimePool.ActiveTasks.Values.Any(task => task.TargetCrimeId == record.CrimeId))
-                    .OrderBy(record => preferred != GwpCrimeCategory.Unknown && record.CrimeCategory == preferred ? 0 : 1)
+                    .OrderBy(record => caseDuty &&
+                        GreyWardenDutyScheduler.IsRoadsAndVillagesCase(record.CrimeCategory) ? 0 : 1)
                     .ThenBy(record => source.GetPosition2D.Distance(record.ShelterSettlement!.GetPosition2D))
                     .ToList();
                 foreach (CrimeRecord crime in candidates)

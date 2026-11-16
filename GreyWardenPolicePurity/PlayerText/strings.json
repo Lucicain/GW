@@ -125,9 +125,9 @@
       "context": "创始领主晨曦的百科介绍，对应重建；修屋清井是重建的叙事描写，不新增工程功能。"
     },
     "gwp_enc_mise": {
-      "en": "{HERO_NAME} pursues those who attack villages. She remembers the names of many burned settlements and knows the paths their people take when fleeing. News of a raid sends her gathering riders; she holds that no one's faith can excuse their being robbed or killed. She rarely raises her voice and listens patiently to those who have suffered. Before a fight, she arranges shelter for the old and the young.",
-      "zh": "{HERO_NAME}负责村庄遇袭后的追捕。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路。接到劫掠的消息，她便召集人手出发；在她看来，是否入教都不能成为任人劫杀的理由。她不善高声争辩，却愿意耐心听完受害者的话；开战前总先安排老幼避险。",
-      "context": "创始领主弥瑟的百科介绍；拟稿中的保护不限信仰来自“保护平民”方向，不增添信仰筛选机制。"
+      "en": "{HERO_NAME} shares the hunt for raiders with a sister of the order; when villagers, caravans, or villages are attacked, the pursuit falls to them. She remembers the names of many burned settlements and knows the paths their people take when fleeing, and she holds that no one's faith can excuse their being robbed or killed. She rarely raises her voice and listens patiently to those who have suffered. Before a fight, she arranges shelter for the old and the young.",
+      "zh": "{HERO_NAME}与一位修会姊妹共同追捕劫掠者，村民、商队和村庄遭了袭击，都归她们去追。她记得不少被烧毁的村名，也熟悉村民逃难时常走的小路；在她看来，是否入教都不能成为任人劫杀的理由。她不善高声争辩，却愿意耐心听完受害者的话；开战前总先安排老幼避险。",
+      "context": "创始领主弥瑟的百科介绍，与约珥同任乡路巡法（用户批准 2026-11-16）"
     },
     "gwp_enc_muguang": {
       "en": "{HERO_NAME} receives appeals from nobles for the order, with particular concern for wrongs done to its members. She first hears what happened, then brings those concerned before a public decision. When precedent offers no answer, she takes the matter back to the order for discussion. She speaks gently and considers a promise before making it. Once committed, she patiently sees the matter through.",
@@ -145,9 +145,9 @@
       "context": "创始领主梵蒂的百科介绍，对应练兵本职。"
     },
     "gwp_enc_yoer": {
-      "en": "{HERO_NAME} protects the trade roads, riding between bridges, ferries, and markets. She pursues attacks on caravans and unlawful tolls, refusing to dismiss them as ordinary wartime losses. Many who trade along these roads know her grey mantle. She is cheerful and enjoys talking with her escorts on the march. Once she has promised to keep a road safe, she is slow to abandon it.",
-      "zh": "{HERO_NAME}负责保护商路，常在桥梁、渡口和集市之间奔走。她追查商队遇袭与沿途勒索，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。她性子爽朗，行军时也愿陪护卫谈笑，答应替人守住的路便不肯轻易放弃。",
-      "context": "创始领主约珥的百科介绍，对应商队护卫。"
+      "en": "{HERO_NAME} shares the hunt for raiders with a sister of the order: those who attack caravans, kill villagers, or burn villages are theirs to pursue. She rides between bridges, ferries, and markets, refusing to dismiss such deeds as ordinary wartime losses. Many who trade along these roads know her grey mantle. She is cheerful and enjoys talking with her escorts on the march. Once she has promised to keep a road safe, she is slow to abandon it.",
+      "zh": "{HERO_NAME}与一位修会姊妹共同追捕劫掠者：袭击商队、杀害村民、焚烧村庄的人，都归她们去追。她常在桥梁、渡口和集市之间奔走，不肯把这些事当作战争中无须过问的小事。走这几条路的商人，许多都认得她的灰袍。她性子爽朗，行军时也愿陪护卫谈笑，答应替人守住的路便不肯轻易放弃。",
+      "context": "创始领主约珥的百科介绍，与弥瑟同任乡路巡法（用户批准 2026-11-16）"
     },
     "gwp_greet_bad": {
       "en": "We have heard something of your deeds. Make amends, and there is still a way back.",
@@ -654,18 +654,6 @@
     "gwp_gwpencyclopediaheropagevm_011": {
       "en": null,
       "zh": "本人震慑：{VAR_1}"
-    },
-    "gwp_gwpencyclopediaheropagevm_012": {
-      "en": null,
-      "zh": "烧村欲望倍率：{VAR_1}"
-    },
-    "gwp_gwpencyclopediaheropagevm_013": {
-      "en": null,
-      "zh": "攻击村民欲望倍率：{VAR_1}"
-    },
-    "gwp_gwpencyclopediaheropagevm_014": {
-      "en": null,
-      "zh": "攻击商队欲望倍率：{VAR_1}"
     },
     "gwp_gwpencyclopediaheropagevm_015": {
       "en": "Latest enforcement: {VAR_1}",
@@ -3152,25 +3140,14 @@
       "en": "{VAR_1} Grey Warden recruits have joined your party.",
       "zh": "{VAR_1} 名灰袍新兵加入了你的队伍。"
     },
-    "gwp_gwpencyclopediaheropagevm_020": {
-      "en": null,
-      "zh": "村庄保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）"
-    },
-    "gwp_gwpencyclopediaheropagevm_021": {
-      "en": null,
-      "zh": "商队保护震慑：{VAR_1}（本人 {VAR_2}，传递 {VAR_3}）"
-    },
     "gwp_duty_training": {
       "en": "Training Warden",
       "zh": "灰袍练兵者"
     },
-    "gwp_duty_caravan": {
-      "en": "Caravan Protection Warden",
-      "zh": "灰袍商路巡法者"
-    },
-    "gwp_duty_village": {
-      "en": "Village Protection Warden",
-      "zh": "灰袍乡土巡法者"
+    "gwp_duty_roads_villages": {
+      "en": "Roads and Villages Warden",
+      "zh": "灰袍乡路巡法者",
+      "context": "用户批准 2026-11-16：商队护卫与护村合并为乡路巡法，约珥与弥瑟同任。本职称号与事务界面职能名。"
     },
     "gwp_duty_issues": {
       "en": "Petition Warden",
@@ -3200,15 +3177,10 @@
       "zh": "她负责操练士兵，要求新兵先学会守住队列。",
       "context": "成年成员承担练兵本职时的百科职责片段。"
     },
-    "gwp_bio_hint_caravan": {
-      "en": "She patrols the trade roads and pursues those who attack caravans.",
-      "zh": "她巡察商路，追捕袭击商队的人。",
-      "context": "成年成员承担商队护卫时。"
-    },
-    "gwp_bio_hint_village": {
-      "en": "She pursues village raiders and protects villagers on the roads.",
-      "zh": "她负责村庄遇袭后的追捕，保护往来的村民。",
-      "context": "成年成员承担护村本职时。"
+    "gwp_bio_hint_roads_villages": {
+      "en": "She pursues those who attack villagers and caravans or burn villages.",
+      "zh": "她追捕袭击村民、商队和焚烧村庄的人。",
+      "context": "用户批准 2026-11-16：商队护卫与护村合并为乡路巡法，约珥与弥瑟同任。后继成员百科生平提示。"
     },
     "gwp_bio_hint_issues": {
       "en": "She travels between villages and towns to hear the notables' petitions.",
@@ -3281,25 +3253,15 @@
       "en": "Recorded crimes: {VAR_1} | Arrested by Grey Wardens: {VAR_2}",
       "zh": "累计犯罪：{VAR_1} | 被灰袍抓获：{VAR_2}"
     },
-    "gwp_det_ui_village_heading": {
-      "en": "Harm against villagers",
-      "zh": "【侵害村民】"
+    "gwp_det_ui_harm_heading": {
+      "en": "Harm against villagers and caravans",
+      "zh": "【侵害村民与商队】",
+      "context": "用户批准 2026-11-16：英雄百科案底与震慑页，袭击村民、商队与烧村共用一个震慑度。"
     },
-    "gwp_det_ui_villager_desire": {
-      "en": "Desire to attack villagers: {VAR_1}% of normal (suppressed {VAR_2}%)",
-      "zh": "攻击村民欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）"
-    },
-    "gwp_det_ui_raid_desire": {
-      "en": "Desire to raid villages: {VAR_1}% of normal (the same suppression as attacks on villagers)",
-      "zh": "烧村欲望：原版的 {VAR_1}%（与攻击村民共用同一压制）"
-    },
-    "gwp_det_ui_caravan_heading": {
-      "en": "Harm against caravans",
-      "zh": "【侵害商队】"
-    },
-    "gwp_det_ui_caravan_desire": {
-      "en": "Desire to attack caravans: {VAR_1}% of normal (suppressed {VAR_2}%)",
-      "zh": "攻击商队欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）"
+    "gwp_det_ui_harm_desire": {
+      "en": "Desire to attack villagers and caravans or raid villages: {VAR_1}% of normal (suppressed {VAR_2}%)",
+      "zh": "攻击村民、商队与烧村的欲望：原版的 {VAR_1}%（已压制 {VAR_2}%）",
+      "context": "用户批准 2026-11-16：英雄百科案底与震慑页的共用意愿倍率。"
     },
     "gwp_det_ui_source": {
       "en": "Source of suppression: personal {VAR_1} | passed on {VAR_2} ({VAR_3})",

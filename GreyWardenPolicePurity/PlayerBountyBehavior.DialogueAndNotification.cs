@@ -528,8 +528,7 @@ namespace GreyWardenPolicePurity
         // The affairs screen lists every currently eligible case; no three-choice picker.
         internal IReadOnlyList<CrimeRecord> GetAffairsOffers() =>
             CrimePool.GetAvailablePlayerBounties()
-                .Where(crime => crime.CrimeCategory == GwpCrimeCategory.CaravanAttack ||
-                                crime.CrimeCategory == GwpCrimeCategory.VillageViolence)
+                .Where(crime => GreyWardenDutyScheduler.IsRoadsAndVillagesCase(crime.CrimeCategory))
                 .OrderByDescending(EstimateAffairsReward)
                 .ThenBy(crime => crime.CrimeId, StringComparer.OrdinalIgnoreCase).ToList();
 
@@ -595,7 +594,6 @@ namespace GreyWardenPolicePurity
             _activeBountyTargetName = targetName.ToString();
             _activeBountyTargetFactionId = targetFaction?.StringId ?? string.Empty;
             _activeBountyTargetHeroId = crime.OffenderHeroId ?? string.Empty;
-            _activeBountyCrimeCategory = (int)crime.CrimeCategory;
             _assignedCaseFine = assessedFine;
             _assignedCaseStanding = Math.Max(0, CrimePool.GetHistory(crime.OffenderHero)?.NegativeStanding ?? 0);
             _bountyPlayerCasualties = 0;

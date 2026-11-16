@@ -113,7 +113,7 @@ python tools/Check-StateFreshness.py
 
 | 文件 | 覆盖范围 |
 |---|---|
-| [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、震慑、外交封锁、被俘豁免 |
+| [`crime-intake.md`](crime-intake.md) | 三个立案入口、人命与声望、罚金、共用震慑度、外交封锁、被俘豁免 |
 | [`case-enforcement.md`](case-enforcement.md) | 案件生命周期：派单门槛、结案口径、协力编成、战争跟随 |
 | [`case-assistance.md`](case-assistance.md) | 协力登记、征调、会合、追速分散、缩编与普通支援 |
 | [`case-interceptors.md`](case-interceptors.md) | 立即追截队：归队、船与多余的人去信众村、常规追截与周期兜底 |
@@ -138,14 +138,14 @@ python tools/Check-StateFreshness.py
 | [`player-requests.md`](player-requests.md) | 贵族事务：封地重议申诉 |
 | [`sparring.md`](sparring.md) | 与灰袍领主切磋（竞技场与野外） |
 | [`map-bar-affairs.md`](map-bar-affairs.md) | 灰袍事务入口、界面定位与改版讨论 |
-| [`affairs-interface.md`](affairs-interface.md) | 原版家族风格的五页事务界面、六职能分类与玩家自选案件 |
+| [`affairs-interface.md`](affairs-interface.md) | 原版家族风格的五页事务界面、五职能分类与玩家自选案件 |
 | [`warden-gear.md`](warden-gear.md) | 入会装备与原版品质、宗教常服、执勤旗与玩家本队战场纹章 |
 
 ### 灰袍家族与世界
 
 | 文件 | 覆盖范围 |
 |---|---|
-| [`family.md`](family.md) | 成员、六个本职与继承、婚姻、与要人的关系、六人声音与性格、成就兼容 |
+| [`family.md`](family.md) | 成员、五个本职与继承、婚姻、与要人的关系、六人声音与性格、成就兼容 |
 | [`kingdom-membership.md`](kingdom-membership.md) | 灰袍不入国：四个入国入口拦截、内战流亡收容排除、读档离国、宣战监听、反馈环境与回退 |
 | [`clan-banner.md`](clan-banner.md) | 黑底金鸟旗帜、自定义图标、静态材质与美术源 |
 | [`village-relief.md`](village-relief.md) | 被焚村庄的善后与收养、重建、请愿 |

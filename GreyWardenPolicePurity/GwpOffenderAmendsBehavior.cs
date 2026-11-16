@@ -11,7 +11,7 @@ namespace GreyWardenPolicePurity
 {
     /// <summary>
     /// 仁慈高的罪犯交完罚金后，带自己的部队去修本国一座废村（用户裁定 2026-11-06、2026-11-07）。
-    /// 工期与到达距离沿用灰袍重建，不花灰袍公库；修好时按村庄类别再记他一次被抓，叠一层震慑。
+    /// 工期与到达距离沿用灰袍重建，不花灰袍公库；修好时再记他一次被抓，叠一层震慑。
     /// 去村与在村口干活都走欲望层的访问意图（同灰袍重建），不停他的决策：本国废村多在前线，原版避敌照常起作用。
     /// 罚金在谈判当场已照数收清，这里只管修村；人没了、部队没了、村子被别人修好或成了敌境，就作罢。
     /// </summary>
@@ -168,8 +168,8 @@ namespace GreyWardenPolicePurity
                 if (now < entry.WorkEndHours) continue;
 
                 IncreaseSettlementHealthAction.Apply(village, MathF.Max(0f, 1f - village.SettlementHitPoints));
-                // 按村庄类别再记一次被抓：震慑与恢复下限照被抓一次处理（用户裁定 2026-11-07）。
-                GwpFieldArrestBehavior.RegisterFieldEnforcement(hero, null);
+                // 再记一次被抓：震慑与恢复下限照被抓一次处理（用户裁定 2026-11-07）。
+                GwpFieldArrestBehavior.RegisterFieldEnforcement(hero);
                 GwpSettlementNotices.Post(village, hero, GwpText.Get(GwpTextCatalog.gwp_notice_rebuilt));
                 Finish(entry, "rebuilt");
             }

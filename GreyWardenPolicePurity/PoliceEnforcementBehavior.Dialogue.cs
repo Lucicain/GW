@@ -286,7 +286,7 @@ namespace GreyWardenPolicePurity
             history.NegativeStanding = 0;
             CloseCase(crime, "companion_fine_paid");
             Campaign.Current?.GetCampaignBehavior<PoliceAIDeterrenceBehavior>()
-                ?.RegisterEnforcementOutcome(null, accused, crime.CrimeCategory, countAsArrest: true);
+                ?.RegisterEnforcementOutcome(null, accused, countAsArrest: true);
 
             InformationManager.DisplayMessage(new InformationMessage(
                 GwpText.Get(GwpTextCatalog.gwp_enforcement_companion_paid,
@@ -327,7 +327,6 @@ namespace GreyWardenPolicePurity
             _atonementTargetPartyId = offender.StringId ?? string.Empty;
             _atonementTargetName = offender.Name?.ToString() ?? GwpText.Get(GwpTextCatalog.gwp_policeenforcementbehavior_dialogue_013);
             _atonementTargetHeroId = targetCrime.OffenderHeroId ?? string.Empty;
-            _atonementTargetCrimeCategory = (int)targetCrime.CrimeCategory;
             _atonementTargetFactionId = offender.MapFaction?.StringId ?? string.Empty;
             _atonementTargetSizeSnapshot = targetSizeSnapshot;
             _atonementReputationReward = rewardRep;
