@@ -2171,10 +2171,6 @@
       "en": "Grey Warden troops",
       "zh": "主队灰袍兵"
     },
-    "gwp_player_troop_stage_waiting_for_capacity": {
-      "en": "Awaiting room for delivery",
-      "zh": "兵员已备齐，等待灰袍名额"
-    },
     "gwp_sparring_launch_failed": {
       "en": null,
       "zh": "这里不适合切磋，这次就先算了。"

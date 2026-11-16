@@ -36,7 +36,10 @@ namespace GreyWardenPolicePurity
             }
             if (catalog.TotalManCount == 0)
             {
-                MBInformationManager.AddQuickInformation(GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unaffordable));
+                // 一个都订不了：照最便宜那一个兵的报价说原因，付不起就是声望不足，付得起就是名额已满（超编常见）。
+                int cheapest = OrderTroopIds.Select(CharacterObject.Find).Where(GwpCommon.IsGreyWardenTroop).Min(GetUnitCost);
+                MBInformationManager.AddQuickInformation(GetOrderRestriction(QuoteReputationOrder(cheapest, 1, escortCount)) ??
+                    GwpText.Create(GwpTextCatalog.gwp_player_troop_order_unaffordable));
                 cancel?.Invoke();
                 return;
             }

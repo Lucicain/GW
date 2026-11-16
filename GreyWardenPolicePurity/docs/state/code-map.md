@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-238 个源文件、60,389 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
+238 个源文件、60,366 行、455 个公开类型、128 条 Harmony 目标声明（含动态入口，共 128 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -711,7 +711,7 @@
 - `PlayerBountyBehavior.cs` — 874 行 · `PlayerBountyBehavior` : CampaignBehaviorBase
 - `PlayerBountyBehavior.CaseSettlement.cs` — 677 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.DialogueAndNotification.cs` — 661 行 · `PlayerBountyBehavior`
-- `GwpCaseArchiveItemVM.cs` — 570 行 · `GwpCaseArchiveItemVM` : ViewModel
+- `GwpCaseArchiveItemVM.cs` — 568 行 · `GwpCaseArchiveItemVM` : ViewModel
 - `PlayerBountyBehavior.Support.cs` — 191 行 · `PlayerBountyBehavior`
 - `PlayerBountyBehavior.QuestAndNotification.cs` — 146 行 · `PlayerBountyBehavior` : QuestBase，另含 1 个类型
 - `PlayerBountyBehavior.Custody.cs` — 142 行 · `PlayerBountyBehavior`
@@ -723,10 +723,10 @@
 ### 使者与交兵（8 个文件）
 
 - `GwpWardenDispatchBehavior.cs` — 923 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
-- `GreyWardenTroopRequestBehavior.cs` — 875 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
+- `GreyWardenTroopRequestBehavior.cs` — 852 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpWardenDispatchDialogue.cs` — 575 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 254 行 · `GreyWardenTroopRequestBehavior`
-- `GreyWardenTroopRequestBehavior.OrderScreen.cs` — 126 行 · `GreyWardenTroopRequestBehavior`
+- `GreyWardenTroopRequestBehavior.OrderScreen.cs` — 129 行 · `GreyWardenTroopRequestBehavior`
 - `GwpWardenDispatch.cs` — 111 行 · `GwpDispatchPurpose`，另含 2 个类型
 - `GwpBribeBarterable.cs` — 62 行 · `GwpBribeBarterable` : Barterable
 - `GwpWardenDispatchBehavior.Affairs.cs` — 59 行 · `GwpWardenDispatchBehavior`
@@ -770,7 +770,7 @@
 
 ### 其他（144 个文件）
 
-- `GwpTextCatalog.g.cs` — 1444 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1443 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1357 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 900 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型

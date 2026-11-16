@@ -536,7 +536,6 @@
   <string id="gwp_warden_upgrade_insufficient" text="灰袍声望不足，无法继续升级。" />
   <string id="gwp_player_warden_capacity" text="当前声望允许接收至多 {CAPACITY} 名灰袍士兵，名额不足。" />
   <string id="gwp_mapbar_warden_troops" text="主队灰袍兵" />
-  <string id="gwp_player_troop_stage_waiting_for_capacity" text="兵员已备齐，等待灰袍名额" />
   <string id="gwp_sparring_launch_failed" text="这里不适合切磋，这次就先算了。" />
   <string id="gwp_sparring_town_win" text="{OPPONENT}认输了，你赢得了这场切磋。" />
   <string id="gwp_sparring_town_loss" text="你输给了{OPPONENT}。" />

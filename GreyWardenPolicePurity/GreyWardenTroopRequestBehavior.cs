@@ -56,7 +56,6 @@ namespace GreyWardenPolicePurity
             public CampaignTime FiledTime { get; set; }
             public PlayerTroopOrderStage Stage { get; set; }
             public WardenDuty? PausedBy { get; set; }
-            public bool WaitingForCapacity { get; set; }
         }
 
         public GreyWardenTroopRequestBehavior() => _instance = this;
@@ -184,8 +183,6 @@ namespace GreyWardenPolicePurity
                 FiledTime = CampaignTime.Hours((float)Math.Max(0d,
                     _instance._filedHour)),
                 Stage = (PlayerTroopOrderStage)_instance._orderStage,
-                WaitingForCapacity = (PlayerTroopOrderStage)_instance._orderStage == PlayerTroopOrderStage.Delivering &&
-                                     !_instance.HasRoomForTroopDelivery(),
                 PausedBy = trainer == null ? null : GwpWardenDuties.BlockingDuty(trainer, WardenDuty.PlayerRequest)
             });
             return result;
@@ -266,8 +263,7 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_player_troop_delivery_accept),
                 PrepareDeliveryConversation,
                 CompleteTroopDelivery,
-                310,
-                CanAcceptTroopDelivery);
+                310);
 
             starter.AddDialogLine(
                 "gwp_player_troop_delivery_accepted",
@@ -473,16 +469,9 @@ namespace GreyWardenPolicePurity
                 return;
             }
 
+            // 主队灰袍兵名额是软上限：只限制下单和其他新增兵员，已订好的兵照样交付，交完超编也保留。
+            // （依据：用户裁定 2026-11-16「软上限，再怎么说也应该把兵给我，后来招兵才受上限限制」）
             _orderStage = (int)PlayerTroopOrderStage.Delivering;
-            if (!HasRoomForTroopDelivery())
-            {
-                if (_nextContactHour >= 0d)
-                {
-                    StopPlayerContact(trainer);
-                    _nextContactHour = -1d;
-                }
-                return;
-            }
             if (_nextContactHour < 0d) _nextContactHour = CampaignTime.Now.ToHours;
             if (CampaignTime.Now.ToHours >= _nextContactHour) MoveTrainerToPlayer(trainer);
         }
@@ -656,9 +645,6 @@ namespace GreyWardenPolicePurity
             return false;
         }
 
-        private bool HasRoomForTroopDelivery() => MobileParty.MainParty is { IsActive: true } player &&
-            _orderedCount <= GwpPlayerWardenTroops.RemainingSlots(player.MemberRoster);
-
         private bool PrepareDeliveryConversation()
         {
             if ((PlayerTroopOrderStage)_orderStage !=
@@ -677,20 +663,12 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool CanAcceptTroopDelivery(out TextObject reason)
-        {
-            bool hasRoom = HasRoomForTroopDelivery();
-            reason = hasRoom ? TextObject.GetEmpty() : GwpPlayerWardenTroops.CapacityMessage(PlayerBehaviorPool.ReputationUnits);
-            return hasRoom;
-        }
-
         private void CompleteTroopDelivery()
         {
             MobileParty? trainer = ResolveTrainerParty();
             MobileParty? pool = ResolveCohortParty();
             if (trainer?.IsActive != true || pool?.IsActive != true ||
-                _orderLines.Count == 0 || CountReady(pool) < _orderedCount ||
-                !HasRoomForTroopDelivery())
+                _orderLines.Count == 0 || CountReady(pool) < _orderedCount)
                 return;
 
             foreach (var line in _orderLines)
@@ -793,8 +771,7 @@ namespace GreyWardenPolicePurity
         {
             _ = attackerParty;
             _ = defenderParty;
-            if ((PlayerTroopOrderStage)_orderStage !=
-                PlayerTroopOrderStage.Delivering || !HasRoomForTroopDelivery())
+            if ((PlayerTroopOrderStage)_orderStage != PlayerTroopOrderStage.Delivering)
                 return;
 
             MobileParty? trainer = ResolveTrainerParty();

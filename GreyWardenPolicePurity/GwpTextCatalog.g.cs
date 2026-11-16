@@ -1100,7 +1100,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_player_troop_order_unavailable = "{=gwp_player_troop_order_unavailable}This troop order can no longer be placed.";
         internal const string gwp_player_troop_stage_delivery = "{=gwp_player_troop_stage_delivery}Delivering troops";
         internal const string gwp_player_troop_stage_training = "{=gwp_player_troop_stage_training}Training";
-        internal const string gwp_player_troop_stage_waiting_for_capacity = "{=gwp_player_troop_stage_waiting_for_capacity}Awaiting room for delivery";
         internal const string gwp_player_warden_capacity = "{=gwp_player_warden_capacity}Your current reputation allows {CAPACITY} Grey Warden troops. There is no room for these recruits.";
         internal const string gwp_playerbehaviormonitor_005 = "{=gwp_playerbehaviormonitor_005}Raid village";
         internal const string gwp_playerbehaviormonitor_006 = "{=gwp_playerbehaviormonitor_006}Unknown village";
