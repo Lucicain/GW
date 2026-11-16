@@ -20,14 +20,14 @@ namespace GreyWardenPolicePurity
     {
         internal static void Register(CampaignGameStarter starter)
         {
-            starter.AddGameMenuOption("village", "gwp_fs_village_armory",
+            starter.AddGameMenuOption(GwpFireswornMenus.VillageServicesMenuId, "gwp_fs_village_armory",
                 GwpTextCatalog.gwp_fs_armory_option,
                 args =>
                 {
                     args.optionLeaveType = GameMenuOption.LeaveType.Manage;
                     return GwpFireswornBehavior.HasFireswornGuard(Settlement.CurrentSettlement);
                 },
-                _ => ShowContents(Settlement.CurrentSettlement.StringId), isLeave: false, index: 6);
+                _ => ShowContents(Settlement.CurrentSettlement.StringId));
 
             // 调试用，任何灰袍领主都能直接问，不用入会、不用是带队的那位（用户 2026-10-08）。
             starter.AddPlayerLine("gwp_fs_lord_armory_ask", "lord_talk_speak_diplomacy_2", "gwp_fs_lord_armory_reply",

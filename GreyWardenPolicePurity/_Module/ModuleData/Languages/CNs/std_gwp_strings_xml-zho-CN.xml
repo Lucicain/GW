@@ -1368,12 +1368,13 @@
   <string id="gwp_fs_ritual_damnation_title" text="火刑" />
   <string id="gwp_fs_ritual_congregation_text" text="{VILLAGE}的村民聚在广场上听讲戒律，新入教的人正在宣誓。集会尚未结束，暂时无法办理村中事务。还需约{HOURS}小时。主持：{HOST}。" />
   <string id="gwp_fs_ritual_damnation_text" text="{VILLAGE}的广场上正在执行火刑。人被绑在木架上，围观的教众齐声祷告，浓烟飘过屋顶。村中事务暂时停办，还需约{HOURS}小时。主持：{HOST}。" />
-  <string id="gwp_fs_village_option" text="灰袍教众：{HOUSEHOLDS}户（{SHARE}%），守村{GUARD}人" />
-  <string id="gwp_fs_village_info" text="{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。" />
+  <string id="gwp_fs_village_visit_priest" text="拜访{PRIEST}" />
+  <string id="gwp_fs_village_info" text="{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户（{SHARE}%）奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。" />
   <string id="gwp_fs_village_priest" text="{PRIEST}在此传教，并照管教众。灰袍来征募时，村中愿意从军的人由他引荐。" />
   <string id="gwp_fs_village_no_priest" text="村中暂时没有灰袍教士。" />
   <string id="gwp_fs_village_info_title" text="灰袍教众" />
-  <string id="gwp_fs_village_info_ok" text="关闭" />
+  <string id="gwp_fs_village_sell_goods" text="卖货" />
+  <string id="gwp_fs_village_back" text="返回村庄" />
   <string id="gwp_fs_ritual_leave" text="离开……" />
   <string id="gwp_fs_militia_change" text="灰袍教众继续留守" />
   <string id="gwp_fs_militia_stopped" text="灰袍教众负责守卫，停止征募新民兵" />

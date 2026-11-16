@@ -22,17 +22,25 @@ namespace GreyWardenPolicePurity
     internal static class GwpFireswornMenus
     {
         internal const string RitualMenuId = "gwp_firesworn_ritual";
+        internal const string VillageServicesMenuId = "gwp_firesworn_village_services";
 
-        internal static void Register(CampaignGameStarter starter)
+        internal static void Register(CampaignGameStarter starter, GwpFireswornBehavior behavior)
         {
             starter.AddGameMenu(RitualMenuId, "{GWP_FS_RITUAL_TEXT}", RitualInit);
             starter.AddGameMenuOption(RitualMenuId, "gwp_fs_ritual_leave", GwpTextCatalog.gwp_fs_ritual_leave,
                 LeaveCondition, LeaveConsequence, isLeave: true);
-            starter.AddGameMenuOption("village", "gwp_fs_village_faith", "{GWP_FS_VILLAGE_OPTION}",
-                FaithOptionCondition, FaithOptionConsequence, isLeave: false, index: 5);
+            starter.AddGameMenu(VillageServicesMenuId, "{GWP_FS_VILLAGE_TEXT}", VillageServicesInit,
+                GameMenu.MenuOverlayType.SettlementWithBoth);
+            starter.AddGameMenuOption("village", "gwp_fs_village_visit", "{GWP_FS_VILLAGE_VISIT}",
+                VillageVisitCondition, _ => GameMenu.SwitchToMenu(VillageServicesMenuId), isLeave: false, index: 5);
+            behavior.RegisterVillageTrade(starter);
+            starter.AddGameMenuOption(VillageServicesMenuId, "gwp_fs_village_goods", GwpTextCatalog.gwp_fs_village_sell_goods,
+                MarketCondition, OpenMarket);
 #if GWP_DIAGNOSTICS
             GwpFireswornArmoryView.Register(starter);
 #endif
+            starter.AddGameMenuOption(VillageServicesMenuId, "gwp_fs_village_back", GwpTextCatalog.gwp_fs_village_back,
+                LeaveCondition, _ => GameMenu.SwitchToMenu("village"), isLeave: true);
         }
 
         private static void RitualInit(MenuCallbackArgs args)
@@ -79,27 +87,50 @@ namespace GreyWardenPolicePurity
             PlayerEncounter.Finish();
         }
 
-        private static bool FaithOptionCondition(MenuCallbackArgs args)
+        private static TextObject VillageVisitTitle(Hero? priest) => priest != null
+            ? GwpText.Create(GwpTextCatalog.gwp_fs_village_visit_priest, "PRIEST", priest.Name)
+            : GwpText.Create(GwpTextCatalog.gwp_fs_village_info_title);
+
+        private static bool VillageVisitCondition(MenuCallbackArgs args)
         {
             Settlement? village = Settlement.CurrentSettlement;
-            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int households, out int guard, out _))
+            if (village == null || !GwpFireswornBehavior.TryGetVillageFaith(village, out _, out _, out Hero? priest))
                 return false;
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
-            MBTextManager.SetTextVariable("GWP_FS_VILLAGE_OPTION", GwpText.Get(
-                GwpTextCatalog.gwp_fs_village_option,
-                "HOUSEHOLDS", households, "SHARE", HearthShare(village!, households), "GUARD", guard));
+            MBTextManager.SetTextVariable("GWP_FS_VILLAGE_VISIT",
+                VillageVisitTitle(GwpFireswornBehavior.PresentVillagePriest(priest, village)));
             return true;
         }
 
-        private static void FaithOptionConsequence(MenuCallbackArgs args)
+        private static void VillageServicesInit(MenuCallbackArgs args)
         {
             Settlement? village = Settlement.CurrentSettlement;
-            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int households, out int guard, out Hero? priest))
+            if (village?.IsVillage != true)
+            {
+                GameMenu.ExitToLast();
                 return;
+            }
+            if (!GwpFireswornBehavior.TryGetVillageFaith(village, out int households, out int guard, out Hero? priest))
+            {
+                GameMenu.SwitchToMenu("village");
+                return;
+            }
+            if (GwpFireswornBehavior.TryGetActiveRitual(village, out _, out _, out _))
+            {
+                GameMenu.SwitchToMenu(RitualMenuId);
+                return;
+            }
 
+            var locations = Campaign.Current.GameMenuManager.MenuLocations;
+            locations.Clear();
+            locations.AddRange(village.LocationComplex.GetListOfLocations());
+            args.MenuContext.SetBackgroundMeshName(village.Village.WaitMeshName);
+            priest = GwpFireswornBehavior.PresentVillagePriest(priest, village);
+            args.MenuTitle = VillageVisitTitle(priest);
             string body = GwpText.Get(
                 GwpTextCatalog.gwp_fs_village_info,
-                "HOUSEHOLDS", households, "GUARD", guard, "HEARTH", (int)(village!.Village?.Hearth ?? 0f), "VILLAGE", village.Name);
+                "HOUSEHOLDS", households, "SHARE", HearthShare(village, households), "GUARD", guard,
+                "HEARTH", (int)village.Village.Hearth, "VILLAGE", village.Name);
             body += "\n\n" + (priest != null
                 ? GwpText.Get(GwpTextCatalog.gwp_fs_village_priest,
                     "PRIEST", priest.Name)
@@ -108,9 +139,25 @@ namespace GreyWardenPolicePurity
             body += "\n\n" + GwpText.Get(
                 GwpTextCatalog.gwp_fs_village_stores,
                 "PRISONERS", prisoners, "ARMORY", armoryItems, "GOODS", goodsValue);
-            InformationManager.ShowInquiry(new InquiryData(
-                GwpText.Get(GwpTextCatalog.gwp_fs_village_info_title), body,
-                true, false, GwpText.Get(GwpTextCatalog.gwp_fs_village_info_ok), string.Empty, null, null));
+            MBTextManager.SetTextVariable("GWP_FS_VILLAGE_TEXT", body);
+        }
+
+        private static bool MarketCondition(MenuCallbackArgs args)
+        {
+            args.optionLeaveType = GameMenuOption.LeaveType.Trade;
+            Settlement? village = Settlement.CurrentSettlement;
+            if (village?.IsVillage != true || GwpFireswornBehavior.TryGetActiveRitual(village, out _, out _, out _))
+                return false;
+
+            bool canTrade = Campaign.Current.Models.SettlementAccessModel.CanMainHeroDoSettlementAction(village,
+                SettlementAccessModel.SettlementAction.Trade, out bool disabled, out TextObject reason);
+            return MenuHelper.SetOptionProperties(args, canTrade, disabled, reason);
+        }
+
+        private static void OpenMarket(MenuCallbackArgs args)
+        {
+            if (MarketCondition(args) && args.IsEnabled && Settlement.CurrentSettlement is { IsVillage: true } village)
+                InventoryScreenHelper.OpenScreenAsTrade(village.ItemRoster, village.Village);
         }
 
         private static int HearthShare(Settlement village, int households)

@@ -831,13 +831,14 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_trade_troops_reply = "{=gwp_fs_trade_troops_reply}Show me whom you can spare. We could use some veterans on the watch.";
         internal const string gwp_fs_trade_troops_title = "{=gwp_fs_trade_troops_title}Send Soldiers to the Village Militia";
         internal const string gwp_fs_trade_unavailable = "{=gwp_fs_trade_unavailable}This delivery can no longer be made. Speak to the priest again.";
-        internal const string gwp_fs_village_info = "{=gwp_fs_village_info}Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens.";
-        internal const string gwp_fs_village_info_ok = "{=gwp_fs_village_info_ok}Close";
+        internal const string gwp_fs_village_back = "{=gwp_fs_village_back}Back to the village";
+        internal const string gwp_fs_village_info = "{=gwp_fs_village_info}Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} ({SHARE}%) follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens.";
         internal const string gwp_fs_village_info_title = "{=gwp_fs_village_info_title}The Grey Warden Faithful";
         internal const string gwp_fs_village_no_priest = "{=gwp_fs_village_no_priest}There is currently no Grey Warden priest in the village.";
-        internal const string gwp_fs_village_option = "{=gwp_fs_village_option}Grey Warden faithful: {HOUSEHOLDS} households ({SHARE}%), {GUARD} defenders";
         internal const string gwp_fs_village_priest = "{=gwp_fs_village_priest}{PRIEST} preaches here and tends to the faithful. When the Wardens recruit, he introduces villagers willing to serve.";
+        internal const string gwp_fs_village_sell_goods = "{=gwp_fs_village_sell_goods}Sell goods";
         internal const string gwp_fs_village_stores = "{=gwp_fs_village_stores}The cellar holds {PRISONERS} people awaiting the stake. The stores contain {ARMORY} pieces of arms and armour, with goods worth {GOODS} denars awaiting transport to market.";
+        internal const string gwp_fs_village_visit_priest = "{=gwp_fs_village_visit_priest}Visit {PRIEST}";
         internal const string gwp_grace_collect = "{=gwp_grace_collect}Show me what you can pay now.";
         internal const string gwp_grace_due = "{=gwp_grace_due}The time you allowed {VAR_1} has expired. Seek payment or take him into custody; no payment has been received automatically.";
         internal const string gwp_grace_granted = "{=gwp_grace_granted}You allowed {VAR_1} three days to raise the fine. The commission remains open; return to collect it or take the offender into custody.";

@@ -1368,12 +1368,13 @@
 | gwp_fs_ritual_damnation_title | Burning at the Stake | 火刑 | 火刑期间进村，仪式菜单标题。 |
 | gwp_fs_ritual_congregation_text | The villagers of {VILLAGE} have gathered to hear the commandments, and new believers are taking their vows. Village business is suspended until the congregation ends, in about {HOURS} hours. Host: {HOST}. | {VILLAGE}的村民聚在广场上听讲戒律，新入教的人正在宣誓。集会尚未结束，暂时无法办理村中事务。还需约{HOURS}小时。主持：{HOST}。 | 布道期间的锁村画面；HOST无教士时会回退成村名，故使用中性的“主持方”。 |
 | gwp_fs_ritual_damnation_text | People are bound to stakes in the square of {VILLAGE}, where a burning is under way. The gathered believers pray as smoke drifts over the roofs. Village business is suspended for about {HOURS} more hours. Host: {HOST}. | {VILLAGE}的广场上正在执行火刑。人被绑在木架上，围观的教众齐声祷告，浓烟飘过屋顶。村中事务暂时停办，还需约{HOURS}小时。主持：{HOST}。 | 火刑期间的锁村画面；不把火写成能裁定罪名的神，也不把实际被烧者一律称为罪犯。 |
-| gwp_fs_village_option | Grey Warden faithful: {HOUSEHOLDS} households ({SHARE}%), {GUARD} defenders | 灰袍教众：{HOUSEHOLDS}户（{SHARE}%），守村{GUARD}人 | 有灰袍教众记录时的村庄菜单入口。 |
-| gwp_fs_village_info | Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens. | {VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。 | 点击村庄教众入口后的详情正文。 |
+| gwp_fs_village_visit_priest | Visit {PRIEST} | 拜访{PRIEST} | 普通村庄菜单进入当地灰袍要人子菜单的按钮及标题。 |
+| gwp_fs_village_info | Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} ({SHARE}%) follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens. | {VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户（{SHARE}%）奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。 | 灰袍要人子菜单的村庄概况。 |
 | gwp_fs_village_priest | {PRIEST} preaches here and tends to the faithful. When the Wardens recruit, he introduces villagers willing to serve. | {PRIEST}在此传教，并照管教众。灰袍来征募时，村中愿意从军的人由他引荐。 | 教众详情中存在在世教士的分支。 |
 | gwp_fs_village_no_priest | There is currently no Grey Warden priest in the village. | 村中暂时没有灰袍教士。 | 教众详情中没有在世教士的分支。 |
 | gwp_fs_village_info_title | The Grey Warden Faithful | 灰袍教众 | 村庄教众详情弹窗标题。 |
-| gwp_fs_village_info_ok | Close | 关闭 | 村庄教众详情弹窗关闭按钮。 |
+| gwp_fs_village_sell_goods | Sell goods | 卖货 | 从灰袍要人子菜单打开原版村庄市场的按钮。 |
+| gwp_fs_village_back | Back to the village | 返回村庄 | 从灰袍要人子菜单返回原版村庄菜单的按钮。 |
 | gwp_fs_ritual_leave | Leave... | 离开…… | 仪式锁村画面的离开按钮。 |
 | gwp_fs_militia_change | The Grey Warden faithful remain on watch | 灰袍教众继续留守 | 民兵每日变化的说明条目：抵消灰袍守村兵对应的原版退役项。 |
 | gwp_fs_militia_stopped | The Grey Warden faithful guard the village; no new militia is raised | 灰袍教众负责守卫，停止征募新民兵 | 教士势力已达本村最强时，民兵变化的说明条目。 |
@@ -1393,19 +1394,19 @@
 | gwp_fs_armory_party | Armory of {PARTY} ({ITEMS} pieces) | {PARTY}的军械库（{ITEMS}件） | 仅开发版：领主部队库房弹窗标题。 |
 | gwp_fs_armory_empty | The stores are empty. | 库房为空。 | 仅开发版：该持有者尚无军械账本时的说明。 |
 | gwp_fs_armory_summary | These stores supply {MEN} soldiers, of whom {ARMED} have weapons. There are {FREE} reserve pieces and {SURPLUS} surplus pieces. | 这里为{MEN}名士兵保管装备，其中{ARMED}人已配有兵器；另有{FREE}件备用装备和{SURPLUS}件多余装备。 | 仅开发版：MEN为各阶灰袍兵的配装记录数，ARMED包含原配或库装主武器/远程武器。库存含已分配库装，备用与多余分开。 |
-| gwp_fs_trade_prisoners_ask | I have prisoners to hand over. | 我有些俘虏想交给你。 | GwpFireswornPlayerTrade.cs:25 |
-| gwp_fs_trade_prisoners_reply | Let me see whom you've brought. The Wardens will remember this. | 让我看看你押来了谁。灰袍会记下这份人情。 | GwpFireswornPlayerTrade.cs:25 |
-| gwp_fs_trade_troops_ask | Some of my soldiers could serve here. | 我想留些士兵下来帮你们守村。 | GwpFireswornPlayerTrade.cs:27 |
-| gwp_fs_trade_troops_reply | Show me whom you can spare. We could use some veterans on the watch. | 你能留下哪些人？村里正缺有经验的人值守。 | GwpFireswornPlayerTrade.cs:27 |
-| gwp_fs_trade_armory_ask | I can spare some gear from my armoury. | 我能从军械库匀些装备给你们。 | GwpFireswornPlayerTrade.cs:29 |
-| gwp_fs_trade_armory_reply | Show me what you can spare. We'll put it to use here. | 让我看看你能匀出哪些。这些东西在村里派得上用场。 | GwpFireswornPlayerTrade.cs:29 |
-| gwp_fs_trade_armory_prepare_ask | I'd like to sort out my company's arms and armour first. | 我想先整理一下随军的军械。 | GwpFireswornPlayerTrade.cs:31 |
-| gwp_fs_trade_armory_prepare_reply | Go ahead. Set aside the gear you can spare, then come and see me again. | 你先去清点军械。匀得出什么，再来找我。 | GwpFireswornPlayerTrade.cs:34 |
-| gwp_fs_trade_return | Was there anything else? | 还有别的事吗？ | GwpFireswornPlayerTrade.cs:40 |
-| gwp_fs_trade_prisoners_title | Hand Over Prisoners | 交付俘虏 | GwpFireswornPlayerTrade.cs:123 |
-| gwp_fs_trade_troops_title | Send Soldiers to the Village Militia | 调入村庄民兵 | GwpFireswornPlayerTrade.cs:123 |
-| gwp_fs_trade_armory_title | Supply the Village Armoury | 交付军械 | GwpFireswornPlayerTrade.cs:197 |
-| gwp_fs_trade_unavailable | This delivery can no longer be made. Speak to the priest again. | 这笔交付已无法完成，请再与祭司交谈。 | GwpFireswornPlayerTrade.cs:233 |
+| gwp_fs_trade_prisoners_ask | I have prisoners to hand over. | 我有些俘虏想交给你。 | GwpFireswornPlayerTrade.cs:26 |
+| gwp_fs_trade_prisoners_reply | Let me see whom you've brought. The Wardens will remember this. | 让我看看你押来了谁。灰袍会记下这份人情。 | GwpFireswornPlayerTrade.cs:26 |
+| gwp_fs_trade_troops_ask | Some of my soldiers could serve here. | 我想留些士兵下来帮你们守村。 | GwpFireswornPlayerTrade.cs:28 |
+| gwp_fs_trade_troops_reply | Show me whom you can spare. We could use some veterans on the watch. | 你能留下哪些人？村里正缺有经验的人值守。 | GwpFireswornPlayerTrade.cs:28 |
+| gwp_fs_trade_armory_ask | I can spare some gear from my armoury. | 我能从军械库匀些装备给你们。 | GwpFireswornPlayerTrade.cs:30 |
+| gwp_fs_trade_armory_reply | Show me what you can spare. We'll put it to use here. | 让我看看你能匀出哪些。这些东西在村里派得上用场。 | GwpFireswornPlayerTrade.cs:30 |
+| gwp_fs_trade_armory_prepare_ask | I'd like to sort out my company's arms and armour first. | 我想先整理一下随军的军械。 | GwpFireswornPlayerTrade.cs:32 |
+| gwp_fs_trade_armory_prepare_reply | Go ahead. Set aside the gear you can spare, then come and see me again. | 你先去清点军械。匀得出什么，再来找我。 | GwpFireswornPlayerTrade.cs:35 |
+| gwp_fs_trade_return | Was there anything else? | 还有别的事吗？ | GwpFireswornPlayerTrade.cs:41 |
+| gwp_fs_trade_prisoners_title | Hand Over Prisoners | 交付俘虏 | GwpFireswornPlayerTrade.cs:47, GwpFireswornPlayerTrade.cs:164 |
+| gwp_fs_trade_troops_title | Send Soldiers to the Village Militia | 调入村庄民兵 | GwpFireswornPlayerTrade.cs:49, GwpFireswornPlayerTrade.cs:164 |
+| gwp_fs_trade_armory_title | Supply the Village Armoury | 交付军械 | GwpFireswornPlayerTrade.cs:51, GwpFireswornPlayerTrade.cs:238 |
+| gwp_fs_trade_unavailable | This delivery can no longer be made. Speak to the priest again. | 这笔交付已无法完成，请再与祭司交谈。 | GwpFireswornPlayerTrade.cs:274 |
 | gwp_fs_party_pretalk | Anything else? | 还有什么事？ | 地图遇到教众队伍，买卖取消后回到主对话。 |
 | gwp_fs_party_buy | What goods are you carrying? | 你们带了什么货？ | 只有卖货队有货、总价大于零且玩家付得起时显示的购买选项。 |
 | gwp_fs_party_offer | We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful. | 有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。 | 卖货队报价，不把钱说成归某团火所有。 |

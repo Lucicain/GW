@@ -1,6 +1,6 @@
 # 玩家可见文字：独立维护入口
 
-> 当前状态：近期玩家文本已核对；搜捕搬运提示随机制删除；进城搜捕审阅稿已实装；乡路巡法称号与震慑页已实装；主文本1742条、编译常量1429条
+> 当前状态：近期玩家文本已核对；搜捕搬运提示随机制删除；进城搜捕审阅稿已实装；乡路巡法称号与震慑页已实装；主文本1743条、编译常量1430条
 > 最后验收：未建立检查点
 > 覆盖源码：`GwpTextCatalog.g.cs` `GreyWardenPolicePurity/PlayerText/strings.json` `tools/Generate-PlayerText.py` `tools/tests/test_player_text.py` `_Module/ModuleData/Languages/**`
 > 待实测：中英文菜单、对话、百科与地图提示正常显示，变量替换完整

@@ -4,6 +4,7 @@ using System.Linq;
 using GreyWardenPolicePurity.Core.Troops;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Inventory;
 using TaleWorlds.CampaignSystem.Party;
@@ -40,6 +41,36 @@ namespace GreyWardenPolicePurity
                 GwpText.Get(GwpTextCatalog.gwp_fs_trade_return), null, null);
         }
 
+        internal void RegisterVillageTrade(CampaignGameStarter starter)
+        {
+            AddVillageTrade(starter, FireswornTradeKind.Prisoners, "gwp_fs_village_prisoners",
+                GwpTextCatalog.gwp_fs_trade_prisoners_title, GameMenuOption.LeaveType.Ransom);
+            AddVillageTrade(starter, FireswornTradeKind.Troops, "gwp_fs_village_troops",
+                GwpTextCatalog.gwp_fs_trade_troops_title, GameMenuOption.LeaveType.DonateTroops);
+            AddVillageTrade(starter, FireswornTradeKind.Armory, "gwp_fs_village_arms",
+                GwpTextCatalog.gwp_fs_trade_armory_title, GameMenuOption.LeaveType.OpenStash);
+            starter.AddGameMenuOption(GwpFireswornMenus.VillageServicesMenuId, "gwp_fs_village_prepare_armory",
+                GwpTextCatalog.gwp_player_armory_manage, args =>
+                {
+                    args.optionLeaveType = GameMenuOption.LeaveType.OpenStash;
+                    return CurrentPriestTrade(FireswornTradeKind.Armory, fromConversation: false).HasValue;
+                }, _ =>
+                {
+                    if (CurrentPriestTrade(FireswornTradeKind.Armory, fromConversation: false) is { } trade)
+                        OpenPlayerArmoryLedger(trade.Party);
+                });
+        }
+
+        private void AddVillageTrade(CampaignGameStarter starter, FireswornTradeKind kind,
+            string id, string label, GameMenuOption.LeaveType leaveType)
+        {
+            starter.AddGameMenuOption(GwpFireswornMenus.VillageServicesMenuId, id, label, args =>
+            {
+                args.optionLeaveType = leaveType;
+                return CanOfferPriestTrade(kind, fromConversation: false);
+            }, _ => OpenPriestTrade(kind, fromConversation: false));
+        }
+
         private void AddPriestTrade(CampaignGameStarter starter, FireswornTradeKind kind,
             string id, string ask, string reply)
         {
@@ -47,32 +78,42 @@ namespace GreyWardenPolicePurity
             starter.AddDialogLine(id + "_reply", id, PriestTradeReturn, GwpText.Get(reply), null, () => OpenPriestTrade(kind));
         }
 
-        private bool CanOfferPriestTrade(FireswornTradeKind kind)
+        private bool CanOfferPriestTrade(FireswornTradeKind kind, bool fromConversation = true)
         {
-            if (CurrentPriestTrade(kind) is not { } trade) return false;
+            if (CurrentPriestTrade(kind, fromConversation) is not { } trade) return false;
 
             return kind == FireswornTradeKind.Armory
                 ? _armories.TryGetValue(trade.Party.StringId, out ItemRoster? ledger) && ledger.Any(IsTradeEquipment)
                 : TradeRoster(trade.Party, kind).GetTroopRoster().Any(entry => entry.Number > 0 && CanHandOver(entry.Character, kind));
         }
 
-        private (MobileParty Party, Settlement Village, Hero Priest)? CurrentPriestTrade(FireswornTradeKind kind)
+        private (MobileParty Party, Settlement Village, Hero Priest)? CurrentPriestTrade(
+            FireswornTradeKind kind, bool fromConversation = true)
         {
             MobileParty party = MobileParty.MainParty;
-            if (party?.CurrentSettlement is not { } village || Hero.OneToOneConversationHero is not { } priest ||
-                !CanCompletePriestTrade(party, village, priest, kind)) return null;
+            if (party?.CurrentSettlement is not { } village) return null;
+            Hero? priest = Hero.OneToOneConversationHero;
+            if (!fromConversation)
+            {
+                if (Settlement.CurrentSettlement != village || !_villages.TryGetValue(village.StringId, out FaithVillage? row))
+                    return null;
+                priest = FindLivingPriest(row);
+            }
+            if (priest == null || !CanCompletePriestTrade(party, village, priest, kind)) return null;
             return (party, village, priest);
         }
 
         private bool CanCompletePriestTrade(MobileParty party, Settlement village, Hero priest, FireswornTradeKind kind) =>
             party == MobileParty.MainParty && party.IsActive && party.MapEvent == null && party.CurrentSettlement == village &&
-            !Hero.MainHero.IsPrisoner && !priest.IsPrisoner && village.IsVillage && IsVillageQuiet(village) &&
-            _villages.TryGetValue(village.StringId, out FaithVillage? row) && FindLivingPriest(row) == priest &&
+            !Hero.MainHero.IsPrisoner && village.IsVillage && IsVillageQuiet(village) &&
+            !TryGetActiveRitual(village, out _, out _, out _) &&
+            _villages.TryGetValue(village.StringId, out FaithVillage? row) &&
+            PresentVillagePriest(FindLivingPriest(row), village) == priest &&
             FireswornTradeRules.IsAvailable(kind, PlayerBehaviorPool.PreciseReputation);
 
-        private void OpenPriestTrade(FireswornTradeKind kind)
+        private void OpenPriestTrade(FireswornTradeKind kind, bool fromConversation = true)
         {
-            if (CurrentPriestTrade(kind) is not { } trade) return;
+            if (CurrentPriestTrade(kind, fromConversation) is not { } trade) return;
             var (party, village, priest) = trade;
 
             if (kind == FireswornTradeKind.Armory)

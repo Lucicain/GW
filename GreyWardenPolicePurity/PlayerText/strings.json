@@ -5540,15 +5540,15 @@
       "zh": "{VILLAGE}的广场上正在执行火刑。人被绑在木架上，围观的教众齐声祷告，浓烟飘过屋顶。村中事务暂时停办，还需约{HOURS}小时。主持：{HOST}。",
       "context": "火刑期间的锁村画面；不把火写成能裁定罪名的神，也不把实际被烧者一律称为罪犯。"
     },
-    "gwp_fs_village_option": {
-      "en": "Grey Warden faithful: {HOUSEHOLDS} households ({SHARE}%), {GUARD} defenders",
-      "zh": "灰袍教众：{HOUSEHOLDS}户（{SHARE}%），守村{GUARD}人",
-      "context": "有灰袍教众记录时的村庄菜单入口。"
+    "gwp_fs_village_visit_priest": {
+      "en": "Visit {PRIEST}",
+      "zh": "拜访{PRIEST}",
+      "context": "普通村庄菜单进入当地灰袍要人子菜单的按钮及标题。"
     },
     "gwp_fs_village_info": {
-      "en": "Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens.",
-      "zh": "{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。",
-      "context": "点击村庄教众入口后的详情正文。"
+      "en": "Of the {HEARTH} households in {VILLAGE}, {HOUSEHOLDS} ({SHARE}%) follow the Grey Wardens' rule, and {GUARD} believers defend the village. They worship Heaven, hear the priest's teachings, and provide recruits for the Wardens.",
+      "zh": "{VILLAGE}共有{HEARTH}户，其中{HOUSEHOLDS}户（{SHARE}%）奉行灰袍的戒律，{GUARD}名教众负责守村。他们信奉上天，听从教士的教诲，也为灰袍提供兵员。",
+      "context": "灰袍要人子菜单的村庄概况。"
     },
     "gwp_fs_village_priest": {
       "en": "{PRIEST} preaches here and tends to the faithful. When the Wardens recruit, he introduces villagers willing to serve.",
@@ -5565,10 +5565,15 @@
       "zh": "灰袍教众",
       "context": "村庄教众详情弹窗标题。"
     },
-    "gwp_fs_village_info_ok": {
-      "en": "Close",
-      "zh": "关闭",
-      "context": "村庄教众详情弹窗关闭按钮。"
+    "gwp_fs_village_sell_goods": {
+      "en": "Sell goods",
+      "zh": "卖货",
+      "context": "从灰袍要人子菜单打开原版村庄市场的按钮。"
+    },
+    "gwp_fs_village_back": {
+      "en": "Back to the village",
+      "zh": "返回村庄",
+      "context": "从灰袍要人子菜单返回原版村庄菜单的按钮。"
     },
     "gwp_fs_ritual_leave": {
       "en": "Leave...",

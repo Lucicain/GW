@@ -474,7 +474,7 @@ namespace GreyWardenPolicePurity
         {
             RestoreArmoryBattleLoadouts();
             BindExistingLordArmories();
-            GwpFireswornMenus.Register(starter);
+            GwpFireswornMenus.Register(starter, this);
             GwpFireswornPartyDialogs.Register(starter);
             RegisterPlayerTrade(starter);
             RebuildPriestIndex();
@@ -825,6 +825,11 @@ namespace GreyWardenPolicePurity
             Hero? hero = Hero.Find(row.PriestId);
             return hero?.IsAlive == true ? hero : null;
         }
+
+        internal static Hero? PresentVillagePriest(Hero? priest, Settlement village) =>
+            priest is { IsActive: true, IsPrisoner: false } && priest.CurrentSettlement == village
+                ? priest
+                : null;
 
         private void RebuildPriestIndex()
         {
