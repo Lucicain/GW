@@ -1,9 +1,9 @@
 # 玩家声望、入会与悬赏
 
-> 当前状态：护村结算及灰袍招募使者经用户确认，专项诊断已退休。行善与交人按阶记权重，已部署待实测
-> 最后验收：`ec2eeb5`（2026-11-14 用户确认护村与招募相关反馈已解决）
+> 当前状态：用户反馈行善声望正常，已核对一场派兵的主队战果。胜局奖励栏新增灰袍声望预览
+> 最后验收：`316e184`（2026-11-16 用户反馈行善声望正常，派兵一场实际获得 4 点）
 > 覆盖源码：`PlayerBehaviorMonitor.cs` `PlayerBehaviorPool.cs` `PlayerBountyBehavior.cs` `PlayerBountyBehavior.DialogueAndNotification.cs` `PlayerBountyBehavior.Support.cs` `PlayerBountyBehavior.QuestAndNotification.cs` `PlayerBountyBehavior.Encyclopedia.cs` `GwpCaseSettlementRules.cs` `GwpCaseReceipt.cs` `GwpFieldReportLedger.cs` `GwpMapBarReputationPatch.cs` `GwpCaseTargetNameplatePatch.cs` `GwpPlayerIntervention.cs`
-> 待实测：四类现场选边后返回/不介入及帮助攻击侧的结算。个人与主队战果、混编、派兵及轮次间存读。招募使者拒绝分支、办案名牌恢复与自选案件交差
+> 待实测：亲自出战与派兵胜利的原版奖励栏和实际入账，混编及轮次间存读。现场选边回退及协助攻击侧，招募使者拒绝，办案名牌恢复与自选案件交差
 
 玩家与灰袍之间的账：声望怎么涨跌、什么时候被通缉、怎么入会退会、怎么接悬赏、
 交差时查账。委托结果判定和交差金额见 [`player-commission.md`](player-commission.md)；
@@ -30,13 +30,14 @@
 - 打败村民队或商队、劫掠得手、强征新兵或补给：按失败方战前人数，每 10 人（向上取整）−1。
   打劫无人防守的村子，按民兵和驻军人数算；一个人没有就不扣。
 - 强征新兵、强征补给另各记一条罪行，−1。
-- 打败灰袍或纠察队：按失败方灰袍执法队的死亡、受伤及溃逃人数合计，每 10 人（向上取整）−1，不是只数阵亡。强制介入时帮罪犯打灰袍并获胜同样按这个合计扣分，通缉时记「妨碍执法」。（依据：CountPoliceCasualties、TryApplyPoliceBattlePenalty及TryResolvePendingPoliceCriminalReputation源码复核2026-10-21）
+- 打败灰袍或纠察队：按失败方灰袍执法队的死亡、受伤及溃逃人数合计，每 10 人（向上取整）−1，不是只数阵亡。强制介入时帮罪犯打灰袍并获胜同样按这个合计扣分，通缉时记「妨碍执法」。（依据：`CountPoliceCasualties`、`DescribeBattleStanding` 和 `ApplyPoliceBattlePenalty` 源码复核 2026-11-16）
 - 已在通缉状态时，以上罪行都会追加到 `PLAYER_WANTED` 案。
 
 ### 加分
 
 - 交普通俘虏、交普通兵和行善战斗共用兵员权重。一至六阶分别记 1、2、3、4、5、6，更低或更高阶用相应端点。各途径单独积攒，满 20 权重点入账 1 点声望，余数随档保留。读旧档时，已累计的余数按原本距下一点的进度折算，声望余额继续沿用原存值。（依据：用户裁定 2026-11-16；余数接续为本轮实施）
 - 玩家在胜方时，剿匪、救村民队或商队、护村、打还开着案的罪犯部队或协助灰袍抓人，按击倒或击杀的敌人阶级结算。玩家亲手击败按全权重，主队成员击败按四分之一，按[原版部队归属](../vanilla/village-raids.md#个人击倒与地图战斗)核对，包含原版派兵结算。盟军、同势力其他部队和借用主队标识的场景临时援军均不入账。个人和主队战果合计，满 20 权重点入账 1 点，四分之一的零头跨战斗、存读档接续。协助灰袍先结算并短路普通在案罪犯分支。本场两类权重、玩家选边和战前人数随实际参战侧存档，结算取同一地图事件中胜出一侧的数据。（依据：用户裁定 2026-11-16，原版统计与战斗结算源码核对）
+- [原版战报](../vanilla/village-raids.md#战报与地图事件结案)的奖励栏显示可预见的灰袍声望收入。预览和事件结案共用行善资格及声望报价。承办灰袍可能在同场先销卷的案件，按结案时仍有效的资格入账。余额与余数在 `MapEventEnded` 更新。（依据：用户反馈、事件注册顺序及源码核对 2026-11-16）
 - 赢得[灰袍领主切磋](sparring.md#声望与冷却)加 1 点。灰袍兵升阶用声望及兵员额度见[兵源与声望](warden-recruitment.md#玩家兵源与声望方案)。（依据：用户裁定 2026-11-14）
 - [向祭司交付](firesworn-economy.md#玩家向祭司交付)按兵员权重或军械估价加分。[野外结案](field-arrest.md#结案settle)的现场声望与后续复命的办案费分别结算。（依据：用户裁定 2026-11-15、2026-11-16；野外结案源码核对）
 

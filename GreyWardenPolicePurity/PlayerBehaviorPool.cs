@@ -76,21 +76,22 @@ namespace GreyWardenPolicePurity
                 "CUSTOM_REPUTATION_RESET",
                 "before=" + before + "; requested=" + value + "; after=" + Reputation);
         }
-        internal static bool TryAwardGoodDeedReputation((int Personal, int MainParty) weights)
+        private static (int ReputationUnits, int Remainder) QuoteGoodDeedReputation((int Personal, int MainParty) weights)
         {
             int weightUnits = WardenReputationRules.BattleRewardWeightUnits(weights.Personal, weights.MainParty);
-            if (weightUnits <= 0) return false;
+            return weightUnits > 0
+                ? WardenReputationRules.QuoteRewardProgress(_goodDeedRewardProgressUnits, weightUnits,
+                    WardenReputationRules.BattleWeightUnitsPerPoint, RemainingReputationUnits)
+                : (0, _goodDeedRewardProgressUnits);
+        }
 
-            int previousProgress = _goodDeedRewardProgressUnits;
-            var award = WardenReputationRules.QuoteRewardProgress(previousProgress, weightUnits,
-                WardenReputationRules.BattleWeightUnitsPerPoint, RemainingReputationUnits);
+        internal static int PreviewGoodDeedReputation((int Personal, int MainParty) weights) =>
+            QuoteGoodDeedReputation(weights).ReputationUnits;
+
+        internal static bool TryAwardGoodDeedReputation((int Personal, int MainParty) weights)
+        {
+            var award = QuoteGoodDeedReputation(weights);
             _goodDeedRewardProgressUnits = award.Remainder;
-#if GWP_DIAGNOSTICS
-            GwpAiDiagnostics.WritePlayerJusticeState("GOOD_DEED_WEIGHT_SETTLED",
-                "personalWeight=" + weights.Personal + "; mainPartyWeight=" + weights.MainParty +
-                "; weightUnits=" + weightUnits + "; previousProgressUnits=" + previousProgress +
-                "; gain=" + FormatReputationUnits(award.ReputationUnits) + "; remainderUnits=" + award.Remainder);
-#endif
             if (award.ReputationUnits <= 0) return false;
 
             ChangeReputationUnits(award.ReputationUnits);

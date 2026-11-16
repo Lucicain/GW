@@ -46,6 +46,10 @@
 
 `MapEvent.PlayerMapEvent` 指向玩家主队当前的地图事件。战斗任务的个体移除和地图事件最终结算是两个时机。两轮间回地图可以保存，继续战斗时用前节所述的同一个 `MapEvent`。（依据：v1.4.8、v1.5.7 的 `StatisticsCampaignBehavior` 与 `MapEvent` 托管源码）
 
+### 战报与地图事件结案
+
+战役的现场战斗和派兵共用 `SPScoreboardVM`。`BattleResultsReady` 触发 `OnBattleOver`，后者按当前 `PlayerEncounter.Battle` 的胜方选取奖励。`GetBattleRewards` 每次先清空 `BattleResults`，再填入声望、影响力、士气等结果，供 `SPScoreboard.xml` 的奖励栏显示。奖励栏在玩家离开战报前已打开。`MapEvent.FinalizeEvent` 进入 `WaitingRemoval` 后派发 `MapEventEnded`，随后清理参战侧。（依据：v1.4.8、v1.5.7 的 `SPScoreboardVM`、`PlayerEncounter`、`MapEvent` 与原版 Gauntlet 布局）
+
 ## 容易想错的地方
 
 - 原版烧村分里**没有**仁慈等性格项。常说的「关系影响烧村」是第 4 步的关系项，而且是和**村主家族**的关系，不是和村民或别的家族。

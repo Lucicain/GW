@@ -4,6 +4,7 @@ using System.Linq;
 using GreyWardenPolicePurity.Core.Troops;
 using HarmonyLib;
 using SandBox.CampaignBehaviors;
+using SandBox.ViewModelCollection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
@@ -14,6 +15,7 @@ using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
@@ -227,6 +229,32 @@ namespace GreyWardenPolicePurity
 
         #region 行善监听
 
+        private enum BattleStandingReason
+        {
+            None,
+            AssistedWardens,
+            ObstructedWardens,
+            FoughtWardens,
+            DefeatedOffender,
+            DefendedVillage,
+            SavedCaravan,
+            SavedVillagers,
+            DefeatedBandits
+        }
+
+        internal int PreviewBattleReputation(MapEvent battle)
+        {
+            MapEventSide? winner = battle.Winner;
+            if (winner == null || winner != _goodDeedBattleSide || !IncludesMainParty(winner))
+                return 0;
+
+            int policeSupport = _pendingBattleSide == winner ? _pendingPoliceCrimeSupport : 0;
+            var (reason, _) = DescribeBattleStanding(winner, DefendedVillage(winner) != null, policeSupport, preview: true);
+            return IsGoodDeed(reason)
+                ? PlayerBehaviorPool.PreviewGoodDeedReputation((_goodDeedPersonalWeight, _goodDeedMainPartyWeight))
+                : 0;
+        }
+
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
@@ -240,57 +268,24 @@ namespace GreyWardenPolicePurity
                 _villageDefenseSide = null;
                 _defendedVillage = null;
             }
-            if (winner == null || !winner.Parties.Any(p => p.Party?.MobileParty?.IsMainParty == true))
+            if (winner == null || !IncludesMainParty(winner))
                 return;
 
-            if (TryResolvePendingPoliceCriminalReputation(mapEvent, weights, policeSupport))
-                return;
-
-            if (TryApplyPoliceBattlePenalty(mapEvent))
-                return;
-
-            // 在案罪犯、剿匪和救援共用战果权重，协助灰袍的战果已在上面结算。
-            if (defendedVillage == null && TryResolveCaseCriminalReputation(mapEvent, weights))
-                return;
-
-            bool enemyIsBandit = false;
-            bool defenderIsVillager = false;
-            bool defenderIsCaravan = false;
-
-            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
-                ? mapEvent.DefenderSide : mapEvent.AttackerSide;
-
-            foreach (var p in loser.Parties)
+            MapEventSide loser = winner.OtherSide;
+            var (reason, policeCasualties) = DescribeBattleStanding(winner, defendedVillage != null, policeSupport);
+            if (reason is BattleStandingReason.ObstructedWardens or BattleStandingReason.FoughtWardens)
             {
-                if (p.Party?.IsMobile != true) continue;
-                if (p.Party.MobileParty.ActualClan?.IsBanditFaction == true)
-                    enemyIsBandit = true;
+                ApplyPoliceBattlePenalty(mapEvent, loser, policeCasualties, reason == BattleStandingReason.ObstructedWardens);
+                return;
             }
 
-            foreach (var p in mapEvent.Winner.Parties)
-            {
-                if (p.Party?.IsMobile != true) continue;
-                var mp = p.Party.MobileParty;
-                if (mp.PartyComponent is VillagerPartyComponent) defenderIsVillager = true;
-                if (mp.PartyComponent is CaravanPartyComponent) defenderIsCaravan = true;
-            }
-
-            bool anyGoodDeed = enemyIsBandit || defenderIsVillager || defenderIsCaravan || defendedVillage != null;
-            if (anyGoodDeed && PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
-            {
-                string deedType = defendedVillage != null ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_014)
-                                : defenderIsCaravan     ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_015)
-                                : defenderIsVillager    ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_016)
-                                : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_017);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_018, "VAR_1", deedType),
-                    Colors.Green));
-            }
+            if (IsGoodDeed(reason) && PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
+                ShowGoodDeedNotification(reason);
+            if (reason is BattleStandingReason.AssistedWardens or BattleStandingReason.DefeatedOffender)
+                return;
 
             // ── 声望扣除：按失败方战前人数向上取整（1~10人=-1，无人死伤=0）────────
             // 适用场景：玩家作为攻击方击败村民/商队，或成功劫掠村庄
-            // 注：loserIsVillager/loserIsCaravan 与上方 defenderIsVillager/defenderIsCaravan 互斥
-            //     （村民/商队在 loser 侧 = 玩家攻打他们；在 winner 侧 = 玩家保护他们）
             bool loserIsVillager = false;
             bool loserIsCaravan  = false;
             foreach (var p in loser.Parties)
@@ -452,126 +447,105 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private bool TryResolvePendingPoliceCriminalReputation(MapEvent mapEvent,
-            (int Personal, int MainParty) weights, int policeSupport)
+        private static bool IncludesMainParty(MapEventSide side) =>
+            side.Parties.Any(p => p.Party?.MobileParty?.IsMainParty == true);
+
+        private static bool IsGoodDeed(BattleStandingReason reason) =>
+            reason is not (BattleStandingReason.None or BattleStandingReason.ObstructedWardens or BattleStandingReason.FoughtWardens);
+
+        private static (BattleStandingReason Reason, int PoliceCasualties) DescribeBattleStanding(
+            MapEventSide winner, bool defendedVillage, int policeSupport, bool preview = false)
         {
-            if (policeSupport == 0)
-                return false;
-
             if (policeSupport > 0)
-            {
-                if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
-                    return true;
+                return (BattleStandingReason.AssistedWardens, 0);
 
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_043),
-                    Colors.Green));
+            MapEvent battle = winner.MapEvent;
+            if (policeSupport < 0 && TryGetPoliceCriminalEncounter(battle, out BattleSideEnum policeSide, out _))
+                return (BattleStandingReason.ObstructedWardens, CountPoliceCasualties(battle.GetMapEventSide(policeSide)));
+
+            MapEventSide loser = winner.OtherSide;
+            int policeCasualties = CountPoliceCasualties(loser);
+            if (policeCasualties > 0)
+                return (BattleStandingReason.FoughtWardens, policeCasualties);
+            if (defendedVillage)
+                return (BattleStandingReason.DefendedVillage, 0);
+            if (SideContainsOpenCaseCriminal(loser, preview ? winner : null))
+                return (BattleStandingReason.DefeatedOffender, 0);
+            if (SideContainsPartyType(winner, static p => p.PartyComponent is CaravanPartyComponent))
+                return (BattleStandingReason.SavedCaravan, 0);
+            if (SideContainsPartyType(winner, static p => p.PartyComponent is VillagerPartyComponent))
+                return (BattleStandingReason.SavedVillagers, 0);
+            if (SideContainsPartyType(loser, static p => p.ActualClan?.IsBanditFaction == true))
+                return (BattleStandingReason.DefeatedBandits, 0);
+            return default;
+        }
+
+        private static void ShowGoodDeedNotification(BattleStandingReason reason)
+        {
+            string message = reason switch
+            {
+                BattleStandingReason.AssistedWardens => GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_043),
+                BattleStandingReason.DefeatedOffender => GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_054),
+                _ => GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_018, "VAR_1", GwpText.Get(reason switch
+                {
+                    BattleStandingReason.DefendedVillage => GwpTextCatalog.gwp_playerbehaviormonitor_014,
+                    BattleStandingReason.SavedCaravan => GwpTextCatalog.gwp_playerbehaviormonitor_015,
+                    BattleStandingReason.SavedVillagers => GwpTextCatalog.gwp_playerbehaviormonitor_016,
+                    _ => GwpTextCatalog.gwp_playerbehaviormonitor_017
+                }))
+            };
+            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Green));
+        }
+
+        private static void ApplyPoliceBattlePenalty(MapEvent mapEvent, MapEventSide loser, int policeCasualties,
+            bool obstructedWardens)
+        {
+            int repLoss = (policeCasualties + 9) / 10;
+            if (repLoss <= 0) return;
+            PlayerBehaviorPool.ChangeReputation(-repLoss);
+
+            string message;
+            if (obstructedWardens)
+            {
+                if (PlayerBehaviorPool.IsWanted)
+                    CrimePool.TryAddPlayerCrime(
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_044), mapEvent.Position.ToVec2(),
+                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_045));
+                message = GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_046, "VAR_1", policeCasualties);
             }
             else
             {
-                if (!TryGetPoliceCriminalEncounter(mapEvent, out BattleSideEnum policeSide, out _))
-                    return false;
-
-                MapEventSide policeEventSide = policeSide == BattleSideEnum.Attacker
-                    ? mapEvent.AttackerSide
-                    : mapEvent.DefenderSide;
-                int policeCasualties = CountPoliceCasualties(policeEventSide);
-                int repLoss = (policeCasualties + 9) / 10;
-                if (repLoss <= 0)
-                    return true;
-
-                PlayerBehaviorPool.ChangeReputation(-repLoss);
-
-                if (PlayerBehaviorPool.IsWanted)
-                {
-                    CrimePool.TryAddPlayerCrime(
-                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_044),
-                        mapEvent.Position.ToVec2(),
-                        GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_045));
-                }
-
-                InformationManager.DisplayMessage(new InformationMessage(
-                    GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_046, "VAR_1", policeCasualties),
-                    Colors.Red));
+                string targetName = GwpText.Get(SideContainsPartyType(loser, static p => GwpCommon.IsPatrolParty(p))
+                    ? GwpTextCatalog.gwp_playerbehaviormonitor_047 : GwpTextCatalog.gwp_playerbehaviormonitor_048);
+                message = GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_049,
+                    "VAR_1", targetName, "VAR_2", policeCasualties);
             }
 
-            return true;
+            InformationManager.DisplayMessage(new InformationMessage(message, Colors.Red));
         }
 
-        private bool TryApplyPoliceBattlePenalty(MapEvent mapEvent)
-        {
-            if (mapEvent == null || !mapEvent.HasWinner)
-                return false;
-
-            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
-                ? mapEvent.DefenderSide
-                : mapEvent.AttackerSide;
-            if (loser == null)
-                return false;
-
-            int policeCasualties = CountPoliceCasualties(loser);
-            if (policeCasualties <= 0)
-                return false;
-
-            bool loserHadPatrol = SideContainsPartyType(loser, static p => GwpCommon.IsPatrolParty(p));
-            int repLoss = (policeCasualties + 9) / 10;
-            if (repLoss <= 0)
-                return false;
-
-            PlayerBehaviorPool.ChangeReputation(-repLoss);
-
-            string targetName = loserHadPatrol ? GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_047) : GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_048);
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_049, "VAR_1", targetName, "VAR_2", policeCasualties),
-                Colors.Red));
-            return true;
-        }
-
-        /// <summary>
-        /// 玩家获胜且失败方包含仍有开放案卷的罪犯部队时，按个人和主队战果累计灰袍声望。
-        /// 命中强制介入协助分支时，由 TryResolvePendingPoliceCriminalReputation
-        /// 先结算并返回。
-        /// </summary>
-        private bool TryResolveCaseCriminalReputation(MapEvent mapEvent, (int Personal, int MainParty) weights)
-        {
-            if (mapEvent == null || !mapEvent.HasWinner)
-                return false;
-
-            MapEventSide loser = mapEvent.Winner == mapEvent.AttackerSide
-                ? mapEvent.DefenderSide
-                : mapEvent.AttackerSide;
-            if (loser == null || !SideContainsOpenCaseCriminal(loser))
-                return false;
-
-            if (!PlayerBehaviorPool.TryAwardGoodDeedReputation(weights))
-                return true;
-
-            InformationManager.DisplayMessage(new InformationMessage(
-                GwpText.Get(GwpTextCatalog.gwp_playerbehaviormonitor_054),
-                Colors.Green));
-            return true;
-        }
-
-        private static bool SideContainsOpenCaseCriminal(MapEventSide side)
+        private static bool SideContainsOpenCaseCriminal(MapEventSide side, MapEventSide? previewWinner)
         {
             foreach (var p in side.Parties)
             {
                 MobileParty? party = p?.Party?.MobileParty;
                 if (party == null) continue;
 
-                if (IsOpenCaseCriminal(party) ||
-                    IsOpenCaseCriminal(party.AttachedTo) ||
-                    IsOpenCaseCriminal(party.Army?.LeaderParty))
+                if (IsOpenCaseCriminal(party, previewWinner) ||
+                    IsOpenCaseCriminal(party.AttachedTo, previewWinner) ||
+                    IsOpenCaseCriminal(party.Army?.LeaderParty, previewWinner))
                     return true;
             }
             return false;
         }
 
-        private static bool IsOpenCaseCriminal(MobileParty? party)
+        private static bool IsOpenCaseCriminal(MobileParty? party, MapEventSide? previewWinner = null)
         {
             if (party == null || party.IsMainParty)
                 return false;
-            return CrimePool.GetByOffenderId(party.StringId) != null;
+            CrimeRecord? crime = CrimePool.GetByOffenderId(party.StringId);
+            return crime != null && (previewWinner == null ||
+                !PoliceEnforcementBehavior.MayCloseCaseAtBattleEnd(crime, previewWinner));
         }
 
         private static bool TryGetPoliceCriminalEncounter(MapEvent battle, out BattleSideEnum policeSide, out MobileParty? criminal)
@@ -751,6 +725,22 @@ namespace GreyWardenPolicePurity
                 return;
 
             Campaign.Current?.GetCampaignBehavior<PlayerBehaviorMonitor>()?.RecordGoodDeedDefeat(side, troop.Tier, personal);
+        }
+    }
+
+    [HarmonyPatch(typeof(SPScoreboardVM), "GetBattleRewards", typeof(bool))]
+    internal static class GwpBattleReputationPreviewPatch
+    {
+        private static void Postfix(SPScoreboardVM __instance, bool playerVictory)
+        {
+            if (!playerVictory || PlayerEncounter.Battle is not { } battle) return;
+            int rewardUnits = Campaign.Current?.GetCampaignBehavior<PlayerBehaviorMonitor>()
+                ?.PreviewBattleReputation(battle) ?? 0;
+            if (rewardUnits <= 0) return;
+
+            string text = GwpText.Get(GwpTextCatalog.gwp_party_reputation_gain,
+                "AMOUNT", PlayerBehaviorPool.FormatReputationUnits(rewardUnits));
+            __instance.BattleResults.Add(new BattleResultVM(text, null));
         }
     }
 }

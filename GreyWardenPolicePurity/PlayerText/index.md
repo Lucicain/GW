@@ -245,53 +245,53 @@
 | gwp_playerbehaviormonitor_002 | — | 攻击村民 | 未检出直接引用；保留 |
 | gwp_playerbehaviormonitor_003 | — | 商队 | 未检出直接引用；保留 |
 | gwp_playerbehaviormonitor_004 | — | 攻击商队 | 未检出直接引用；保留 |
-| gwp_playerbehaviormonitor_005 | Raid village | 劫掠村庄 | PlayerBehaviorMonitor.cs:177 |
-| gwp_playerbehaviormonitor_006 | Unknown village | 未知村庄 | PlayerBehaviorMonitor.cs:177 |
-| gwp_playerbehaviormonitor_007 | The Grey Wardens record your raid on {VAR_1}. | 灰袍记下了你劫掠{VAR_1}的罪行。 | PlayerBehaviorMonitor.cs:180 |
+| gwp_playerbehaviormonitor_005 | Raid village | 劫掠村庄 | PlayerBehaviorMonitor.cs:179 |
+| gwp_playerbehaviormonitor_006 | Unknown village | 未知村庄 | PlayerBehaviorMonitor.cs:179 |
+| gwp_playerbehaviormonitor_007 | The Grey Wardens record your raid on {VAR_1}. | 灰袍记下了你劫掠{VAR_1}的罪行。 | PlayerBehaviorMonitor.cs:182 |
 | gwp_playerbehaviormonitor_008 | — | 劫掠村庄 | 未检出直接引用；保留 |
 | gwp_playerbehaviormonitor_009 | — | 未知村庄 | 未检出直接引用；保留 |
-| gwp_playerbehaviormonitor_010 | Forced Recruitment | 强迫募兵 | PlayerBehaviorMonitor.cs:202 |
-| gwp_playerbehaviormonitor_011 | Unknown Village | 未知村庄 | PlayerBehaviorMonitor.cs:203 |
-| gwp_playerbehaviormonitor_012 | Forced Requisition of Supplies | 强征给养 | PlayerBehaviorMonitor.cs:222 |
-| gwp_playerbehaviormonitor_013 | Unknown Village | 未知村庄 | PlayerBehaviorMonitor.cs:223 |
-| gwp_playerbehaviormonitor_014 | Protect the Village from Plunder | 保护村庄免遭劫掠 | PlayerBehaviorMonitor.cs:281 |
-| gwp_playerbehaviormonitor_015 | Rescue the Caravan | 解救商队 | PlayerBehaviorMonitor.cs:282 |
-| gwp_playerbehaviormonitor_016 | Rescue the Villagers | 解救村民 | PlayerBehaviorMonitor.cs:283 |
-| gwp_playerbehaviormonitor_017 | Defeat the robbers | 击败劫匪 | PlayerBehaviorMonitor.cs:284 |
-| gwp_playerbehaviormonitor_018 | The Grey Wardens note your good deed: {VAR_1}. | 灰袍记下了你的义举：{VAR_1}。 | PlayerBehaviorMonitor.cs:286 |
-| gwp_playerbehaviormonitor_019 | Raid the village | 劫掠村庄 | PlayerBehaviorMonitor.cs:331 |
-| gwp_playerbehaviormonitor_020 | Force recruits | 强迫募兵 | PlayerBehaviorMonitor.cs:332 |
-| gwp_playerbehaviormonitor_021 | Force supplies | 强征给养 | PlayerBehaviorMonitor.cs:333 |
-| gwp_playerbehaviormonitor_022 | Raid the caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:334 |
-| gwp_playerbehaviormonitor_023 | Kill the villagers | 杀害村民 | PlayerBehaviorMonitor.cs:335 |
-| gwp_playerbehaviormonitor_024 | Raid a village | 劫掠村庄 | PlayerBehaviorMonitor.cs:339 |
-| gwp_playerbehaviormonitor_025 | Force recruitment | 强迫募兵 | PlayerBehaviorMonitor.cs:340 |
-| gwp_playerbehaviormonitor_026 | Forced supplies | 强征给养 | PlayerBehaviorMonitor.cs:341 |
-| gwp_playerbehaviormonitor_027 | Raid a caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:342 |
-| gwp_playerbehaviormonitor_028 | Kill villagers | 杀害村民 | PlayerBehaviorMonitor.cs:343 |
-| gwp_playerbehaviormonitor_029 | The Grey Wardens record your crime: {VAR_1}. | 灰袍记下了你的罪行：{VAR_1}。 | PlayerBehaviorMonitor.cs:345 |
-| gwp_playerbehaviormonitor_030 | Village | 村庄 | PlayerBehaviorMonitor.cs:423 |
-| gwp_playerbehaviormonitor_031 | Caravan | 商队 | PlayerBehaviorMonitor.cs:424 |
-| gwp_playerbehaviormonitor_032 | Villager | 村民 | PlayerBehaviorMonitor.cs:425 |
-| gwp_playerbehaviormonitor_033 | Participate in raiding village | 参与劫掠村庄 | PlayerBehaviorMonitor.cs:426 |
-| gwp_playerbehaviormonitor_034 | Raid Caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:427 |
-| gwp_playerbehaviormonitor_035 | Attack villagers | 攻击村民 | PlayerBehaviorMonitor.cs:428 |
-| gwp_playerbehaviormonitor_036 | Join the defenders and protect {VAR_1}. | 加入防守方，保护{VAR_1}。 | PlayerBehaviorMonitor.cs:430 |
-| gwp_playerbehaviormonitor_037 | joins the attacker, {VAR_1}. | 加入攻击方，{VAR_1}。 | PlayerBehaviorMonitor.cs:431 |
-| gwp_playerbehaviormonitor_038 | Prisoner | 犯人 | PlayerBehaviorMonitor.cs:443 |
-| gwp_playerbehaviormonitor_039 | Join the Grey Wardens and help hunt down criminals. | 加入灰袍守卫一方，协助缉拿罪犯。 | PlayerBehaviorMonitor.cs:447 |
-| gwp_playerbehaviormonitor_040 | Join {VAR_1} against the Grey Wardens. | 加入 {VAR_1} 一方，对抗灰袍守卫。 | PlayerBehaviorMonitor.cs:448 |
-| gwp_playerbehaviormonitor_041 | Join {VAR_1} against the Grey Wardens. | 加入 {VAR_1} 一方，对抗灰袍守卫。 | PlayerBehaviorMonitor.cs:450 |
-| gwp_playerbehaviormonitor_042 | Join the Grey Wardens and help catch criminals. | 加入灰袍守卫一方，协助缉拿罪犯。 | PlayerBehaviorMonitor.cs:451 |
-| gwp_playerbehaviormonitor_043 | The Grey Wardens note that you helped bring an outlaw to justice. | 灰袍记下了你协助缉拿罪犯的义举。 | PlayerBehaviorMonitor.cs:467 |
-| gwp_playerbehaviormonitor_044 | Obstructed enforcement | 妨碍执法 | PlayerBehaviorMonitor.cs:488 |
-| gwp_playerbehaviormonitor_045 | Helped criminals against the Grey Wardens | 帮助罪犯对抗灰袍守卫 | PlayerBehaviorMonitor.cs:490 |
-| gwp_playerbehaviormonitor_046 | The Grey Wardens record that you obstructed them. | 灰袍记下了你妨碍执法的罪行。 | PlayerBehaviorMonitor.cs:494 |
-| gwp_playerbehaviormonitor_047 | Picket | 纠察队 | PlayerBehaviorMonitor.cs:523 |
-| gwp_playerbehaviormonitor_048 | Grey Wardens | 灰袍守卫 | PlayerBehaviorMonitor.cs:523 |
-| gwp_playerbehaviormonitor_049 | The Grey Wardens record your attack on {VAR_1}. | 灰袍记下了你袭击{VAR_1}的罪行。 | PlayerBehaviorMonitor.cs:525 |
+| gwp_playerbehaviormonitor_010 | Forced Recruitment | 强迫募兵 | PlayerBehaviorMonitor.cs:204 |
+| gwp_playerbehaviormonitor_011 | Unknown Village | 未知村庄 | PlayerBehaviorMonitor.cs:205 |
+| gwp_playerbehaviormonitor_012 | Forced Requisition of Supplies | 强征给养 | PlayerBehaviorMonitor.cs:224 |
+| gwp_playerbehaviormonitor_013 | Unknown Village | 未知村庄 | PlayerBehaviorMonitor.cs:225 |
+| gwp_playerbehaviormonitor_014 | Protect the Village from Plunder | 保护村庄免遭劫掠 | PlayerBehaviorMonitor.cs:491 |
+| gwp_playerbehaviormonitor_015 | Rescue the Caravan | 解救商队 | PlayerBehaviorMonitor.cs:492 |
+| gwp_playerbehaviormonitor_016 | Rescue the Villagers | 解救村民 | PlayerBehaviorMonitor.cs:493 |
+| gwp_playerbehaviormonitor_017 | Defeat the robbers | 击败劫匪 | PlayerBehaviorMonitor.cs:494 |
+| gwp_playerbehaviormonitor_018 | The Grey Wardens note your good deed: {VAR_1}. | 灰袍记下了你的义举：{VAR_1}。 | PlayerBehaviorMonitor.cs:489 |
+| gwp_playerbehaviormonitor_019 | Raid the village | 劫掠村庄 | PlayerBehaviorMonitor.cs:326 |
+| gwp_playerbehaviormonitor_020 | Force recruits | 强迫募兵 | PlayerBehaviorMonitor.cs:327 |
+| gwp_playerbehaviormonitor_021 | Force supplies | 强征给养 | PlayerBehaviorMonitor.cs:328 |
+| gwp_playerbehaviormonitor_022 | Raid the caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:329 |
+| gwp_playerbehaviormonitor_023 | Kill the villagers | 杀害村民 | PlayerBehaviorMonitor.cs:330 |
+| gwp_playerbehaviormonitor_024 | Raid a village | 劫掠村庄 | PlayerBehaviorMonitor.cs:334 |
+| gwp_playerbehaviormonitor_025 | Force recruitment | 强迫募兵 | PlayerBehaviorMonitor.cs:335 |
+| gwp_playerbehaviormonitor_026 | Forced supplies | 强征给养 | PlayerBehaviorMonitor.cs:336 |
+| gwp_playerbehaviormonitor_027 | Raid a caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:337 |
+| gwp_playerbehaviormonitor_028 | Kill villagers | 杀害村民 | PlayerBehaviorMonitor.cs:338 |
+| gwp_playerbehaviormonitor_029 | The Grey Wardens record your crime: {VAR_1}. | 灰袍记下了你的罪行：{VAR_1}。 | PlayerBehaviorMonitor.cs:340 |
+| gwp_playerbehaviormonitor_030 | Village | 村庄 | PlayerBehaviorMonitor.cs:418 |
+| gwp_playerbehaviormonitor_031 | Caravan | 商队 | PlayerBehaviorMonitor.cs:419 |
+| gwp_playerbehaviormonitor_032 | Villager | 村民 | PlayerBehaviorMonitor.cs:420 |
+| gwp_playerbehaviormonitor_033 | Participate in raiding village | 参与劫掠村庄 | PlayerBehaviorMonitor.cs:421 |
+| gwp_playerbehaviormonitor_034 | Raid Caravan | 劫掠商队 | PlayerBehaviorMonitor.cs:422 |
+| gwp_playerbehaviormonitor_035 | Attack villagers | 攻击村民 | PlayerBehaviorMonitor.cs:423 |
+| gwp_playerbehaviormonitor_036 | Join the defenders and protect {VAR_1}. | 加入防守方，保护{VAR_1}。 | PlayerBehaviorMonitor.cs:425 |
+| gwp_playerbehaviormonitor_037 | joins the attacker, {VAR_1}. | 加入攻击方，{VAR_1}。 | PlayerBehaviorMonitor.cs:426 |
+| gwp_playerbehaviormonitor_038 | Prisoner | 犯人 | PlayerBehaviorMonitor.cs:438 |
+| gwp_playerbehaviormonitor_039 | Join the Grey Wardens and help hunt down criminals. | 加入灰袍守卫一方，协助缉拿罪犯。 | PlayerBehaviorMonitor.cs:442 |
+| gwp_playerbehaviormonitor_040 | Join {VAR_1} against the Grey Wardens. | 加入 {VAR_1} 一方，对抗灰袍守卫。 | PlayerBehaviorMonitor.cs:443 |
+| gwp_playerbehaviormonitor_041 | Join {VAR_1} against the Grey Wardens. | 加入 {VAR_1} 一方，对抗灰袍守卫。 | PlayerBehaviorMonitor.cs:445 |
+| gwp_playerbehaviormonitor_042 | Join the Grey Wardens and help catch criminals. | 加入灰袍守卫一方，协助缉拿罪犯。 | PlayerBehaviorMonitor.cs:446 |
+| gwp_playerbehaviormonitor_043 | The Grey Wardens note that you helped bring an outlaw to justice. | 灰袍记下了你协助缉拿罪犯的义举。 | PlayerBehaviorMonitor.cs:487 |
+| gwp_playerbehaviormonitor_044 | Obstructed enforcement | 妨碍执法 | PlayerBehaviorMonitor.cs:512 |
+| gwp_playerbehaviormonitor_045 | Helped criminals against the Grey Wardens | 帮助罪犯对抗灰袍守卫 | PlayerBehaviorMonitor.cs:513 |
+| gwp_playerbehaviormonitor_046 | The Grey Wardens record that you obstructed them. | 灰袍记下了你妨碍执法的罪行。 | PlayerBehaviorMonitor.cs:514 |
+| gwp_playerbehaviormonitor_047 | Picket | 纠察队 | PlayerBehaviorMonitor.cs:519 |
+| gwp_playerbehaviormonitor_048 | Grey Wardens | 灰袍守卫 | PlayerBehaviorMonitor.cs:519 |
+| gwp_playerbehaviormonitor_049 | The Grey Wardens record your attack on {VAR_1}. | 灰袍记下了你袭击{VAR_1}的罪行。 | PlayerBehaviorMonitor.cs:520 |
 | gwp_playerbehaviormonitor_053 | — | 击倒在案罪犯部队 | 未检出直接引用；保留 |
-| gwp_playerbehaviormonitor_054 | The Grey Wardens note that you broke a wanted outlaw's band. | 灰袍记下了你击溃在逃罪犯的义举。 | PlayerBehaviorMonitor.cs:550 |
+| gwp_playerbehaviormonitor_054 | The Grey Wardens note that you broke a wanted outlaw's band. | 灰袍记下了你击溃在逃罪犯的义举。 | PlayerBehaviorMonitor.cs:488 |
 | gwp_playerbountybehavior_001 | Grey Warden herald | 灰袍招募使者 | PlayerBountyBehavior.cs:419 |
 | gwp_playerbountybehavior_002 | A Grey Warden envoy is coming from {VAR_1} to see you. | 灰袍的招募使者正从{VAR_1}前来见你。 | PlayerBountyBehavior.cs:447 |
 | gwp_playerbountybehavior_003 | The Warden escort is gone, but the bounty still stands. | 随行的灰袍已离开，悬赏仍然有效。 | PlayerBountyBehavior.cs:587 |
@@ -429,8 +429,8 @@
 | gwp_policeenforcementbehavior_006 | Escort fine unpaid | 押送罚款未缴清 | PoliceEnforcementBehavior.cs:451 |
 | gwp_policeenforcementbehavior_007 | Fortress | 堡垒 | PoliceEnforcementBehavior.cs:455 |
 | gwp_policeenforcementbehavior_008 | You are brought to {VAR_1} and released after paying {VAR_3} denars. | 你被押送到{VAR_1}，缴纳罚金 {VAR_3} 第纳尔后获释。 | PoliceEnforcementBehavior.cs:457 |
-| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1269 |
-| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1271 |
+| gwp_policeenforcementbehavior_009 | FORT | 堡垒 | PoliceEnforcementBehavior.cs:1280 |
+| gwp_policeenforcementbehavior_010 | You are defeated by {VAR_1} and taken to {VAR_2}. | 你被{VAR_1}击败，正被押往{VAR_2}。 | PoliceEnforcementBehavior.cs:1282 |
 | gwp_policeenforcementbehavior_atonementquest_001 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:93 |
 | gwp_policeenforcementbehavior_atonementquest_002 | Unknown Target | 未知目标 | PoliceEnforcementBehavior.AtonementQuest.cs:99 |
 | gwp_policeenforcementbehavior_atonementquest_003 | the Grey Wardens Atonement: The Hunt {VAR_1} | 灰袍赎罪令：追捕 {VAR_1} | PoliceEnforcementBehavior.AtonementQuest.cs:103 |

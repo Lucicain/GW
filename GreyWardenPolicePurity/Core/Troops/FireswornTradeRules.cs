@@ -19,7 +19,7 @@ namespace GreyWardenPolicePurity.Core.Troops
         private static int ProgressPerPoint(FireswornTradeKind kind) => kind switch
         {
             FireswornTradeKind.Prisoners or FireswornTradeKind.Troops => WardenReputationRules.TroopWeightPerPoint,
-            FireswornTradeKind.Armory => 300,
+            FireswornTradeKind.Armory => 600,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 

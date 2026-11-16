@@ -1205,6 +1205,17 @@ namespace GreyWardenPolicePurity
 
         #region 战斗结束
 
+        internal static bool MayCloseCaseAtBattleEnd(CrimeRecord crime, MapEventSide winner)
+        {
+            MapEvent battle = winner.MapEvent;
+            if (!battle.IsFieldBattle) return false;
+
+            // 承办队的结案回调先于玩家声望入账，同一场可能先收掉案卷。
+            return CrimePool.ActiveTasks.Values.Any(task => task.WarDeclared && task.TargetCrimeId == crime.CrimeId &&
+                winner.Parties.Any(p => p.Party?.MobileParty?.StringId == task.PolicePartyId) &&
+                WasTaskOffenderInEvent(task, battle));
+        }
+
         private void OnMapEventEnded(MapEvent mapEvent)
         {
             if (mapEvent == null) return;
