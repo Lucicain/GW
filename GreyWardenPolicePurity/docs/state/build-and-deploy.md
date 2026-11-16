@@ -7,7 +7,7 @@
 
 ## 当前开发部署
 
-live 为按安装版 Bannerlord v1.5.7 构建的 r16.2 诊断开发版，模块清单和程序集修订号均为 1.5.16.2。[村庄交付置灰和整理入口调整](firesworn-economy.md#玩家向祭司交付)已部署。Client/Editor DLL 与通过兼容预检的隔离产物等哈希，SHA-256 为 `D317BA22B8407C7891034DE78BE6BE955F0E67A17814B88A310B70E5F396C2AC`。[单层旗帜图集与缓存](clan-banner.md#可编辑素材与静态材质)的 TPAC 和 RDC 与仓库归档一致。仓库与 live 中文语言 XML 同为 `3A26BC2F4EFB0110E775F40357753BB29E6769251F481302733CE48D4F6497E9`，`SubModule.xml` 同为 `FC162FA845610B9B7821335924B783E5B9E62CE17C7817470EEA2E6BE4160924`。74 个运行时镜像文件校验一致。（依据：构建、部署、兼容预检及 SHA-256 核对 2026-11-17）
+live 为按安装版 Bannerlord v1.5.7 构建的 r17 诊断开发版，模块清单与程序集对应 1.5.17。[背包卖货换灰袍声望](firesworn-economy.md#玩家向祭司交付)已部署。Client/Editor DLL 与通过兼容预检的隔离产物等哈希，SHA-256 为 `8FBEE5CB7FF0716979E3FD14524D961A92BA823CB53917F8E015C0EAC6F9362F`。[单层旗帜图集与缓存](clan-banner.md#可编辑素材与静态材质)的 TPAC 和 RDC 与仓库归档一致。仓库与 live 中文语言 XML 同为 `3A26BC2F4EFB0110E775F40357753BB29E6769251F481302733CE48D4F6497E9`，`SubModule.xml` 同为 `3D536F6DC26297C480626CC7907D287DF2BE9373F60FE6AC59510DAD884D84EF`。74 个运行时镜像文件含中英 README 均核对一致。（依据：构建、部署、兼容预检及 SHA-256 核对 2026-11-17）
 
 v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点名旧 DLL 中 `GwpAgentApplyDamageModel.CalculatePassiveAttackDamage` 和 `GwpFaithCombatSimulationModel.SimulateHit` 不再实现原版抽象签名。旧 DLL 在同一安装版复现类型加载失败；新 DLL 接上对应签名，并更新部队上限的海陆参数、治疗委托、自动战斗的海战计算、借船锚点和使者报价的界面刷新入口。原版拒绝的阶段见[模块加载手册](../vanilla/module-loading.md#v157-子模块类型加载失败)。预检与模块 XML 通过；用户一次正常启动到主菜单、读旧档、进大地图，日志 `rgl_log_7016.txt` 与灰袍案件日志确认地图和案件逻辑运行，此次旧报错复发 0 次。（依据：崩溃日志、安装版反编译、旧新 DLL 对照和用户实测 2026-11-12）
 
@@ -53,11 +53,11 @@ v1.5.7 启动故障：`rgl_log_36640.txt` 的 `ReflectionTypeLoadException` 点�
 - `DeployToLiveModule=false` 时输出隔离到 `bin\<Configuration>\isolated\`；
   命令行显式 `OutputPath` 优先。
 - `GameFolder` = `D:\steam\steamapps\common\Mount & Blade II Bannerlord`。
-- `<Version>` 设置程序集的模组修订号，当前默认 `1.5.16.2`，与开发模块清单一致。构建不同修订号的玩家 DLL 时，用 `-p:Version=<模组修订号>` 显式指定。
+- `<Version>` 设置程序集的模组修订号，当前默认 `1.5.17`，与开发模块清单一致。构建不同修订号的玩家 DLL 时，用 `-p:Version=<模组修订号>` 显式指定。
 
 ### 游戏世代检测
 
-`GwpDetectTargetGame` 读取目标安装的 `Modules/Native/SubModule.xml` 版本：`148`、`150`（1.5.0 起）、`157`（1.5.7 起）分别接对应 API。没有安装目录时可用精确版本引用程序集并显式指定 `GwpTargetGame`。1.5.0 改了被动撞击伤害的签名；1.5.7 又改了自动结算等接口，因此**对目标游戏版本分别编译**，不能只看 `1.5` 前缀推定兼容。当前 r16.2 玩家目标是 1.4.8 和 1.5.7；1.4.8 用 `Bannerlord.ReferenceAssemblies` 1.4.8.119303 重建的玩家 DLL，与此前以该安装版验证的同内容 DLL 的 IL 一致。打包只给 `SubModule.xml` 写该包的修订号，共用源数据。（依据：原版接口与隔离构建对照 2026-11-12）
+`GwpDetectTargetGame` 读取目标安装的 `Modules/Native/SubModule.xml` 版本。`148`、`150`（1.5.0 起）、`157`（1.5.7 起）分别接对应 API。没有安装目录时可用精确版本引用程序集并显式指定 `GwpTargetGame`。1.5.0 改了被动撞击伤害签名，1.5.7 改了自动结算等接口，因此**对目标游戏版本分别编译**。r17 的 1.4.8 玩家 DLL 使用 `Bannerlord.ReferenceAssemblies` 1.4.8.119303，1.5.7 玩家 DLL 使用安装版程序集。逐项完整签名对照两版均通过，故意互换目标出现缺失。`SubModule.xml` 采用该包的修订号，两个包共用源数据。（依据：原版接口与隔离构建对照 2026-11-17）
 
 1.4.8 和 1.5.7 的最终玩家包以同一份灰袍玩法、资源和称呼为验收目标，版本分支限于原版接口差异；逐项核对两包数据并单独登记游戏内验证范围。（依据：用户裁定 2026-11-12）
 

@@ -78,7 +78,7 @@
 | 火誓者来源 | `SWORN_GROWTH`（驻留/自然增长信众户 fromWardensHouseholds/fromHearthHouseholds、补兵 regrown、补前缺额 headroomBefore）、`RECONSTRUCTION_SWORN`（added为实际增户）、`CONGREGATION_STARTED`、`CONGREGATION_COMPLETED`（gain为实际增户）、`CONGREGATION_CANCELLED`、`MISSION_DISPATCHED`、`MISSION_JOINED`、`DAMNATION`（烧了谁、生成什么）；分析器将户、兵、人次分项标注，旧集会日志按households前后值求实际增户。 |
 | 守村补兵模型 | `SWORN_MILITIA_MODEL` 每日汇总旧版会强转失败的补兵计算，`activeModel` 为战役当前民兵模型，`villageCalculations` 为当天经过该路径的村数。根因和实测条件见[信众村](firesworn-villages.md#待实测)，验收后退休。 |
 | 俘虏与地牢 | `HANDOVER`、`DEFENCE_SPOILS` |
-| 玩家向祭司交付 | `PLAYER_PRIEST_TRADE`（村庄、种类、实际名册或军械扣交数量、折算单位、实得声望与零头）。验收[玩家向祭司交付](firesworn-economy.md#待实测)后退休。 |
+| 玩家向祭司交付 | `PLAYER_PRIEST_TRADE`（村庄、种类、实际扣交的人员或物品数量、折算单位、实得声望与零头）。验收[玩家向祭司交付](firesworn-economy.md#待实测)后退休。 |
 | 缴获 | `ARMORY_LOOT`（每场战斗每本账一行） |
 | 招兵 | `PRIEST_RECRUITED`（从守村队带走几个）、`ZEALOTS_ENLISTED`、`KITS_MOVED`、`PRIEST_SPAWNED`、`PRIEST_HOME_RESTORED`、`PRIEST_DISAPPEAR_BLOCKED` |
 | 无领主队 | `FAITH_PARTY_FORMED`、`DETACHMENT_SETTLED`（追截队多余的人在信众村落脚）、`BALANCE_DISPATCHED`、`BALANCE_DELIVERED`、`MARKET_DISPATCHED`、`MARKET_SOLD`、`FAITH_PARTY_HOME`、`FAITH_PARTY_TURNED_BACK`、`FAITH_PARTY_LOST` |

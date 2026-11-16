@@ -24,6 +24,6 @@ DDS 源是 2048×2048 RGBA、单层未压缩。4×4 网格的第 0 格有鸟徽�
 
 下次完整加载游戏、开新档，看地图小旗、百科和战场旗帜是否黑底金鸟、方向正确、爪尾完整；同版本存读后保持。旧档的 Banner 属于原版保存状态，不通过新增迁移改写。
 
-本地开发版使用 live 的 `Assets` 与对应的 `RuntimeDataCache`。下一次玩家包发布时，在 Kit 导入和发布结果中核对图集只有一层 mip。
+本地开发版使用 live 的 `Assets` 与对应的 `RuntimeDataCache`。r17 的打包美术使用同一份单层图集像素，当前素材身份与验收记录见 [clan-banner state](../../../state/clan-banner.md#验证与发行状态)。
 
 离线参考：[512/128/64像素](native-mask-preview.png)，非引擎截图。格式参照 [TaleWorlds 自定义旗帜图标文档](https://moddocs.bannerlord.com/asset-management/creating_custom_banner_icons/)。

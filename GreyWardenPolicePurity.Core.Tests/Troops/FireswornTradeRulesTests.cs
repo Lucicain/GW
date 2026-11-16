@@ -12,6 +12,8 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
         [InlineData(FireswornTradeKind.Troops, 21, true)]
         [InlineData(FireswornTradeKind.Armory, 20, false)]
         [InlineData(FireswornTradeKind.Armory, 21, true)]
+        [InlineData(FireswornTradeKind.Goods, 20, false)]
+        [InlineData(FireswornTradeKind.Goods, 21, true)]
         public void OnlyAdvancedTradesRequireMoreThanTwentyReputation(FireswornTradeKind kind, int reputation, bool available)
         {
             Assert.Equal(available, FireswornTradeRules.IsAvailable(kind, reputation));
@@ -52,6 +54,14 @@ namespace GreyWardenPolicePurity.Core.Tests.Troops
             int room, int gained, int remainder)
         {
             Assert.Equal((gained, remainder), FireswornTradeRules.Quote(FireswornTradeKind.Armory, previous, value, room));
+        }
+
+        [Fact]
+        public void GoodsAndArmorySalesUseTheSameValuePerPoint()
+        {
+            var goods = FireswornTradeRules.Quote(FireswornTradeKind.Goods, 0, 350, 100);
+            Assert.Equal((0, 350), goods);
+            Assert.Equal((5, 0), FireswornTradeRules.Quote(FireswornTradeKind.Armory, goods.Remainder, 250, 100));
         }
     }
 }

@@ -30,7 +30,7 @@ namespace GreyWardenPolicePurity
         private static int _wardenUpgradeProgress;
         private static int _prisonerTradeProgress;
         private static int _troopTradeProgress;
-        private static int _armoryTradeProgress;
+        private static int _itemTradeProgress;
         public static bool IsWanted => PreciseReputation <= -11;
         public static bool HasAtonementTask { get; private set; } = false;
         public static IReadOnlyCollection<IFaction> VictimFactions => _victimFactions;
@@ -158,7 +158,8 @@ namespace GreyWardenPolicePurity
             {
                 case FireswornTradeKind.Prisoners: return ref _prisonerTradeProgress;
                 case FireswornTradeKind.Troops: return ref _troopTradeProgress;
-                case FireswornTradeKind.Armory: return ref _armoryTradeProgress;
+                case FireswornTradeKind.Armory:
+                case FireswornTradeKind.Goods: return ref _itemTradeProgress;
                 default: throw new ArgumentOutOfRangeException(nameof(kind));
             }
         }
@@ -170,7 +171,7 @@ namespace GreyWardenPolicePurity
             bool hasBattleWeightUnits = dataStore.SyncData("gwp_good_deed_reward_weight_units", ref _goodDeedRewardProgressUnits);
             dataStore.SyncData("gwp_player_prisoner_trade_progress", ref _prisonerTradeProgress);
             dataStore.SyncData("gwp_player_troop_trade_progress", ref _troopTradeProgress);
-            dataStore.SyncData("gwp_player_armory_trade_progress", ref _armoryTradeProgress);
+            dataStore.SyncData("gwp_player_armory_trade_progress", ref _itemTradeProgress);
 
             if (!dataStore.IsLoading) return;
             if (!hasBattleWeightUnits)
@@ -200,7 +201,7 @@ namespace GreyWardenPolicePurity
             _wardenUpgradeProgress = 0;
             _prisonerTradeProgress = 0;
             _troopTradeProgress = 0;
-            _armoryTradeProgress = 0;
+            _itemTradeProgress = 0;
             HasAtonementTask = false;
             _victimFactions.Clear();
         }

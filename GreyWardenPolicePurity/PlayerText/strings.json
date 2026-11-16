@@ -5568,7 +5568,7 @@
     "gwp_fs_village_sell_goods": {
       "en": "Sell goods",
       "zh": "卖货",
-      "context": "从灰袍要人子菜单打开原版村庄市场的按钮。"
+      "context": "从灰袍要人子菜单交付背包物品以换取灰袍声望。"
     },
     "gwp_fs_village_back": {
       "en": "Back to the village",

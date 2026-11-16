@@ -107,7 +107,6 @@ state 里引用已失效的文件和符号、超长的 state、`.codex_tmp/` 与
 
 清理待办：
 
-- 玩家 README 下次发版时同步：`_Module/README.md` 功能概览第 13 行仍列「村民酬谢」，该机制已于 2026-11-15 退休；README 只在发版时改，英文版本来未提。
 - 玩家文字分批审阅（2026-11-04）附带、需用户定玩法的代码问题，详见各稿「代码问题」（谈判数值与打算候选已迁入同一份生产纯规则）：`GwpFieldArrestBehavior.ChargeCondition` 设了 `GWP_FIELD_ARREST_RESIST/PLEAD` 却没有对话行使用，抗法、交不出钱 32 条台词走不到（第 2 批）；罪名以显示文字存进案件、切语言不随动（第 10 批）；`GwpCaseArchiveItemVM` 战争理由 `_075` 若按 10-18 界面裁定删掉需改一行（第 6 批）；`GwpFieldArrestLines.PaymentRebuff` 对每种打算只取 `_lead` 的英文，按技能分句需先有审阅稿批准的 24 条英文。清单见 `docs/reference/text-review-inventory-20261104.md`。（2026-11-04 登记，2026-11-06 清掉无需裁定的部分）
 - 按部队编号找部队的私有方法各写一份：`GreyWardenIssueResolutionBehavior`、`GreyWardenVillageReconstructionBehavior`、`GwpFireswornBehavior` 的 `FindParty`，`GwpAffairsData.FindParty`，`GreyWardenVillageAdoptionBehavior.FindPoliceParty` 等，写法略有差异（空串判定、是否只要活跃队），可逐个核对后并入 `GwpCommon.FindParty`。（2026-11-07 登记）
 - reference 里还有两份原版资料未迁入手册：`firesworn-vanilla-reference.md`（村庄民兵、志愿兵格子）和 `vanilla-marriage-reference.md`（2026-03 写的婚姻 API，未按 v1.4.8 复核）。迁入前按源码库逐条核实，核不实的不写。（2026-10-29 登记）

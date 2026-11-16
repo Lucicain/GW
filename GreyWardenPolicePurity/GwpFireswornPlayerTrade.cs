@@ -41,6 +41,8 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_fs_trade_troops_title, GameMenuOption.LeaveType.DonateTroops);
             AddVillageTrade(starter, FireswornTradeKind.Armory, "gwp_fs_village_arms",
                 GwpTextCatalog.gwp_fs_trade_armory_title, GameMenuOption.LeaveType.OpenStash);
+            AddVillageTrade(starter, FireswornTradeKind.Goods, "gwp_fs_village_goods",
+                GwpTextCatalog.gwp_fs_village_sell_goods, GameMenuOption.LeaveType.Trade);
         }
 
         private void AddVillageTrade(CampaignGameStarter starter, FireswornTradeKind kind,
@@ -50,12 +52,9 @@ namespace GreyWardenPolicePurity
             {
                 args.optionLeaveType = leaveType;
                 bool canOffer = CanOfferPriestTrade(kind, fromConversation: false);
-                if (kind is FireswornTradeKind.Prisoners or FireswornTradeKind.Armory)
-                {
-                    args.IsEnabled = canOffer;
-                    return true;
-                }
-                return canOffer;
+                if (kind == FireswornTradeKind.Troops) return canOffer;
+                args.IsEnabled = canOffer;
+                return true;
             }, _ => OpenPriestTrade(kind, fromConversation: false));
         }
 
@@ -70,9 +69,11 @@ namespace GreyWardenPolicePurity
         {
             if (CurrentPriestTrade(kind, fromConversation) is not { } trade) return false;
 
-            return kind == FireswornTradeKind.Armory
-                ? _armories.TryGetValue(trade.Party.StringId, out ItemRoster? ledger) && ledger.Any(IsTradeEquipment)
-                : TradeRoster(trade.Party, kind).GetTroopRoster().Any(entry => entry.Number > 0 && CanHandOver(entry.Character, kind));
+            if (kind is FireswornTradeKind.Armory or FireswornTradeKind.Goods)
+                return ItemTradeSource(trade.Party, kind)?.Any(entry => IsTradeItem(entry, kind)) == true;
+
+            return TradeRoster(trade.Party, kind).GetTroopRoster()
+                .Any(entry => entry.Number > 0 && CanHandOver(entry.Character, kind));
         }
 
         private (MobileParty Party, Settlement Village, Hero Priest)? CurrentPriestTrade(
@@ -104,9 +105,9 @@ namespace GreyWardenPolicePurity
             if (CurrentPriestTrade(kind, fromConversation) is not { } trade) return;
             var (party, village, priest) = trade;
 
-            if (kind == FireswornTradeKind.Armory)
+            if (kind is FireswornTradeKind.Armory or FireswornTradeKind.Goods)
             {
-                OpenArmoryTrade(party, village, priest);
+                OpenItemTrade(party, village, priest, kind);
                 return;
             }
             OpenPersonnelTrade(party, village, priest, kind);
@@ -206,54 +207,68 @@ namespace GreyWardenPolicePurity
             return true;
         }
 
-        private static bool IsTradeEquipment(ItemRosterElement entry) =>
+        private static bool IsTradeItem(ItemRosterElement entry, FireswornTradeKind kind) =>
             entry.Amount > 0 && !entry.EquipmentElement.IsEmpty && !entry.EquipmentElement.IsQuestItem &&
-            entry.EquipmentElement.Item.IsTransferable && IsArmoryItem(entry.EquipmentElement.Item);
+            entry.EquipmentElement.Item.IsTransferable &&
+            (kind == FireswornTradeKind.Goods || IsArmoryItem(entry.EquipmentElement.Item));
 
-        private void OpenArmoryTrade(MobileParty party, Settlement village, Hero priest)
+        private ItemRoster? ItemTradeSource(MobileParty party, FireswornTradeKind kind)
         {
-            if (!_armories.TryGetValue(party.StringId, out ItemRoster? ledger)) return;
+            if (kind == FireswornTradeKind.Goods) return party.ItemRoster;
+            return _armories.TryGetValue(party.StringId, out ItemRoster? ledger) ? ledger : null;
+        }
+
+        private void OpenItemTrade(MobileParty party, Settlement village, Hero priest, FireswornTradeKind kind)
+        {
+            if (ItemTradeSource(party, kind) is not { } source) return;
             ItemRoster available = new ItemRoster();
-            foreach (ItemRosterElement entry in ledger.Where(IsTradeEquipment)) available.Add(entry);
+            foreach (ItemRosterElement entry in source.Where(entry => IsTradeItem(entry, kind))) available.Add(entry);
             if (available.Count == 0) return;
 
             var state = Game.Current.GameStateManager.CreateState<InventoryState>();
             state.InventoryMode = InventoryScreenHelper.InventoryMode.Stash;
             var selection = new ItemRoster();
             var logic = new InventoryLogic(null);
+            bool armory = kind == FireswornTradeKind.Armory;
+            string title = armory ? GwpTextCatalog.gwp_fs_trade_armory_title : GwpTextCatalog.gwp_fs_village_sell_goods;
             logic.Initialize(selection, available, party.MemberRoster, isTrading: false, isSpecialActionsPermitted: false,
                 CharacterObject.PlayerCharacter, InventoryScreenHelper.InventoryCategoryType.None, village.Village.MarketData,
-                useBasePrices: false, state.InventoryMode, GwpText.Create(GwpTextCatalog.gwp_fs_trade_armory_title));
-            GwpArmoryTransferScreen.Register(logic, () => CompleteArmoryTrade(party, village, priest, selection),
-                () => selection.Count == 0 ? null
-                    : TradePreview(FireswornTradeKind.Armory, ArmoryTradeUnits(party, village, selection)));
+                useBasePrices: false, state.InventoryMode, GwpText.Create(title));
+            GwpFireswornItemTradeScreen.Register(logic, armory ? GwpTextCatalog.gwp_player_armory : null,
+                () => CompleteItemTrade(party, village, priest, kind, selection),
+                () => selection.Count == 0 ? null : TradePreview(kind, ItemTradeUnits(party, village, selection)));
             state.InventoryLogic = logic;
             Game.Current.GameStateManager.PushState(state);
         }
 
-        private bool CompleteArmoryTrade(MobileParty party, Settlement village, Hero priest, ItemRoster selection)
+        private bool CompleteItemTrade(MobileParty party, Settlement village, Hero priest, FireswornTradeKind kind,
+            ItemRoster selection)
         {
-            const FireswornTradeKind kind = FireswornTradeKind.Armory;
             if (selection.Count == 0) return true;
             if (!CanCompletePriestTrade(party, village, priest, kind) ||
-                !_armories.TryGetValue(party.StringId, out ItemRoster? ledger)) return NotifyPriestTradeUnavailable();
+                ItemTradeSource(party, kind) is not { } source) return NotifyPriestTradeUnavailable();
             foreach (ItemRosterElement entry in selection)
             {
-                int index = ledger.FindIndexOfElement(entry.EquipmentElement);
-                if (!IsTradeEquipment(entry) || index < 0 || ledger.GetElementNumber(index) < entry.Amount)
+                int index = source.FindIndexOfElement(entry.EquipmentElement);
+                if (!IsTradeItem(entry, kind) || index < 0 || source.GetElementNumber(index) < entry.Amount)
                     return NotifyPriestTradeUnavailable();
             }
 
-            long units = ArmoryTradeUnits(party, village, selection);
-            int count = MoveAll(selection, ledger, ItemsOf(_armories, village.StringId));
-            _plans.Remove(party.StringId);
-            _plans.Remove(village.StringId);
-            NotifyPriestTradeCompleted(village, kind, count, units);
+            long units = ItemTradeUnits(party, village, selection);
+            int count = 0;
+            foreach (ItemRosterElement entry in selection)
+            {
+                source.AddToCounts(entry.EquipmentElement, -entry.Amount);
+                Store(village.StringId, entry.EquipmentElement, entry.Amount);
+                count += entry.Amount;
+            }
+            if (kind == FireswornTradeKind.Armory) _plans.Remove(party.StringId);
             selection.Clear();
+            NotifyPriestTradeCompleted(village, kind, count, units);
             return true;
         }
 
-        private static long ArmoryTradeUnits(MobileParty party, Settlement village, ItemRoster selection) =>
+        private static long ItemTradeUnits(MobileParty party, Settlement village, ItemRoster selection) =>
             selection.Sum(entry => (long)village.Village.MarketData.GetPrice(entry.EquipmentElement, party, true, village.Party) *
                 entry.Amount);
 

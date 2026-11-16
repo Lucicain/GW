@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-237 个源文件、60,036 行、454 个公开类型、133 条 Harmony 目标声明（含动态入口，共 133 个补丁类）。
+237 个源文件、60,033 行、454 个公开类型、133 条 Harmony 目标声明（含动态入口，共 133 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -65,8 +65,8 @@
 | `HeroSpawnCampaignBehavior` | `GetBestAvailableCommander` | Transpiler | `GwpCityCaseNewCommanderPatch` | GwpCityCaseMovementPatch.cs:68 |
 | `HeroSpawnCampaignBehavior` | `OnHeroDailyTick` | Prefix | `GwpCityCaseDailyMovePatch` | GwpCityCaseMovementPatch.cs:53 |
 | `HumanAIComponent` | `RefreshBehaviorValues` | Prefix | `GwpWardenRetreatBehaviorPatch` | GwpWardenResolve.cs:52 |
-| `InventoryLogic` | `DoneLogic` | Prefix | `DonePatch` | GwpArmoryTransferScreen.cs:34 |
-| `InventoryLogic` | `ProcessTransferCommand` | Prefix | `TransferPatch` | GwpArmoryTransferScreen.cs:26 |
+| `InventoryLogic` | `DoneLogic` | Prefix | `DonePatch` | GwpFireswornItemTradeScreen.cs:35 |
+| `InventoryLogic` | `ProcessTransferCommand` | Prefix | `TransferPatch` | GwpFireswornItemTradeScreen.cs:27 |
 | `KingdomElection` | `DetermineOfficialSupport` | Postfix | `GwpFiefPublicSupportPatch` | GwpFiefPublicSupportPatch.cs:19 |
 | `Location` | `CanAIEnter` | Postfix | `GwpCitySearchDuelLocationEntryPatch` | GwpCitySearchMission.Movement.cs:99 |
 | `MapEvent` | `LootCasualtyCharacter` | Prefix | `GwpArmoryCasualtyLootPatch` | GwpFireswornArmory.cs:775 |
@@ -110,14 +110,14 @@
 | `PartyVM` | `RefreshTopInformation` | Postfix | `RefreshPatch` | GwpPartyScreenPreview.cs:55 |
 | `PassageUsePoint` | `OnUse` | Prefix | `GwpCitySearchPassagePatch` | GwpCitySearchMission.Progress.cs:349 |
 | `PersonaSoftspokenTag` | `IsApplicableTo` | Finalizer | `GwpDispatchBarterFaultDiagnostics` | GwpDispatchBarterFaultDiagnostics.cs:11 |
-| `PlayerTownVisitCampaignBehavior` | `game_menu_village_on_init` | Postfix | `GwpFireswornVillageLockPatch` | GwpFireswornMenus.cs:176 |
+| `PlayerTownVisitCampaignBehavior` | `game_menu_village_on_init` | Postfix | `GwpFireswornVillageLockPatch` | GwpFireswornMenus.cs:155 |
 | `PrisonerReleaseCampaignBehavior` | `DailyHeroTick` | Prefix | `GwpDispatchHeroEscapePatch` | GwpDispatchPrisonerCustody.cs:15 |
 | `PrisonerReleaseCampaignBehavior` | `HourlyPartyTick` | Prefix | `GwpDispatchOverflowEscapePatch` | GwpDispatchPrisonerCustody.cs:23 |
 | `SPScoreboardVM` | `GetBattleRewards` | Postfix | `GwpBattleReputationPreviewPatch` | PlayerBehaviorMonitor.cs:732 |
 | `SellGoodsForTradeAction` | `ApplyByVillagerTrade` | Prefix | `GwpFaithVillagerSalePatch` | GwpFaithVillagers.cs:356 |
 | `SetPartyAiAction` | `GetActionForGoingAroundParty` | Prefix | `GwpPlayerEnforcementEngageActionPatch` | GwpPartyDutyMovementPatch.cs:68 |
 | `SetPartyAiAction` | `GetActionForPatrollingAroundPoint` | Prefix | `GwpLocationDutyRefreshPatch` | GwpPartyDutyMovementPatch.cs:41 |
-| `Settlement` | `RemoveMilitiasFromParty` | Prefix | `GwpFireswornGuardStaysPatch` | GwpFireswornMenus.cs:190 |
+| `Settlement` | `RemoveMilitiasFromParty` | Prefix | `GwpFireswornGuardStaysPatch` | GwpFireswornMenus.cs:169 |
 | `SettlementNameplateNotificationsVM` | `RegisterEvents` | Postfix | `GwpSettlementNoticesRegisterPatch` | GwpSettlementNotices.cs:82 |
 | `SettlementNameplateNotificationsVM` | `UnloadEvents` | Postfix | `GwpSettlementNoticesUnloadPatch` | GwpSettlementNotices.cs:88 |
 | `SettlementVisual` | `RefreshPartyIcon` | Postfix/Prefix | `GwpDamnationSmokePatch` | GwpDamnationSmokePatch.cs:16 |
@@ -149,7 +149,7 @@
 | `动态/未静态解析` | `TargetMethods()` | Postfix/Prefix | `GwpInterventionSelectionPatch` | GwpPlayerIntervention.cs:147 |
 | `动态/未静态解析` | `TargetMethods()` | Prefix | `GwpKingdomMembershipPatch` | GwpKingdomMembershipPatch.cs:13 |
 | `动态/未静态解析` | `TargetMethods()` | Finalizer/Postfix | `GwpNavalCustomBattleCommanderListPatch` | GwpDualBladeActionSetPatch.cs:161 |
-| `动态/未静态解析` | `TargetMethods()` | Postfix | `LabelPatch` | GwpArmoryTransferScreen.cs:50 |
+| `动态/未静态解析` | `TargetMethods()` | Postfix | `LabelPatch` | GwpFireswornItemTradeScreen.cs:51 |
 | `动态/未静态解析` | `见类属性与实现` | Postfix | `GwpDispatchOfferLabelPatch` | GwpAssetOfferValidationPatch.cs:102 |
 | `动态/未静态解析` | `见类属性与实现` | Postfix | `GwpPlayerWardenPrisonerRecruitmentPatch` | GwpPlayerWardenTroops.cs:143 |
 
@@ -302,7 +302,6 @@
 - `GwpArmoryBattleRosterPatch` → GwpArmoryBattle.cs ←
 - `GwpArmoryCasualtyLootPatch` → GwpFireswornArmory.cs ←
 - `GwpArmorySpawnPatch` → GwpFireswornArmory.cs ←
-- `GwpArmoryTransferScreen` → GwpArmoryTransferScreen.cs
 - `GwpArmyExitDisorganizedPatch` → GwpArmyExitDisorganizedPatch.cs
 - `GwpArmyInfluenceFailureTracePatch` → GwpAssistanceArmyLifecyclePatch.cs ←
 - `GwpAssetAcceptancePatch` → GwpAssetOfferValidationPatch.cs ←
@@ -435,6 +434,7 @@
 - `GwpFireswornArt` → GwpFireswornArt.cs
 - `GwpFireswornBehavior` → GwpArmoryAllocation.cs , GwpArmoryBalance.cs , GwpArmoryBattle.cs , GwpArmoryBattleSave.cs , GwpArmoryOwnership.cs , GwpFaithVillagers.cs , GwpFireswornAffairs.cs , GwpFireswornArmory.cs , GwpFireswornBehavior.cs , GwpFireswornDungeon.cs , GwpFireswornExperience.cs , GwpFireswornParties.cs , GwpFireswornPlayerTrade.cs , GwpFireswornRituals.cs , GwpPlayerArmory.cs , GwpSurplusGuardRitual.cs , GwpTrainingTransports.cs
 - `GwpFireswornGuardStaysPatch` → GwpFireswornMenus.cs ←
+- `GwpFireswornItemTradeScreen` → GwpFireswornItemTradeScreen.cs
 - `GwpFireswornMenus` → GwpFireswornMenus.cs
 - `GwpFireswornMilitiaModel` → GwpFireswornMenus.cs ←
 - `GwpFireswornPartyDialogs` → GwpFireswornPartyDialogs.cs
@@ -793,16 +793,16 @@
 - `GwpArmoryAllocation.cs` — 305 行 · `GwpFireswornBehavior`
 - `GwpWardenVisitDesire.cs` — 305 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
+- `GwpFireswornPlayerTrade.cs` — 296 行 · `GwpFireswornBehavior`
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
-- `GwpFireswornPlayerTrade.cs` — 281 行 · `GwpFireswornBehavior`
-- `PlayerBehaviorPool.cs` — 272 行 · `PlayerBehaviorPool`
+- `PlayerBehaviorPool.cs` — 273 行 · `PlayerBehaviorPool`
 - `GwpCitySearchMission.HallDuel.cs` — 254 行 · `GwpCitySearchMissionController` : AgentBehavior，另含 2 个类型
-- `GwpFireswornMenus.cs` — 249 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpAssetPayment.cs` — 243 行 · `GwpAssetPayment`
 - `GwpCitySearchBehavior.cs` — 241 行 · `GwpCitySearchBehavior` : CampaignBehaviorBase
 - `GwpStrength.Native.cs` — 240 行 · `GwpStrength`，另含 3 个类型
 - `GwpAffairsData.cs` — 239 行 · `GwpAffairsEntry`，另含 2 个类型
 - `GwpCitySearchMission.Reinforcements.cs` — 231 行 · `GwpCitySearchMissionController` : IGwpBattleSceneSource
+- `GwpFireswornMenus.cs` — 228 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型
 - `GwpFlacReader.cs` — 217 行 · `GwpFlacReader` : IDisposable
 - `GwpArmoryBattle.cs` — 211 行 · `GwpFireswornBehavior`，另含 1 个类型
 - `GwpFireswornDungeon.cs` — 199 行 · `GwpFireswornBehavior`
@@ -862,8 +862,8 @@
 - `GwpCitySearchBehavior.StreetState.cs` — 74 行 · `GwpCityStreetBody`，另含 1 个类型
 - `GwpKingdomMembershipPatch.cs` — 71 行 · `GwpKingdomMembershipPatch`，另含 1 个类型
 - `GwpCrimeCategory.cs` — 69 行 · `GwpCrimeCategory`，另含 2 个类型
+- `GwpFireswornItemTradeScreen.cs` — 69 行 · `GwpFireswornItemTradeScreen`
 - `GwpText.cs` — 69 行 · `GwpText`
-- `GwpArmoryTransferScreen.cs` — 68 行 · `GwpArmoryTransferScreen`
 - `GwpCitySearchBehavior.Menu.cs` — 67 行 · `GwpCitySearchBehavior`
 - `GwpPartyScreenPreview.cs` — 67 行 · `GwpPartyScreenPreview`
 - `GwpAssistanceArmyTooltipPatch.cs` — 66 行 · `GwpAssistanceArmyTooltipPatch`
@@ -897,8 +897,8 @@
 - `GwpDamnationSmokePatch.cs` — 36 行 · `GwpDamnationSmokePatch`
 - `GwpDuelOpponentMarkerPatch.cs` — 36 行 · `GwpDuelOpponentMarkerPatch`
 - `GreyWardenDutyScheduler.cs` — 34 行 · `GreyWardenDutyScheduler`
+- `FireswornTradeRules.cs` — 33 行 · `FireswornTradeKind`，另含 1 个类型
 - `GwpCrimeDesireAuction.cs` — 33 行 · `GwpCrimeDesireAuction`
-- `FireswornTradeRules.cs` — 32 行 · `FireswornTradeKind`，另含 1 个类型
 - `TroopOrderComposition.cs` — 32 行 · `TroopOrderComposition`
 - `GwpAdultCommanderLoadoutPatch.cs` — 32 行 · `GwpAdultCommanderLoadoutPatch`
 - `GwpCitySearchBehavior.SupportDialogue.cs` — 32 行 · `GwpCitySearchBehavior`

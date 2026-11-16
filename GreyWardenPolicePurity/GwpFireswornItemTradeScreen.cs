@@ -8,19 +8,20 @@ using TaleWorlds.CampaignSystem.ViewModelCollection.Inventory;
 
 namespace GreyWardenPolicePurity
 {
-    // 原版 Stash 双栏用于挑选货物，个人装备和背包都不是这笔交易的来源。
-    internal static class GwpArmoryTransferScreen
+    // 原版 Stash 双栏只移动本次交付的名册副本，禁止转移个人装备。
+    internal static class GwpFireswornItemTradeScreen
     {
         private sealed class Delivery
         {
             internal Func<bool> Confirm = () => false;
             internal Func<string?> Preview = () => null;
+            internal string? SourceNameText;
         }
 
         private static readonly ConditionalWeakTable<InventoryLogic, Delivery> Deliveries = new();
 
-        internal static void Register(InventoryLogic logic, Func<bool> confirm, Func<string?> preview) =>
-            Deliveries.Add(logic, new Delivery { Confirm = confirm, Preview = preview });
+        internal static void Register(InventoryLogic logic, string? sourceNameText, Func<bool> confirm, Func<string?> preview) =>
+            Deliveries.Add(logic, new Delivery { SourceNameText = sourceNameText, Confirm = confirm, Preview = preview });
 
         [HarmonyPatch(typeof(InventoryLogic), "ProcessTransferCommand")]
         private static class TransferPatch
@@ -59,7 +60,7 @@ namespace GreyWardenPolicePurity
             private static void Postfix(SPInventoryVM __instance, InventoryLogic ____inventoryLogic)
             {
                 if (____inventoryLogic == null || !Deliveries.TryGetValue(____inventoryLogic, out Delivery delivery)) return;
-                __instance.RightInventoryOwnerName = GwpText.Get(GwpTextCatalog.gwp_player_armory);
+                if (delivery.SourceNameText != null) __instance.RightInventoryOwnerName = GwpText.Get(delivery.SourceNameText);
                 __instance.TradeLbl = delivery.Preview() ?? string.Empty;
             }
         }

@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
@@ -34,8 +33,6 @@ namespace GreyWardenPolicePurity
             starter.AddGameMenuOption("village", "gwp_fs_village_visit", "{GWP_FS_VILLAGE_VISIT}",
                 VillageVisitCondition, _ => GameMenu.SwitchToMenu(VillageServicesMenuId), isLeave: false, index: 5);
             behavior.RegisterVillageTrade(starter);
-            starter.AddGameMenuOption(VillageServicesMenuId, "gwp_fs_village_goods", GwpTextCatalog.gwp_fs_village_sell_goods,
-                MarketCondition, OpenMarket);
 #if GWP_DIAGNOSTICS
             GwpFireswornArmoryView.Register(starter);
 #endif
@@ -140,24 +137,6 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_fs_village_stores,
                 "PRISONERS", prisoners, "ARMORY", armoryItems, "GOODS", goodsValue);
             MBTextManager.SetTextVariable("GWP_FS_VILLAGE_TEXT", body);
-        }
-
-        private static bool MarketCondition(MenuCallbackArgs args)
-        {
-            args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-            Settlement? village = Settlement.CurrentSettlement;
-            if (village?.IsVillage != true || GwpFireswornBehavior.TryGetActiveRitual(village, out _, out _, out _))
-                return false;
-
-            bool canTrade = Campaign.Current.Models.SettlementAccessModel.CanMainHeroDoSettlementAction(village,
-                SettlementAccessModel.SettlementAction.Trade, out bool disabled, out TextObject reason);
-            return MenuHelper.SetOptionProperties(args, canTrade, disabled, reason);
-        }
-
-        private static void OpenMarket(MenuCallbackArgs args)
-        {
-            if (MarketCondition(args) && args.IsEnabled && Settlement.CurrentSettlement is { IsVillage: true } village)
-                InventoryScreenHelper.OpenScreenAsTrade(village.ItemRoster, village.Village);
         }
 
         private static int HearthShare(Settlement village, int households)

@@ -6,7 +6,8 @@ namespace GreyWardenPolicePurity.Core.Troops
     {
         Prisoners,
         Troops,
-        Armory
+        Armory,
+        Goods
     }
 
     public static class FireswornTradeRules
@@ -19,7 +20,7 @@ namespace GreyWardenPolicePurity.Core.Troops
         private static int ProgressPerPoint(FireswornTradeKind kind) => kind switch
         {
             FireswornTradeKind.Prisoners or FireswornTradeKind.Troops => WardenReputationRules.TroopWeightPerPoint,
-            FireswornTradeKind.Armory => 600,
+            FireswornTradeKind.Armory or FireswornTradeKind.Goods => 600,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 

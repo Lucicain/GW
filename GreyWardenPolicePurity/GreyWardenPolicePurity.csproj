@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Match the v1.5-r16.2 development revision in SubModule.xml. -->
-    <Version>1.5.16.2</Version>
+    <!-- Match the development revision in SubModule.xml. -->
+    <Version>1.5.17</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

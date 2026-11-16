@@ -27,7 +27,9 @@
 Since 2026-09-27 the module ships one package, published by the Modding Kit from
 the rebuilt editor sources:
 
-- The current player `AssetPackages/pack0.tpac` (republished 2026-10-16 after the
+- The r17 player package reuses the tested single-mip banner pixels. Its current
+  asset identity and hash are in [clan-banner state](../state/clan-banner.md#验证与发行状态).
+- The r15–r16.2 `AssetPackages/pack0.tpac` (republished 2026-10-16 after the
   user deleted the Kit draft `new_material`) is 371,053,851 bytes, SHA-256
   `753aaf1d009691006ac207fa869db44a63a33caa68b17621f2938833c1b93fb6`, 148 assets:
   the 146 below plus the clan banner material and texture (`gwp_commander_banner`).
