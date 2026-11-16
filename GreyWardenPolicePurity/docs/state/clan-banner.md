@@ -1,9 +1,9 @@
 # 灰袍家族旗帜
 
-> 当前状态：黑底浅金鸟徽图案已验收。低画质使用单层旗帜纹理，清晰度待复核
-> 最后验收：2026-10-15 用户实机确认（旗帜工作树，尚无对应提交检查点）
+> 当前状态：黑底浅金鸟徽图案已验收。低画质使用单层旗帜纹理，用户确认模糊问题已解决
+> 最后验收：2026-11-16 用户实机确认 `a2f5206` 部署后的低画质旗帜
 > 覆盖源码：`_Module/ModuleData/spclans.xml` `_Module/ModuleData/banner_icons.xml` `_Module/SubModule.xml` `tools/Prepare-ClanBanner.py` `tools/Verify-ClanBanner.ps1` `tools/Build-ClanBannerMaterial.py`
-> 待实测：贴图质量为低时，核对旗帜编辑器、原版战报、地图小旗和百科的鸟徽轮廓
+> 待实测：无
 
 ## 当前图案与原版接入
 
@@ -41,7 +41,7 @@ Kit 的上述 `_tex.tpac` 为源图与导入元数据，不含内嵌像素；参
 ## 验证与发行状态
 
 - `Verify-ClanBanner.ps1 -Installed` 核对安装版 XSD、Native/NavalDLC ID 冲突、实际 Banner DLL 解析两层、图标材质/格号、精确黑金色、颜色归一、旗帜码往返、reserved、gw 引用、唯一注册与 XML 镜像哈希。材质、纹理 TPAC 和 RDC 也与仓库归档比对。[512/128/64像素参考](../reference/banner-review/kit-input/native-mask-preview.png)来自离线解码。
-- `rgl_log_4268.txt` 记录客户端在上一版旗帜部署后重新加载 `Modules/GreyWarden/Assets`。贴图质量为低时，`dont_degrade` 版本的编辑器和战报鸟徽仍模糊。原缓存有 12 层，从实机战报截出的鸟徽与第 4 层内 32×32 像素的鸟徽细节最接近。现用单层缓存的低画质实际渲染待实测。（依据：用户截图、实机日志及缓存逐层离线对照 2026-11-16）
+- `rgl_log_4268.txt` 记录客户端在上一版旗帜部署后重新加载 `Modules/GreyWarden/Assets`。贴图质量为低时，`dont_degrade` 版本的编辑器和战报鸟徽仍模糊。原缓存有 12 层，从实机战报截出的鸟徽与第 4 层内 32×32 像素的鸟徽细节最接近。部署单层缓存后，用户确认旗帜模糊问题已解决。（依据：用户截图、实机日志、缓存逐层离线对照及用户验收 2026-11-16）
 - 玩家美术包 `pack0` 已含 `gwp_commander_banner` 材质及初版多层纹理。下一次通过 Kit 发布时核对包内纹理为单层。发行哈希见[构建与部署](build-and-deploy.md)。（依据：TPAC 资产清单对照 2026-10-16、2026-11-16）
 
 回退：取回 `4f31993` 的 `_Module/ModuleData/spclans.xml`、`_Module/SubModule.xml` 并镜像，撤去新增运行时 banner_icons.xml。新旗帜源与成图可保留作素材；需要撤下新材质时，在 Kit 退出后移除对应独立资源，不影响装备素材。

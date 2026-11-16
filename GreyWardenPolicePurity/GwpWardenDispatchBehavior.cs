@@ -354,21 +354,25 @@ namespace GreyWardenPolicePurity
 
         private static void TrackOnMap(MobileParty party)
         {
-            VisualTrackerManager? tracker = Campaign.Current?.VisualTrackerManager;
-            if (tracker == null) return;
-            if (party.IsCurrentlyUsedByAQuest && tracker.CheckTracked(party)) return;
-
-            // MapTrackerProvider.CanAddMobileParty 的接受条件（反编译 IL 逐分支确认）是
-            // 三条同时成立：无英雄领队、IsCurrentlyUsedByAQuest、且已在视觉追踪里。
-            // 顺序要紧：先登记视觉追踪，再翻转任务占用——后者会派发
-            // OnMobilePartyQuestStatusChanged，提供者就在那一刻重新评估。
+            Campaign? campaign = Campaign.Current;
+            if (campaign == null) return;
+            VisualTrackerManager tracker = campaign.VisualTrackerManager;
+            // 1.4.8 在任务占用变更事件中读取视觉追踪，先登记再设任务占用。
             if (!tracker.CheckTracked(party)) tracker.RegisterObject(party);
             if (!party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(true);
+#if GWP_GAME_150_OR_LATER
+            // 1.5 的地图界面从 MapTrackerManager 取标记，任务队需要显式登记。
+            campaign.MapTrackerManager.AddMapTracker(party);
+#endif
         }
 
         private static void UntrackOnMap(MobileParty party)
         {
-            Campaign.Current?.VisualTrackerManager?.RemoveTrackedObject(party, true);
+            Campaign? campaign = Campaign.Current;
+#if GWP_GAME_150_OR_LATER
+            campaign?.MapTrackerManager.RemoveMapTracker(party);
+#endif
+            campaign?.VisualTrackerManager.RemoveTrackedObject(party, true);
             if (party.IsCurrentlyUsedByAQuest) party.SetPartyUsedByQuest(false);
         }
 
@@ -458,7 +462,7 @@ namespace GreyWardenPolicePurity
                     continue;
                 }
 
-                if (record.Phase != GwpDispatchPhase.Rejoined) TrackOnMap(party);
+                TrackOnMap(party);
                 WarnIfInTrouble(record, party);
                 if (party.MapEvent != null) continue;
                 KeepCourierDisposition(party);
@@ -471,8 +475,8 @@ namespace GreyWardenPolicePurity
         /// <summary>
         /// 原版 <c>AiVisitSettlementBehavior</c> 只服务小势力／王国势力的部队，或者有
         /// IsLord 领主的部队；无领主的玩家家族队一条进城欲望都拿不到。曾试过给派遣队配
-        /// 一名临时队长去满足它，结果三头落空：地图标记那条路恰恰要求
-        /// <c>LeaderHero == null</c>（见 MapTrackerProvider.CanAddMobileParty），标记直接没了；
+        /// 一名临时队长去满足它，结果三头落空：1.4.8 的任务队地图标记要求
+        /// <c>LeaderHero == null</c>，加队长后标记消失；
         /// 多出来的假英雄可以对话、还占玩家家族的位置；原版进城欲望又把队伍钉在村里。
         /// 因此回到这条细适配：只补"决定进城"这一个欲望，行为用原版 <c>GoToSettlement</c>、
         /// 按 `0.99` 与其他原版欲望同场竞价。进城之后卖俘虏仍由原版

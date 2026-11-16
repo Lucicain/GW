@@ -41,6 +41,7 @@
 - [npc-voices](npc-voices.md)：普通 NPC 的对白、战场喊声与指令
 - [party-settlement-entry](party-settlement-entry.md)：部队访问聚落、军团统帅与附属部队进城
 - [party-encounters](party-encounters.md)：追踪实时部队、实际接触、打开对话与返程
+- [map-party-trackers](map-party-trackers.md)：任务部队的地图标记登记、显示与移除
 - [volunteer-recruitment](volunteer-recruitment.md)：玩家、AI 领主和驻军如何判断要人的招募格子
 - [ship-anchors](ship-anchors.md)：港口与岸边的锚点、下水等待时间
 - [module-loading](module-loading.md)：启动器怎样解析依赖、决定加载顺序及把模块列表交给游戏

@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-238 个源文件、60,094 行、457 个公开类型、135 条 Harmony 目标声明（含动态入口，共 135 个补丁类）。
+238 个源文件、60,098 行、457 个公开类型、135 条 Harmony 目标声明（含动态入口，共 135 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -731,7 +731,7 @@
 
 ### 使者与交兵（8 个文件）
 
-- `GwpWardenDispatchBehavior.cs` — 923 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
+- `GwpWardenDispatchBehavior.cs` — 927 行 · `GwpWardenDispatchBehavior` : CampaignBehaviorBase
 - `GreyWardenTroopRequestBehavior.cs` — 852 行 · `GreyWardenTroopRequestBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpWardenDispatchDialogue.cs` — 575 行 · `GwpWardenDispatchDialogue`
 - `GreyWardenTroopRequestBehavior.Cohort.cs` — 254 行 · `GreyWardenTroopRequestBehavior`
