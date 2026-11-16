@@ -28,14 +28,6 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_fs_trade_troops_ask, GwpTextCatalog.gwp_fs_trade_troops_reply);
             AddPriestTrade(starter, FireswornTradeKind.Armory, "gwp_fs_trade_armory",
                 GwpTextCatalog.gwp_fs_trade_armory_ask, GwpTextCatalog.gwp_fs_trade_armory_reply);
-            starter.AddPlayerLine("gwp_fs_trade_armory_prepare", "hero_main_options", "gwp_fs_trade_armory_prepare",
-                GwpText.Get(GwpTextCatalog.gwp_fs_trade_armory_prepare_ask),
-                () => !CanManagePlayerArmory && CurrentPriestTrade(FireswornTradeKind.Armory).HasValue, null);
-            starter.AddDialogLine("gwp_fs_trade_armory_prepare_reply", "gwp_fs_trade_armory_prepare", PriestTradeReturn,
-                GwpText.Get(GwpTextCatalog.gwp_fs_trade_armory_prepare_reply), null, () =>
-                {
-                    if (CurrentPriestTrade(FireswornTradeKind.Armory) is { } trade) OpenPlayerArmoryLedger(trade.Party);
-                });
             // 原版赎金商在关界面后再走一条 NPC 答复，此时才按最新名册和声望生成选项。
             starter.AddDialogLine(PriestTradeReturn, PriestTradeReturn, "hero_main_options",
                 GwpText.Get(GwpTextCatalog.gwp_fs_trade_return), null, null);
@@ -49,16 +41,6 @@ namespace GreyWardenPolicePurity
                 GwpTextCatalog.gwp_fs_trade_troops_title, GameMenuOption.LeaveType.DonateTroops);
             AddVillageTrade(starter, FireswornTradeKind.Armory, "gwp_fs_village_arms",
                 GwpTextCatalog.gwp_fs_trade_armory_title, GameMenuOption.LeaveType.OpenStash);
-            starter.AddGameMenuOption(GwpFireswornMenus.VillageServicesMenuId, "gwp_fs_village_prepare_armory",
-                GwpTextCatalog.gwp_player_armory_manage, args =>
-                {
-                    args.optionLeaveType = GameMenuOption.LeaveType.OpenStash;
-                    return CurrentPriestTrade(FireswornTradeKind.Armory, fromConversation: false).HasValue;
-                }, _ =>
-                {
-                    if (CurrentPriestTrade(FireswornTradeKind.Armory, fromConversation: false) is { } trade)
-                        OpenPlayerArmoryLedger(trade.Party);
-                });
         }
 
         private void AddVillageTrade(CampaignGameStarter starter, FireswornTradeKind kind,
@@ -67,7 +49,13 @@ namespace GreyWardenPolicePurity
             starter.AddGameMenuOption(GwpFireswornMenus.VillageServicesMenuId, id, label, args =>
             {
                 args.optionLeaveType = leaveType;
-                return CanOfferPriestTrade(kind, fromConversation: false);
+                bool canOffer = CanOfferPriestTrade(kind, fromConversation: false);
+                if (kind is FireswornTradeKind.Prisoners or FireswornTradeKind.Armory)
+                {
+                    args.IsEnabled = canOffer;
+                    return true;
+                }
+                return canOffer;
             }, _ => OpenPriestTrade(kind, fromConversation: false));
         }
 

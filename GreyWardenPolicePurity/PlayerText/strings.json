@@ -5694,14 +5694,6 @@
       "en": "Show me what you can spare. We'll put it to use here.",
       "zh": "让我看看你能匀出哪些。这些东西在村里派得上用场。"
     },
-    "gwp_fs_trade_armory_prepare_ask": {
-      "en": "I'd like to sort out my company's arms and armour first.",
-      "zh": "我想先整理一下随军的军械。"
-    },
-    "gwp_fs_trade_armory_prepare_reply": {
-      "en": "Go ahead. Set aside the gear you can spare, then come and see me again.",
-      "zh": "你先去清点军械。匀得出什么，再来找我。"
-    },
     "gwp_fs_trade_return": {
       "en": "Was there anything else?",
       "zh": "还有别的事吗？"

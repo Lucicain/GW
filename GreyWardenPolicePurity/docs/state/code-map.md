@@ -7,7 +7,7 @@
 > **读法：前两节（补丁点、注册顺序）通读；「类型索引」「文件索引」是查表用的，
 > 用 grep 查某个类型或文件，不要整份读进上下文。**
 
-237 个源文件、60,050 行、454 个公开类型、133 条 Harmony 目标声明（含动态入口，共 133 个补丁类）。
+237 个源文件、60,036 行、454 个公开类型、133 条 Harmony 目标声明（含动态入口，共 133 个补丁类）。
 
 ## 原版接触面（Harmony 补丁）
 
@@ -774,7 +774,7 @@
 
 ### 其他（143 个文件）
 
-- `GwpTextCatalog.g.cs` — 1439 行 · `GwpTextCatalog`
+- `GwpTextCatalog.g.cs` — 1437 行 · `GwpTextCatalog`
 - `GwpFireswornBehavior.cs` — 1362 行 · `GwpFireswornBehavior` : CampaignBehaviorBase，另含 2 个类型
 - `GwpFireswornArmory.cs` — 900 行 · `GwpFireswornBehavior` : CombatSimulationModel，另含 3 个类型
 - `GwpCitySearchMission.cs` — 570 行 · `GwpCitySearchMission` : MissionLogic，另含 2 个类型
@@ -793,8 +793,8 @@
 - `GwpArmoryAllocation.cs` — 305 行 · `GwpFireswornBehavior`
 - `GwpWardenVisitDesire.cs` — 305 行 · `GwpWardenVisitDesire` : PartyHealingModel，另含 5 个类型
 - `GwpAssistanceArmyLifecyclePatch.cs` — 297 行 · `GwpAssistanceArmyDisbandGuardPatch`，另含 7 个类型
-- `GwpFireswornPlayerTrade.cs` — 293 行 · `GwpFireswornBehavior`
 - `GwpStrength.cs` — 292 行 · `GwpStrength`，另含 1 个类型
+- `GwpFireswornPlayerTrade.cs` — 281 行 · `GwpFireswornBehavior`
 - `PlayerBehaviorPool.cs` — 272 行 · `PlayerBehaviorPool`
 - `GwpCitySearchMission.HallDuel.cs` — 254 行 · `GwpCitySearchMissionController` : AgentBehavior，另含 2 个类型
 - `GwpFireswornMenus.cs` — 249 行 · `GwpFireswornMenus` : SettlementMilitiaModel，另含 3 个类型

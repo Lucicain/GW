@@ -1400,8 +1400,6 @@
   <string id="gwp_fs_trade_troops_reply" text="你能留下哪些人？村里正缺有经验的人值守。" />
   <string id="gwp_fs_trade_armory_ask" text="我能从军械库匀些装备给你们。" />
   <string id="gwp_fs_trade_armory_reply" text="让我看看你能匀出哪些。这些东西在村里派得上用场。" />
-  <string id="gwp_fs_trade_armory_prepare_ask" text="我想先整理一下随军的军械。" />
-  <string id="gwp_fs_trade_armory_prepare_reply" text="你先去清点军械。匀得出什么，再来找我。" />
   <string id="gwp_fs_trade_return" text="还有别的事吗？" />
   <string id="gwp_fs_trade_prisoners_title" text="交付俘虏" />
   <string id="gwp_fs_trade_troops_title" text="调入村庄民兵" />

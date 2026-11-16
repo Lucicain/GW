@@ -42,6 +42,6 @@ Kit 的上述 `_tex.tpac` 为源图与导入元数据，不含内嵌像素；参
 
 - `Verify-ClanBanner.ps1 -Installed` 核对安装版 XSD、Native/NavalDLC ID 冲突、实际 Banner DLL 解析两层、图标材质/格号、精确黑金色、颜色归一、旗帜码往返、reserved、gw 引用、唯一注册与 XML 镜像哈希。材质、纹理 TPAC 和 RDC 也与仓库归档比对。[512/128/64像素参考](../reference/banner-review/kit-input/native-mask-preview.png)来自离线解码。
 - `rgl_log_4268.txt` 记录客户端在上一版旗帜部署后重新加载 `Modules/GreyWarden/Assets`。贴图质量为低时，`dont_degrade` 版本的编辑器和战报鸟徽仍模糊。原缓存有 12 层，从实机战报截出的鸟徽与第 4 层内 32×32 像素的鸟徽细节最接近。部署单层缓存后，用户确认旗帜模糊问题已解决。（依据：用户截图、实机日志、缓存逐层离线对照及用户验收 2026-11-16）
-- 玩家美术包 `pack0` 已含 `gwp_commander_banner` 材质及初版多层纹理。下一次通过 Kit 发布时核对包内纹理为单层。发行哈希见[构建与部署](build-and-deploy.md)。（依据：TPAC 资产清单对照 2026-10-16、2026-11-16）
+- 现用玩家美术包 `pack0` 已含 `gwp_commander_banner` 材质，纹理有 12 层 mip。直接复用本机单层像素的隔离候选已通过 TpacTool 读回，玩家端加载和低画质显示待验证。见[同源出包对照](../journal/2026-11-17-test-and-player-packages.md#用当前源码发正式版会有什么差异)。（依据：TPAC 资产清单及逐字节对照 2026-11-17）
 
 回退：取回 `4f31993` 的 `_Module/ModuleData/spclans.xml`、`_Module/SubModule.xml` 并镜像，撤去新增运行时 banner_icons.xml。新旗帜源与成图可保留作素材；需要撤下新材质时，在 Kit 退出后移除对应独立资源，不影响装备素材。

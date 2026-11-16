@@ -1400,13 +1400,11 @@
 | gwp_fs_trade_troops_reply | Show me whom you can spare. We could use some veterans on the watch. | 你能留下哪些人？村里正缺有经验的人值守。 | GwpFireswornPlayerTrade.cs:28 |
 | gwp_fs_trade_armory_ask | I can spare some gear from my armoury. | 我能从军械库匀些装备给你们。 | GwpFireswornPlayerTrade.cs:30 |
 | gwp_fs_trade_armory_reply | Show me what you can spare. We'll put it to use here. | 让我看看你能匀出哪些。这些东西在村里派得上用场。 | GwpFireswornPlayerTrade.cs:30 |
-| gwp_fs_trade_armory_prepare_ask | I'd like to sort out my company's arms and armour first. | 我想先整理一下随军的军械。 | GwpFireswornPlayerTrade.cs:32 |
-| gwp_fs_trade_armory_prepare_reply | Go ahead. Set aside the gear you can spare, then come and see me again. | 你先去清点军械。匀得出什么，再来找我。 | GwpFireswornPlayerTrade.cs:35 |
-| gwp_fs_trade_return | Was there anything else? | 还有别的事吗？ | GwpFireswornPlayerTrade.cs:41 |
-| gwp_fs_trade_prisoners_title | Hand Over Prisoners | 交付俘虏 | GwpFireswornPlayerTrade.cs:47, GwpFireswornPlayerTrade.cs:164 |
-| gwp_fs_trade_troops_title | Send Soldiers to the Village Militia | 调入村庄民兵 | GwpFireswornPlayerTrade.cs:49, GwpFireswornPlayerTrade.cs:164 |
-| gwp_fs_trade_armory_title | Supply the Village Armoury | 交付军械 | GwpFireswornPlayerTrade.cs:51, GwpFireswornPlayerTrade.cs:238 |
-| gwp_fs_trade_unavailable | This delivery can no longer be made. Speak to the priest again. | 这笔交付已无法完成，请再与祭司交谈。 | GwpFireswornPlayerTrade.cs:274 |
+| gwp_fs_trade_return | Was there anything else? | 还有别的事吗？ | GwpFireswornPlayerTrade.cs:33 |
+| gwp_fs_trade_prisoners_title | Hand Over Prisoners | 交付俘虏 | GwpFireswornPlayerTrade.cs:39, GwpFireswornPlayerTrade.cs:152 |
+| gwp_fs_trade_troops_title | Send Soldiers to the Village Militia | 调入村庄民兵 | GwpFireswornPlayerTrade.cs:41, GwpFireswornPlayerTrade.cs:152 |
+| gwp_fs_trade_armory_title | Supply the Village Armoury | 交付军械 | GwpFireswornPlayerTrade.cs:43, GwpFireswornPlayerTrade.cs:226 |
+| gwp_fs_trade_unavailable | This delivery can no longer be made. Speak to the priest again. | 这笔交付已无法完成，请再与祭司交谈。 | GwpFireswornPlayerTrade.cs:262 |
 | gwp_fs_party_pretalk | Anything else? | 还有什么事？ | 地图遇到教众队伍，买卖取消后回到主对话。 |
 | gwp_fs_party_buy | What goods are you carrying? | 你们带了什么货？ | 只有卖货队有货、总价大于零且玩家付得起时显示的购买选项。 |
 | gwp_fs_party_offer | We have {PRODUCTS}, for {TOTAL_PRICE}{GOLD_ICON} in all. The money will go home to support the faithful. | 有{PRODUCTS}，共计{TOTAL_PRICE}{GOLD_ICON}。这些钱要带回去供养教众。 | 卖货队报价，不把钱说成归某团火所有。 |

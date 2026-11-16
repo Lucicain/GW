@@ -819,8 +819,6 @@ namespace GreyWardenPolicePurity
         internal const string gwp_fs_status_returning = "{=gwp_fs_status_returning}Returning to {HOME}.";
         internal const string gwp_fs_status_visit = "{=gwp_fs_status_visit}In {VILLAGE}: handed over {PRISONERS} prisoners, donated {DONATED} items, and recruited {RECRUITS} believers.";
         internal const string gwp_fs_trade_armory_ask = "{=gwp_fs_trade_armory_ask}I can spare some gear from my armoury.";
-        internal const string gwp_fs_trade_armory_prepare_ask = "{=gwp_fs_trade_armory_prepare_ask}I'd like to sort out my company's arms and armour first.";
-        internal const string gwp_fs_trade_armory_prepare_reply = "{=gwp_fs_trade_armory_prepare_reply}Go ahead. Set aside the gear you can spare, then come and see me again.";
         internal const string gwp_fs_trade_armory_reply = "{=gwp_fs_trade_armory_reply}Show me what you can spare. We'll put it to use here.";
         internal const string gwp_fs_trade_armory_title = "{=gwp_fs_trade_armory_title}Supply the Village Armoury";
         internal const string gwp_fs_trade_prisoners_ask = "{=gwp_fs_trade_prisoners_ask}I have prisoners to hand over.";
